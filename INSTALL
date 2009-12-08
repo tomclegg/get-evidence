@@ -1,0 +1,15 @@
+Install prerequisites:
+
+ sudo apt-get install php-db wget libapache2-mod-php5 mysql-server
+ sudo a2enmod php5
+ sudo /etc/init.d/apache2 restart
+
+Download and extract php-openid-2.1.3:
+
+ make
+
+Create MySQL db and user:
+
+ create database evidence;
+ create user evidence@localhost identified by 'shakespeare';
+ grant all privileges on evidence.* to evidence@localhost;
