@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE snap_release ADD UNIQUE variant_id (variant_id, article_pmid, genome_id)");
 }
 
-function evidence_get_variant_id ($chromosome, $position, $alleles)
+function evidence_get_variant_id ($chromosome, $position, $alleles, $create_flag=false)
 {
   if (ereg("[^0-9]", $alleles)) {
     $alleles = strtoupper ($alleles);
@@ -54,7 +54,7 @@ function evidence_get_variant_id ($chromosome, $position, $alleles)
 			SET variant_chr=?,
 			variant_position=?,
 			variant_alleles=?",
-		  array ($chromosome, $positions, $alleles+0));
+		  array ($chromosome, $position, $alleles+0));
   if (theDb()->affectedRows())
     return theDb()->getOne ("SELECT LAST_INSERT_ID()");
   else
@@ -171,17 +171,26 @@ function evidence_signoff ($edit_id)
 		  $edit_id);
 }
 
-function evidence_get_item ($snap, $variant_id)
+function evidence_get_report ($snap, $variant_id)
 {
   // Get all items relating to the given variant
 
   $v =& theDb()->getAll ("SELECT * from snap_$snap
-			     WHERE variant_id=?
-			     ORDER BY
-				genome_id,
-				article_pmid,
-				edit_timestamp",
+			LEFT JOIN variants ON variants.variant_id=snap_$snap.variant_id
+			WHERE snap_$snap.variant_id=?
+			ORDER BY
+			genome_id,
+			article_pmid,
+			edit_timestamp",
 			 array ($variant_id));
+  foreach ($v as $row)
+    {
+      $a = $row["variant_alleles"] + 0;
+      $row["variant_alleles"] = (($a & 1 ? "A" : "") .
+				 ($a & 2 ? "C" : "") .
+				 ($a & 4 ? "G" : "") .
+				 ($a & 8 ? "T" : ""));
+    }
   return $v;
 }
 

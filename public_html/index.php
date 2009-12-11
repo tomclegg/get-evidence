@@ -3,23 +3,74 @@
 include "lib/setup.php";
 $gOut["title"] = "Evidence Base";
 
-function print_content($x)
+if (ereg ("^[0-9]+$", $_GET["q"]))
+  $variant_id = $_GET["q"];
+else if (ereg ("^(chr[0-9XYM])-([0-9]+)-([ACGT]+)", $_GET["q"], $regs))
+  $variant_id = evidence_get_variant_id ($regs[1], $regs[2], $regs[3]);
+if (!$variant_id)
+  {
+    if (!$_GET["q"])
+      {
+	$variant_id = theDb()->getOne ("SELECT MAX(variant_id) FROM snap_release");
+	header ("Location: /?q=$variant_id");
+	exit;
+      }
+    if (!$variant_id)
+      {
+	$gOut["content"] = '<h1>Not found</h1><p>No results were found for your query: <cite>'.htmlspecialchars($_GET["q"]).'</cite>';
+	go();
+	exit;
+      }
+  }
+$report =& evidence_get_report ("latest", $variant_id);
+$row0 =& $report[0];
+
+$gOut["title"] = $row0["variant_chr"].":$row0[variant_position] - Evidence Base";
+
+$gOut["content"] = "
+<h1>$row0[variant_chr]:$row0[variant_position]</h1>
+
+<p>$row0[summary_short]</p>
+
+";
+
+$html = "";
+$outsection = false;
+$firstrow = true;
+foreach ($report as $row)
 {
-  print '
-<h1>chr2:47496961</h1>
-<div class="descr">dbSNP: rs4987188</div>
-
-<p>MSH2 is homologous to the E. coli MutS gene and is involved in DNA mismatch repair.</p>
-
-<ul>Genes:
-<li>MSH2 (G322D)
-</ul>
-
-<ul>Publications:
-<li>PMID 15563510. Alazzouzi, H.; Domingo, E.; Gonzalez, S.; Blanco, I.; Armengol, M.; Espin, E.; Plaja, A.; Schwartz, S.; Capella, G.; Schwartz, S., Jr. : <em>Low levels of microsatellite instability characterize MLH1 and MSH2 HNPCC carriers before tumor diagnosis.</em> Hum. Molec. Genet. 14: 235-239, 2005.</li>
-</ul>
-';
+  if ($firstrow)
+    {
+      $firstrow = false;
+      continue;
+    }
+  if ($row["article_pmid"] !== null)
+    {
+      $section = "Publications";
+      $item = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A>";
+    }
+  if ($row["genome_id"] !== null)
+    {
+      $section = "Genomes";
+      $item = "Genome $row[genome_id]";
+    }
+  if ($outsection != $section)
+    {
+      if ($outsection !== false)
+	{
+	  $html .= "</UL>\n";
+	}
+      $html .= "<UL>$section:\n";
+      $outsection = $section;
+    }
+  $item = $item . ". " . htmlspecialchars($row[summary_short]);
+  if ($row[summary_long])
+    $item .= "<P>".htmlspecialchars($row[summary_long])."</P>";
+  $html .= "<li>$item</li>\n";
 }
+if ($outsection !== false)
+  $html .= "</ul>\n";
+$gOut["content"] .= $html;
 
 go();
 

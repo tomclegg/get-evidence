@@ -15,7 +15,7 @@ evidence_create_tables();
      header ("Content-type: text/plain");
 
 
-     $variant_id = evidence_get_variant_id ("chr1", 5862830, "ACGT");
+     $variant_id = evidence_get_variant_id ("chr1", 5862830, "ACGT", true);
      $e = evidence_edit_id_generate (null, $variant_id);
 
 
@@ -32,7 +32,7 @@ evidence_create_tables();
      evidence_submit ($e);
 
      print "after evidence_submit\n";
-     print_r (evidence_get_item ("latest", $variant_id));
+     print_r (evidence_get_report ("latest", $variant_id));
 
 
      evidence_signoff ($e);
@@ -49,10 +49,10 @@ evidence_create_tables();
      evidence_submit ($a);
 
      print "release:\n";
-     print_r (evidence_get_item ("release", $variant_id));
+     print_r (evidence_get_report ("release", $variant_id));
 
      print "latest:\n";
-     print_r (evidence_get_item ("latest", $variant_id));
+     print_r (evidence_get_report ("latest", $variant_id));
 
    }
  else
