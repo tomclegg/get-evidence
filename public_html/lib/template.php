@@ -26,6 +26,8 @@ function frag($tag)
 <meta name="keywords" content="keywords"/> 
 <meta name="author" content="author"/> 
 <link rel="stylesheet" type="text/css" href="default.css" media="screen"/>
+<script type="text/javascript" 
+ src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1/prototype.js"></script>
 <title><?php frag("title"); ?></title>
 </head>
 
@@ -62,8 +64,8 @@ function frag($tag)
 		<div class="sidenav">
 
 <?php
-		if (isset ($_SESSION) && array_key_exists ("user", $_SESSION)):
-		  print "<div class=\"desc\">Logged in: <strong>" . htmlspecialchars($_SESSION["user"]["nickname"]) . "</strong></div>";
+		if (getCurrentUser()):
+		  print "<div class=\"desc\">Logged in: <strong>" . htmlspecialchars(getCurrentUser("nickname")) . "</strong></div>";
 		endif;
 ?>
 
@@ -74,12 +76,12 @@ function frag($tag)
 			</div>
 			</form>
 
-<?php		if (!(isset ($_SESSION) && array_key_exists ("user", $_SESSION))): ?>
+<?php		if (!getCurrentUser()): ?>
 
 			<h1>Log in</h1>
 			<form action="/openid_start.php" method="post">
 			<div>
-			OpenID URL:<br /><input type="text" name="auth_url" class="styled"
+			   OpenID URL (or <a href="#" onClick="$('auth_url').value='https://www.google.com/accounts/o8/id';">use Google</a> or <a href="#" onClick="$('auth_url').value='http://yahoo.com';">use Yahoo</a>):<br /><input type="text" name="auth_url" class="styled" id="auth_url"
 <?php
 			if (isset($_SESSION) && array_key_exists ("auth_url", $_SESSION)):
 			  print " value=\"" . htmlentities($_SESSION["auth_url"]) . "\"";

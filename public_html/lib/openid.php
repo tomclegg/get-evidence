@@ -145,18 +145,13 @@ function openid_verify() {
 function openid_user_update ($openid, $sreg)
 {
   global $gDb;
-  $gDb->query ('
-CREATE TABLE IF NOT EXISTS eb_users (
-  oid VARCHAR(255) NOT NULL PRIMARY KEY,
-  nickname VARCHAR(64),
-  fullname VARCHAR(128),
-  email VARCHAR(128)
-)');
+  openid_create_tables ();
   $gDb->query ('REPLACE INTO eb_users (oid) values (?)', array ($openid));
   foreach (array ('nickname', 'fullname', 'email') as $key)
     {
       if (array_key_exists ($key, $sreg))
-	$gDb->query ("UPDATE eb_users SET $key=?", array ($sreg[$key]));
+	$gDb->query ("UPDATE eb_users SET $key=? WHERE oid=?",
+		     array ($sreg[$key], $openid));
     }
   $user =& $gDb->getRow ('SELECT * FROM eb_users WHERE oid=?', array($openid));
   if (!strlen ($user["nickname"])) $user["nickname"] = $user["fullname"];
@@ -165,4 +160,16 @@ CREATE TABLE IF NOT EXISTS eb_users (
   $_SESSION["user"] = $user;
 }
 
+function openid_create_tables ()
+{
+  theDb()->query ('
+CREATE TABLE IF NOT EXISTS eb_users (
+  oid VARCHAR(255) NOT NULL PRIMARY KEY,
+  nickname VARCHAR(64),
+  fullname VARCHAR(128),
+  email VARCHAR(128),
+  is_admin TINYINT NOT NULL DEFAULT 0
+)');
+  theDb()->query ('ALTER TABLE eb_users ADD is_admin TINYINT NOT NULL DEFAULT 0');
+}
 ?>
