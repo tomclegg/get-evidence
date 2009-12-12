@@ -1,15 +1,13 @@
 <?php
 
-global $gDb;
-
 require_once "DB.php";
+
+function &theDb() { global $gDb; return $gDb; }
+
 $gDsn = "mysql://$gDbUser:$gDbPassword@$gDbHost/$gDbDatabase";
-
 $gDb = DB::connect ($gDsn);
-if (DB::isError ($gDb)) die ($gDb->getMessage());
+if (DB::isError ($gDb)) die (theDb()->getMessage());
 
-$gDb->setFetchMode (DB_FETCHMODE_ASSOC);
-
-function theDb() { global $gDb; return $gDb; }
+theDb()->setFetchMode (DB_FETCHMODE_ASSOC);
 
 ?>

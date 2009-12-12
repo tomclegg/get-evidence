@@ -31,8 +31,7 @@ function getTrustRoot() {
 
 function openid_try ($url)
 {
-  global $gDb;
-  $store = new Auth_OpenID_MySQLStore($gDb);
+  $store = new Auth_OpenID_MySQLStore(theDb());
   $store->createTables();
   $consumer = new Auth_OpenID_Consumer ($store);
   $auth_request = $consumer->begin ($url);
@@ -85,8 +84,7 @@ function openid_try ($url)
 }
 
 function openid_verify() {
-  global $gDb;
-  $consumer = new Auth_OpenID_Consumer (new Auth_OpenID_MySQLStore($gDb));
+  $consumer = new Auth_OpenID_Consumer (new Auth_OpenID_MySQLStore(theDb()));
 
   // Complete the authentication process using the server's
   // response.
@@ -144,16 +142,15 @@ function openid_verify() {
 
 function openid_user_update ($openid, $sreg)
 {
-  global $gDb;
   openid_create_tables ();
-  $gDb->query ('REPLACE INTO eb_users (oid) values (?)', array ($openid));
+  theDb()->query ('REPLACE INTO eb_users (oid) values (?)', array ($openid));
   foreach (array ('nickname', 'fullname', 'email') as $key)
     {
       if (array_key_exists ($key, $sreg))
-	$gDb->query ("UPDATE eb_users SET $key=? WHERE oid=?",
+	theDb()->query ("UPDATE eb_users SET $key=? WHERE oid=?",
 		     array ($sreg[$key], $openid));
     }
-  $user =& $gDb->getRow ('SELECT * FROM eb_users WHERE oid=?', array($openid));
+  $user =& theDb()->getRow ('SELECT * FROM eb_users WHERE oid=?', array($openid));
   if (!strlen ($user["nickname"])) $user["nickname"] = $user["fullname"];
   if (!strlen ($user["nickname"])) $user["nickname"] = $user["email"];
   if (!strlen ($user["nickname"])) $user["nickname"] = substr(md5($openid),0,8);
