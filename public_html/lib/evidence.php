@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS variants (
   variant_id SERIAL,
   variant_chr VARCHAR(16),
   variant_position INT UNSIGNED,
-  variant_alleles TINYINT UNSIGNED DEFAULT 15,
-  UNIQUE (variant_chr, variant_position, variant_alleles)
+  variant_allele CHAR(1),
+  UNIQUE (variant_chr, variant_position, variant_allele)
 )");
   theDb()->query ("
 CREATE TABLE IF NOT EXISTS edits (
@@ -41,28 +41,21 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE snap_release ADD UNIQUE variant_id (variant_id, article_pmid, genome_id)");
 }
 
-function evidence_get_variant_id ($chromosome, $position, $alleles, $create_flag=false)
+function evidence_get_variant_id ($chromosome, $position, $allele, $create_flag=false)
 {
-  if (ereg("[^0-9]", $alleles)) {
-    $alleles = strtoupper ($alleles);
-    $alleles = ( ((false !== strpos($alleles, 'A')) ? 1 : 0) +
-		 ((false !== strpos($alleles, 'C')) ? 2 : 0) +
-		 ((false !== strpos($alleles, 'G')) ? 4 : 0) +
-		 ((false !== strpos($alleles, 'T')) ? 8 : 0));
-  }
   theDb()->query ("INSERT IGNORE INTO variants
 			SET variant_chr=?,
 			variant_position=?,
-			variant_alleles=?",
-		  array ($chromosome, $position, $alleles+0));
+			variant_allele=?",
+		  array ($chromosome, $position, $allele));
   if (theDb()->affectedRows())
     return theDb()->getOne ("SELECT LAST_INSERT_ID()");
   else
     return theDb()->getOne ("SELECT variant_id FROM variants
 				WHERE variant_chr=?
 				AND variant_position=?
-				AND variant_alleles=?",
-			    array ($chromosome, $positions, $alleles+0));
+				AND variant_allele=?",
+			    array ($chromosome, $positions, $allele));
 }
 
 function evidence_approve ($edit_id, $signoff_oid)
@@ -183,14 +176,6 @@ function evidence_get_report ($snap, $variant_id)
 			article_pmid,
 			edit_timestamp",
 			 array ($variant_id));
-  foreach ($v as $row)
-    {
-      $a = $row["variant_alleles"] + 0;
-      $row["variant_alleles"] = (($a & 1 ? "A" : "") .
-				 ($a & 2 ? "C" : "") .
-				 ($a & 4 ? "G" : "") .
-				 ($a & 8 ? "T" : ""));
-    }
   return $v;
 }
 

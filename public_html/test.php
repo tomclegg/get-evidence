@@ -15,7 +15,7 @@ evidence_create_tables();
      header ("Content-type: text/plain");
 
 
-     $variant_id = evidence_get_variant_id ("chr1", 5862830, "ACGT", true);
+     $variant_id = evidence_get_variant_id ("chr1", 5862830, "A", true);
      $e = evidence_edit_id_generate (null, $variant_id);
 
 
