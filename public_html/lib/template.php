@@ -28,6 +28,9 @@ function frag($tag)
 <link rel="stylesheet" type="text/css" href="default.css" media="screen"/>
 <script type="text/javascript" 
  src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1/prototype.js"></script>
+<script type="text/javascript" src="/js/superTextile.js"></script>
+<script type="text/javascript" src="/js/addEvent.js"></script>
+<script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
 <title><?php frag("title"); ?></title>
 </head>
 

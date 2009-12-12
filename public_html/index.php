@@ -44,10 +44,13 @@ foreach ($report as $row)
       $firstrow = false;
       continue;
     }
+
+  $id_prefix = "v_${variant_id}__p_$row[edit_id]__";
+
   if ($row["article_pmid"] !== null)
     {
       $section = "Publications";
-      $item = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A>";
+      $item = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
     }
   if ($row["genome_id"] !== null)
     {
@@ -63,9 +66,11 @@ foreach ($report as $row)
       $html .= "<UL>$section:\n";
       $outsection = $section;
     }
-  $item = $item . ". " . htmlspecialchars($row[summary_short]);
+  $item .= editable ("${id_prefix}f_summary_short__70x5__textile",
+		    $row[summary_short]);
   if ($row[summary_long])
-    $item .= "<P>".htmlspecialchars($row[summary_long])."</P>";
+    $item .= editable ("${id_prefix}f_summary_long__70x5__textile",
+		       $row[summary_long]);
   $html .= "<li>$item</li>\n";
 }
 if ($outsection !== false)

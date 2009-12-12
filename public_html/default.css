@@ -30,8 +30,10 @@ input {
 	font: normal 1.1em "Lucida Sans Unicode",sans-serif;
 }
 p,cite,code,ul {
-	font-size: 1.2em;
+	/* font-size: 1.2em; */
+	font-size: 12px;
 	padding-bottom: 1.2em;
+	background-color: transparent;
 }
 h1 {
 	font-size: 1.4em;

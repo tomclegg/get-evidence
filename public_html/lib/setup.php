@@ -4,6 +4,7 @@ require_once ("lib/config-default.php");
 require_once ("config.php");
 require_once ("lib/mysql.php");
 require_once ("lib/evidence.php");
+require_once ("lib/editable.php");
 
 global $gOut;
 $gOut = array("site_title" => "Evidence Base");
