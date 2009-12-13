@@ -30,6 +30,7 @@ function frag($tag)
  src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1/prototype.js"></script>
 <script type="text/javascript" src="/js/superTextile.js"></script>
 <script type="text/javascript" src="/js/addEvent.js"></script>
+<script type="text/javascript" src="/js/message.js"></script>
 <script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
 <title><?php frag("title"); ?></title>
 </head>
@@ -58,11 +59,11 @@ function frag($tag)
 
 	<div class="main">
 		
-		<div class="content">
+		<div class="content"><form id="mainform" action="save.php" method="POST">
 
 			<?php frag("content"); ?>
 
-		</div>
+		</form></div>
 
 		<div class="sidenav">
 
@@ -101,6 +102,8 @@ function frag($tag)
 			</div>
 			</form>
 <?php		endif; ?>
+
+		<div style="height: 300px;"><div id="message" class="message" style="border: 1px dashed #000; margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #ffd; display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
 
 		</div>
 	
