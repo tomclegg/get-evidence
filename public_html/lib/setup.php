@@ -27,4 +27,8 @@ function getCurrentUser ($param=null)
   return null;
 }
 
+global $gOpenidEasyProviders;
+$gOpenidEasyProviders = array ("https://www.google.com/accounts/o8/id" => "Google",
+			       "http://yahoo.com" => "Yahoo");
+
 ?>

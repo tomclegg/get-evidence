@@ -83,16 +83,29 @@ function frag($tag)
 <?php		if (!getCurrentUser()): ?>
 
 			<h1>Log in</h1>
-			<form action="/openid_start.php" method="post">
 			<div>
-			   OpenID URL (or <a href="#" onClick="$('auth_url').value='https://www.google.com/accounts/o8/id';">use Google</a> or <a href="#" onClick="$('auth_url').value='http://yahoo.com';">use Yahoo</a>):<br /><input type="text" name="auth_url" class="styled" id="auth_url"
+<?php
+			global $gOpenidEasyProviders;
+			foreach ($gOpenidEasyProviders as $url => $name) {
+?>
+				<form action="/openid_start.php" method="post">
+				<input type="hidden" name="auth_url" class="styled" id="auth_url" value="<?=htmlentities($url)?>">
+				<input type="submit" value="<?=htmlentities($name)?> login" class="button" />
+				</form>
+				<br />
+<?php
+			}
+?>
+			  <form action="/openid_start.php" method="post">
+				  OpenID URL:<br /><input type="text" name="auth_url" class="styled" id="auth_url"
 <?php
 			if (isset($_SESSION) && array_key_exists ("auth_url", $_SESSION)):
 			  print " value=\"" . htmlentities($_SESSION["auth_url"]) . "\"";
 			endif;
 ?>
 
- /> <input type="submit" value="log in" class="button" />
+			  />&nbsp;<input type="submit" value="Log in" class="button" />
+			</form>
 <?php
 			if (isset($_SESSION) && array_key_exists ("auth_error", $_SESSION)):
 			  print "<br />" . htmlspecialchars($_SESSION["auth_error"]);
@@ -100,7 +113,6 @@ function frag($tag)
 			endif;
 ?>
 			</div>
-			</form>
 <?php		endif; ?>
 
 		<div style="height: 300px;"><div id="message" class="message" style="border: 1px dashed #000; margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #ffd; display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
