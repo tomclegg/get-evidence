@@ -115,7 +115,7 @@ function frag($tag)
 			</div>
 <?php		endif; ?>
 
-		<div style="height: 300px;"><div id="message" class="message" style="border: 1px dashed #000; margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #ffd; display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
+		<div style="height: 300px;"><div id="message" class="message" style="border: 1px dashed #000; margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #ffb; display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
 
 		</div>
 	

@@ -31,14 +31,14 @@ CREATE TABLE IF NOT EXISTS edits (
   genome_id BIGINT UNSIGNED,
   
   INDEX (variant_id,edit_timestamp),
-  INDEX (edit_oid, edit_timestamp)
+  INDEX (edit_oid, edit_timestamp),
+  INDEX (previous_edit_id, edit_oid)
 )");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS snap_latest LIKE edits");
-  theDb()->query ("ALTER TABLE snap_latest ADD UNIQUE variant_id (variant_id, article_pmid, genome_id)");
-
+  theDb()->query ("ALTER TABLE snap_latest ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
   theDb()->query ("CREATE TABLE IF NOT EXISTS snap_release LIKE edits");
-  theDb()->query ("ALTER TABLE snap_release ADD UNIQUE variant_id (variant_id, article_pmid, genome_id)");
+  theDb()->query ("ALTER TABLE snap_release ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
 }
 
 function evidence_get_variant_id ($chromosome, $position, $allele, $create_flag=false)
@@ -131,10 +131,10 @@ function evidence_submit ($edit_id)
   // by editing/saving an old revision) and force the user to
   // explicitly lose the intervening changes.
 
-  theDb()->query ("UPDATE edits SET is_draft=0, edit_timestamp=NOW() WHERE edit_id=? AND edit_oid=?",
-		  array($edit_id, $_SESSION["user"]["oid"]));
+  theDb()->query ("UPDATE edits SET is_draft=0, edit_timestamp=NOW(), article_pmid=if(article_pmid is null,0,article_pmid), genome_id=if(genome_id is null,0,genome_id) WHERE edit_id=? AND edit_oid=?",
+		  array($edit_id, getCurrentUser("oid")));
   theDb()->query ("REPLACE INTO snap_latest SELECT * FROM edits WHERE edit_id=? AND edit_oid=?",
-		  array($edit_id, $_SESSION["user"]["oid"]));
+		  array($edit_id, getCurrentUser("oid")));
 }
 
 function evidence_signoff ($edit_id)

@@ -47,12 +47,12 @@ foreach ($report as $row)
 
   $id_prefix = "v_${variant_id}__p_$row[edit_id]__";
 
-  if ($row["article_pmid"] !== null)
+  if ($row["article_pmid"] > 0)
     {
       $section = "Publications";
       $item = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
     }
-  if ($row["genome_id"] !== null)
+  if ($row["genome_id"] > 0)
     {
       $section = "Genomes";
       $item = "Genome $row[genome_id]";

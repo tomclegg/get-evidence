@@ -25,9 +25,8 @@ body {
 	font: normal 62.5% "Lucida Sans Unicode",sans-serif;
 	margin: 0;
 }
-input {
-	color: #555;
-	font: normal 1.1em "Lucida Sans Unicode",sans-serif;
+input,textarea {
+	font: normal 12px "Lucida Sans Unicode",sans-serif;
 }
 p,cite,code,ul {
 	/* font-size: 1.2em; */
