@@ -75,9 +75,10 @@ function frag($tag)
 ?>
 
 			<h1>Search</h1>
-			<form action="/search.php">
+			<form action="/">
 			<div>
-				<input type="text" name="q" class="styled" /> <input type="submit" value="search" class="button" />
+				"GENE" or "GENE A123C":<br />
+				<input type="text" name="q" class="styled" size="12" /> <input type="submit" value="search" class="button" />
 			</div>
 			</form>
 

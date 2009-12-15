@@ -5,6 +5,8 @@ $gOut["title"] = "Evidence Base";
 
 function print_content($x)
 {
+  print "<h1>Recent edits</h1>\n\n";
+
   $q = theDb()->query ("SELECT * FROM edits
 	LEFT JOIN eb_users ON edit_oid=oid
 	LEFT JOIN variants ON variants.variant_id=edits.variant_id
@@ -16,7 +18,7 @@ function print_content($x)
   while ($row =& $q->fetchRow()) {
     print "<LI>";
 
-    print "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_pos]$row[variant_to]\">$row[variant_gene]-$row[variant_aa_from]$row[variant_pos]$row[variant_to]</A>";
+    print "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$row[variant_gene] $row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]</A>";
 
     if (!$row["previous_edit_id"] && !$row["article_pmid"] && !$row["genome_id"])
       print " added by ";

@@ -46,21 +46,26 @@ CREATE TABLE IF NOT EXISTS edits (
 
 function evidence_get_variant_id ($gene, $aa_pos, $aa_from, $aa_to, $create_flag=false)
 {
-  theDb()->query ("INSERT IGNORE INTO variants
+  $aa_from = aa_long_form ($aa_from);
+  $aa_to = aa_long_form ($aa_to);
+
+  if ($create_flag) {
+    $q = theDb()->query ("INSERT IGNORE INTO variants
 			SET variant_gene=?,
 			variant_aa_pos=?,
 			variant_aa_from=?,
 			variant_aa_to=?",
-		  array ($gene, $aa_pos, $aa_from, $aa_to));
-  if (theDb()->affectedRows())
-    return theDb()->getOne ("SELECT LAST_INSERT_ID()");
-  else
-    return theDb()->getOne ("SELECT variant_id FROM variants
+		    array ($gene, $aa_pos, $aa_from, $aa_to));
+    if (!theDb()->isError($q) &&
+	theDb()->affectedRows())
+      return theDb()->getOne ("SELECT LAST_INSERT_ID()");
+  }
+  return theDb()->getOne ("SELECT variant_id FROM variants
 				WHERE variant_gene=?
-				AND variant_pos=?
+				AND variant_aa_pos=?
 				AND variant_aa_from=?
 				AND variant_aa_to=?",
-			    array ($gene, $aa_pos, $aa_from, $aa_to));
+			  array ($gene, $aa_pos, $aa_from, $aa_to));
 }
 
 function evidence_approve ($edit_id, $signoff_oid)

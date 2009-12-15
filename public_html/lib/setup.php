@@ -1,10 +1,18 @@
 <?php
 
+if (get_magic_quotes_gpc())
+  {
+    foreach ($_GET as $k => $v) { $_GET[$k] = stripslashes($v); }
+    foreach ($_POST as $k => $v) { $_POST[$k] = stripslashes($v); }
+    foreach ($_COOKIE as $k => $v) { $_COOKIE[$k] = stripslashes($v); }
+  }
+
 require_once ("lib/config-default.php");
 require_once ("config.php");
 require_once ("lib/mysql.php");
 require_once ("lib/evidence.php");
 require_once ("lib/editable.php");
+require_once ("lib/aa.php");
 
 global $gOut;
 $gOut = array("site_title" => "Evidence Base");
