@@ -31,4 +31,6 @@ global $gOpenidEasyProviders;
 $gOpenidEasyProviders = array ("https://www.google.com/accounts/o8/id" => "Google",
 			       "http://yahoo.com" => "Yahoo");
 
+ini_set ("output_buffering", true);
+
 ?>
