@@ -76,23 +76,25 @@ foreach ($report as $row)
     }
 
   $id_prefix = "v_${variant_id}__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
+  $title = "";
 
   if ($row["article_pmid"] > 0)
     {
       $section = "Publications";
-      $item = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
+      $title = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
     }
   else if ($row["genome_id"] > 0)
     {
       $section = "Genomes";
-      $item = "Genome $row[genome_id]";
+      $title = "Genome $row[genome_id]";
     }
-  $item .= editable ("${id_prefix}f_summary_short__70x5__textile",
-		    $row[summary_short]);
+  $item = editable ("${id_prefix}f_summary_short__70x5__textile",
+		    $row[summary_short],
+		    $title);
   if ($row[summary_long])
     $item .= editable ("${id_prefix}f_summary_long__70x5__textile",
 		       $row[summary_long]);
-  $sections[$section] .= "<li>$item</li>\n";
+  $sections[$section] .= "$item\n";
 }
 
 $newPublicationForm = '
@@ -101,11 +103,10 @@ $newPublicationForm = '
 ';
 
 $html = "";
-$html .= "<UL>$section\n<div id=\"publications\">"
+$html .= "<H2>$section<BR />&nbsp;</H2>\n<DIV id=\"publications\">"
   . $sections["Publications"]
-  . "</div>"
-  . $newPublicationForm
-  . "</UL>\n";
+  . "</DIV>"
+  . $newPublicationForm;
 // $html .= "<UL>$section\n" . $sections["Genomes"] . "</UL>\n";
 
 $gOut["content"] .= $html;

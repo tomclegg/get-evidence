@@ -19,7 +19,8 @@ function editable_decorate (e)
 	return;
     if (!$('toolbar_'+e.id))
 	e.insert({top: '<P id="toolbar_'+e.id+'" class="toolbar"></P>'});
-    $('toolbar_'+e.id).insert('<A href="#" id="pbutton_'+e.id+'" onclick="editable_preview($(\''+e.id+'\'))" style="display:none;">Preview</A><A href="#" id="ebutton_'+e.id+'" onclick="editable_click($(\''+e.id+'\'))">Edit</A>');
+    $('toolbar_'+e.id).className = 'toolbar';
+    $('toolbar_'+e.id).insert('<SPAN style="position:absolute;right:0;bottom:0;"><A href="#" id="pbutton_'+e.id+'" onclick="editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A><A href="#" id="ebutton_'+e.id+'" onclick="editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A></SPAN>');
 }
 
 function editable_click (e)

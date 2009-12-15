@@ -160,21 +160,21 @@ h1,h2,h3 {
 }
 
 .toolbar {
-	text-align: right;
 	border-bottom: 3px solid #ddd;
 	margin: 0;
-	padding: 0px 0px 0px 2px;
+	padding: 0px 0px 0px 3px;
+	position: relative;
 }
-.toolbar a {
+.toolbar_tab {
 	text-decoration: none;
 	list-style: none;
 	padding: 3px 10px;
 	margin: 0px;
 	color: #000;
 	background-color: #ddd;
-	border-top: 2px solid #ddd;
-	border-left: 2px solid #ddd;
-	border-right: 2px solid #ddd;
+	border-top: 3px solid #ddd;
+	border-left: 3px solid #ddd;
+	border-right: 3px solid #ddd;
 }
 
 /* search form */
