@@ -44,8 +44,23 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE snap_release ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
 }
 
-function evidence_get_variant_id ($gene, $aa_pos, $aa_from, $aa_to, $create_flag=false)
+function evidence_get_variant_id ($gene,
+				  $aa_pos=false,
+				  $aa_from=false,
+				  $aa_to=false,
+				  $create_flag=false)
 {
+  if ($aa_pos === false) {
+    if (ereg ("^([-A-Za-z0-9_]+)[- ]+([A-Za-z]+)([0-9]+)([A-Za-z\\*]+)$", $gene, $regs)) {
+      $gene = $regs[1];
+      $aa_from = $regs[2];
+      $aa_pos = $regs[3];
+      $aa_to = $regs[4];
+    }
+    else
+      return null;
+  }
+
   $aa_from = aa_long_form ($aa_from);
   $aa_to = aa_long_form ($aa_to);
 

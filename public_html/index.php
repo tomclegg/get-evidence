@@ -7,8 +7,20 @@ $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
-else if (ereg ("^([-A-Z0-9]+)[- ]([A-Z]|[A-Z][a-z][a-z])([0-9]+)([A-Z]|[A-Z][a-z][a-z]|Stop|\\*)", $_GET["q"], $regs))
-  $variant_id = evidence_get_variant_id ($regs[1], $regs[3], $regs[2], $regs[4]);
+else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)$", $_GET["q"], $regs) &&
+	 aa_sane ($aa = $regs[2])) {
+  $gene = $regs[1];
+  $variant_id = evidence_get_variant_id ("$gene $aa");
+  if (!$variant_id) {
+    $aa_long = aa_long_form ($aa);
+    $aa_short = aa_short_form ($aa_long);
+    header ("HTTP/1.1 404 Not found");
+    $gOut["title"] = "$gene $aa_short";
+    $gOut["content"] = "<h1>$gene $aa_short</h1>\n<p>($gene $aa_long)</p><p>Not found.</p>\n";
+    go();
+    exit;
+  }
+}
 if (!$variant_id)
   {
     if (!$_GET["q"])
@@ -25,8 +37,10 @@ if (!$variant_id)
 	while ($row =& $q->fetchRow()) {
 	  $html .= "<LI><A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$row[variant_gene] $row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]</A></LI>\n";
 	}
-	if ($html == "")
+	if ($html == "") {
+	  header ("HTTP/1.1 404 Not found");
 	  $gOut["content"] = '<h1>Not found</h1><p>No results were found for your query: <cite>'.htmlspecialchars($_GET["q"]).'</cite></p>';
+	}
 	else
 	  $gOut["content"] = "<h1>Search results</h1><p><ul>$html</ul></p>";
 	go();
@@ -39,12 +53,12 @@ $row0 =& $report[0];
 $aa_long = "$row0[variant_aa_from]$row0[variant_aa_pos]$row0[variant_aa_to]";
 $aa_short = aa_short_form($aa_long);
 
-$gOut["title"] = "$row0[variant_gene] $aa_long - Evidence Base";
+$gOut["title"] = "$row0[variant_gene] $aa_short - Evidence Base";
 
 $gOut["content"] = "
-<h1>$row0[variant_gene] $aa_long</h1>
+<h1>$row0[variant_gene] $aa_short</h1>
 
-<p>($row0[variant_gene] $aa_short)</p>
+<p>($row0[variant_gene] $aa_long)</p>
 
 <p>$row0[summary_short]</p>
 
