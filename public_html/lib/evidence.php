@@ -183,4 +183,24 @@ function evidence_get_report ($snap, $variant_id)
   return $v;
 }
 
+function evidence_get_latest_edit ($variant_id, $article_pmid, $genome_id,
+				   $create_flag=false)
+{
+  $edit_id = theDb()->getOne
+    ("SELECT MAX(edit_id) FROM edits
+	WHERE variant_id=? AND article_pmid=? AND genome_id=?
+	AND (is_draft=0 OR edit_oid=?)",
+     array ($variant_id, $article_pmid, $genome_id, getCurrentUser("oid")));
+  if (!$edit_id && $create_flag) {
+    theDb()->query
+      ("INSERT INTO edits
+	SET edit_timestamp=NOW(), edit_oid=?, is_draft=1,
+	variant_id=?, article_pmid=?, genome_id=?",
+       array (getCurrentUser("oid"), $variant_id, $article_pmid, $genome_id));
+    $edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
+    evidence_submit ($edit_id);
+  }
+  return $edit_id + 0;
+}
+
 ?>
