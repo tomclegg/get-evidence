@@ -80,7 +80,7 @@ foreach ($_POST as $param => $newvalue)
 			WHERE edit_id=? AND edit_oid=? AND is_draft=1",
 		       array($newvalue, $edit_id, getCurrentUser("oid")));
   if (!theDb()->isError($q))
-    $response[ereg_replace ("^edited", "saved", $param)] = $newvalue;
+    $response["saved__${previous_edit_id}__${field_id}"] = $newvalue;
   else
     $response["errors"][] = $q->getMessage();
 
