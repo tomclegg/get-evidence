@@ -87,6 +87,8 @@ function editable_save (submit_flag)
 		editable_save_result = transport.responseJSON;
 		editable_save_result.last_save_time = transport.request.parameters.save_time;
 		editable_check_unsaved_all ();
+		if (editable_save_result.please_reload)
+		    window.location.href = window.location.href;
 	    },
 	    parameters: params
 	});
