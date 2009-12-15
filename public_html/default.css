@@ -159,6 +159,24 @@ h1,h2,h3 {
 	margin-left: 18px;
 }
 
+.toolbar {
+	text-align: right;
+	border-bottom: 3px solid #ddd;
+	margin: 0;
+	padding: 0px 0px 0px 2px;
+}
+.toolbar a {
+	text-decoration: none;
+	list-style: none;
+	padding: 3px 10px;
+	margin: 0px;
+	color: #000;
+	background-color: #ddd;
+	border-top: 2px solid #ddd;
+	border-left: 2px solid #ddd;
+	border-right: 2px solid #ddd;
+}
+
 /* search form */
 .styled {
 	border: 3px double #E5E5E5;

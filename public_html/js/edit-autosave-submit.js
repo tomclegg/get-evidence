@@ -13,6 +13,15 @@ function editable_make (id, content)
     return '<SPAN id="'+id+'" class="editable"><SPAN id="preview_'+id+'">'+content+'</SPAN><INPUT type="hidden" id="orig_'+id+'" value="'+content.htmlentities()+'"/>&nbsp;</SPAN>';
 }
 
+function editable_decorate (e)
+{
+    if ($('ebutton_'+e.id))
+	return;
+    if (!$('toolbar_'+e.id))
+	e.insert({top: '<P id="toolbar_'+e.id+'" class="toolbar"></P>'});
+    $('toolbar_'+e.id).insert('<A href="#" id="pbutton_'+e.id+'" onclick="editable_preview($(\''+e.id+'\'))" style="display:none;">Preview</A><A href="#" id="ebutton_'+e.id+'" onclick="editable_click($(\''+e.id+'\'))">Edit</A>');
+}
+
 function editable_click (e)
 {
     if (!$('edited_' + e.id)) {
@@ -21,6 +30,11 @@ function editable_click (e)
     $('preview_' + e.id).style.display='none';
     $('edited_' + e.id).style.display='inline';
     $('edited_' + e.id).focus();
+    $('pbutton_' + e.id).style.display='inline';
+    $('pbutton_' + e.id).style.backgroundColor='#ddd';
+    $('ebutton_' + e.id).style.backgroundColor='#fff';
+    $('edited_' + e.id).style.width='100%';
+    return false;
 }
 
 function editable_highlight (e, flag)
@@ -48,11 +62,15 @@ function editable_preview (e)
 {
     preview = $('preview_' + e.id.sub('^edited_',''));
     edited = $('edited_' + e.id.sub('^edited_',''));
+    e = $(e.id.sub('^edited_',''));
     if (edited && preview) {
 	preview.update(superTextile(edited.value));
 	preview.style.display='inline';
 	edited.style.display='none';
+	$('pbutton_' + e.id).style.backgroundColor='#fff';
+	$('ebutton_' + e.id).style.backgroundColor='#ddd';
     }
+    return false;
 }
 
 function editable_unfocus (e)
@@ -85,8 +103,6 @@ function editable_input (e)
     ids = 'name="edited_' + e.id + '" id="edited_' + e.id + '" onkeyup="editable_check_unsaved(this)" onblur="editable_unfocus(this)"';
     if (xy[1] == 1) { ret = '<input ' + ids + ' type="text" size="' + xy[0] + '" value="' + saved_value.htmlentities() + '" />'; }
     else { ret = '<textarea ' + ids + ' type="text" rows="' + xy[1] + '" cols="' + xy[0] + '">' + saved_value.htmlentities() + '</textarea>'; }
-
-    ret += '<br/><button onclick="editable_preview($(\'' + e.id + '\')); return false;">Preview</button>';
 
     return '<p>' + ret + '</p>';
 }
@@ -256,10 +272,14 @@ function editable_update_last_saved ()
 
 function editable_init_single (e)
 {
-    p = $('preview_'+e.id);
-    Event.observe(p, 'click', function () { editable_click (e); });
-    Event.observe(p, 'mouseover', function () { editable_highlight (e, true); });
-    Event.observe(p, 'mouseout', function () { editable_highlight (e, false); });
+    /*
+      p = $('preview_'+e.id);
+      Event.observe(p, 'click', function () { editable_click (e); });
+      Event.observe(p, 'mouseover', function () { editable_highlight (e, true); });
+      Event.observe(p, 'mouseout', function () { editable_highlight
+      (e, false); });
+    */
+    editable_decorate (e);
 }
 
 function editable_init ()
