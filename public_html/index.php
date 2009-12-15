@@ -12,6 +12,7 @@ if (!$variant_id)
     if (!$_GET["q"])
       {
 	$variant_id = theDb()->getOne ("SELECT MAX(variant_id) FROM snap_release");
+	if (!$variant_id) $variant_id = 1;
 	header ("Location: /?q=$variant_id");
 	exit;
       }
@@ -25,10 +26,10 @@ if (!$variant_id)
 $report =& evidence_get_report ("latest", $variant_id);
 $row0 =& $report[0];
 
-$gOut["title"] = $row0["variant_chr"].":$row0[variant_position] - Evidence Base";
+$gOut["title"] = "$row0[variant_gene] $row0[variant_aa_from]$row0[variant_aa_pos]$row0[variant_aa_to] - Evidence Base";
 
 $gOut["content"] = "
-<h1>$row0[variant_chr]:$row0[variant_position]</h1>
+<h1>$row0[variant_gene] $row0[variant_aa_from]$row0[variant_aa_pos]$row0[variant_aa_to]</h1>
 
 <p>$row0[summary_short]</p>
 

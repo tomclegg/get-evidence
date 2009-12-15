@@ -143,7 +143,7 @@ function openid_verify() {
 function openid_user_update ($openid, $sreg)
 {
   openid_create_tables ();
-  theDb()->query ('REPLACE INTO eb_users (oid) values (?)', array ($openid));
+  theDb()->query ('INSERT IGNORE INTO eb_users (oid) values (?)', array ($openid));
   foreach (array ('nickname', 'fullname', 'email') as $key)
     {
       if (array_key_exists ($key, $sreg))

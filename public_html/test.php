@@ -15,7 +15,7 @@ if ($_REQUEST["test-insert"])
      header ("Content-type: text/plain");
 
 
-     $variant_id = evidence_get_variant_id ("chr1", 5862830, "A", true);
+     $variant_id = evidence_get_variant_id ("NPHP4", 848, "Arg", "Trp", true);
      $e = evidence_edit_id_generate (null, $variant_id);
 
 

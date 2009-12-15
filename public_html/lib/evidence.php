@@ -6,10 +6,11 @@ function evidence_create_tables ()
   theDb()->query ("
 CREATE TABLE IF NOT EXISTS variants (
   variant_id SERIAL,
-  variant_chr VARCHAR(16),
-  variant_position INT UNSIGNED,
-  variant_allele CHAR(1),
-  UNIQUE (variant_chr, variant_position, variant_allele)
+  variant_gene VARCHAR(16),
+  variant_aa_pos INT UNSIGNED,
+  variant_aa_from ENUM('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','Phe','Pro','Ser','Thr','Trp','Tyr','Val','Stop'),
+  variant_aa_to ENUM('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','Phe','Pro','Ser','Thr','Trp','Tyr','Val','Stop'),
+  UNIQUE (variant_gene, variant_aa_pos, variant_aa_from, variant_aa_to)
 )");
   theDb()->query ("
 CREATE TABLE IF NOT EXISTS edits (
@@ -41,21 +42,23 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE snap_release ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
 }
 
-function evidence_get_variant_id ($chromosome, $position, $allele, $create_flag=false)
+function evidence_get_variant_id ($gene, $aa_pos, $aa_from, $aa_to, $create_flag=false)
 {
   theDb()->query ("INSERT IGNORE INTO variants
-			SET variant_chr=?,
-			variant_position=?,
-			variant_allele=?",
-		  array ($chromosome, $position, $allele));
+			SET variant_gene=?,
+			variant_aa_pos=?,
+			variant_aa_from=?,
+			variant_aa_to=?",
+		  array ($gene, $aa_pos, $aa_from, $aa_to));
   if (theDb()->affectedRows())
     return theDb()->getOne ("SELECT LAST_INSERT_ID()");
   else
     return theDb()->getOne ("SELECT variant_id FROM variants
-				WHERE variant_chr=?
-				AND variant_position=?
-				AND variant_allele=?",
-			    array ($chromosome, $positions, $allele));
+				WHERE variant_gene=?
+				AND variant_pos=?
+				AND variant_aa_from=?
+				AND variant_aa_to=?",
+			    array ($gene, $aa_pos, $aa_from, $aa_to));
 }
 
 function evidence_approve ($edit_id, $signoff_oid)
