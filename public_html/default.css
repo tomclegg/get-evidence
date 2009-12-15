@@ -21,7 +21,7 @@ a:hover {
 }
 body {
 	background: #0094D6 url(img/bg.gif) repeat-x;
-	color: #466;
+	/* color: #466; */
 	font: normal 62.5% "Lucida Sans Unicode",sans-serif;
 	margin: 0;
 }
