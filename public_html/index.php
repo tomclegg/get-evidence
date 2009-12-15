@@ -35,9 +35,9 @@ $gOut["content"] = "
 
 ";
 
-$html = "";
-$outsection = false;
 $firstrow = true;
+$sections = array ("Publications" => "",
+		   "Genomes" => "");
 foreach ($report as $row)
 {
   if ($firstrow)
@@ -46,36 +46,39 @@ foreach ($report as $row)
       continue;
     }
 
-  $id_prefix = "v_${variant_id}__p_$row[edit_id]__";
+  $id_prefix = "v_${variant_id}__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
 
   if ($row["article_pmid"] > 0)
     {
       $section = "Publications";
       $item = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
     }
-  if ($row["genome_id"] > 0)
+  else if ($row["genome_id"] > 0)
     {
       $section = "Genomes";
       $item = "Genome $row[genome_id]";
-    }
-  if ($outsection != $section)
-    {
-      if ($outsection !== false)
-	{
-	  $html .= "</UL>\n";
-	}
-      $html .= "<UL>$section:\n";
-      $outsection = $section;
     }
   $item .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		    $row[summary_short]);
   if ($row[summary_long])
     $item .= editable ("${id_prefix}f_summary_long__70x5__textile",
 		       $row[summary_long]);
-  $html .= "<li>$item</li>\n";
+  $sections[$section] .= "<li>$item</li>\n";
 }
-if ($outsection !== false)
-  $html .= "</ul>\n";
+
+$newPublicationForm = '
+<div id="article_new"></div>
+<li>PMID&nbsp;<input type="text" id="article_pmid" size=12 />&nbsp;<button onclick="evidence_add_article('.$variant_id.', $(\'article_pmid\').value); $(\'article_pmid\').value=\'\'; return false;">Add</button></li>
+';
+
+$html = "";
+$html .= "<UL>$section\n<div id=\"publications\">"
+  . $sections["Publications"]
+  . "</div>"
+  . $newPublicationForm
+  . "</UL>\n";
+// $html .= "<UL>$section\n" . $sections["Genomes"] . "</UL>\n";
+
 $gOut["content"] .= $html;
 
 go();

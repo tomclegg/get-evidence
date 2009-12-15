@@ -8,6 +8,11 @@ var editable_save_request = false;
 var editable_save_result = {};
 var editable_monthnames = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
+function editable_make (id, content)
+{
+    return '<SPAN id="'+id+'" class="editable"><SPAN id="preview_'+id+'">'+content+'</SPAN><INPUT type="hidden" id="orig_'+id+'" value="'+content.htmlentities()+'"/>&nbsp;</SPAN>';
+}
+
 function editable_click (e)
 {
     if (!$('edited_' + e.id)) {
@@ -41,13 +46,18 @@ function editable_highlight (e, flag)
 
 function editable_preview (e)
 {
-    edited = e;
-    preview = $('preview' + e.id.sub('edited',''));
+    preview = $('preview_' + e.id.sub('^edited_',''));
+    edited = $('edited_' + e.id.sub('^edited_',''));
     if (edited && preview) {
 	preview.update(superTextile(edited.value));
 	preview.style.display='inline';
 	edited.style.display='none';
     }
+}
+
+function editable_unfocus (e)
+{
+    // editable_preview(e);
 }
 
 String.prototype.htmlentities = function ()
@@ -64,19 +74,21 @@ function editable_input (e)
     if (xy[0] < 8) { xy[0] = 70; }
     if (xy[1] < 1) { xy[1] = 1; }
 
-    
-    if (!(saved_value = eval ('editable_save_result.saved__'
-			      + (/__p_([0-9]+)_/.exec(e.id))[1]
+    if (!editable_save_result ||
+	!(saved_value = eval ('editable_save_result.saved__'
+			      + (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
 			      + '__'
 			      + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1])))
 	saved_value = $('orig_'+e.id).value;
 
     // Build the input (textarea or input, depending on target size)
-    ids = 'name="edited_' + e.id + '" id="edited_' + e.id + '" onkeyup="editable_check_unsaved(this)" onblur="editable_preview(this)"';
+    ids = 'name="edited_' + e.id + '" id="edited_' + e.id + '" onkeyup="editable_check_unsaved(this)" onblur="editable_unfocus(this)"';
     if (xy[1] == 1) { ret = '<input ' + ids + ' type="text" size="' + xy[0] + '" value="' + saved_value.htmlentities() + '" />'; }
     else { ret = '<textarea ' + ids + ' type="text" rows="' + xy[1] + '" cols="' + xy[0] + '">' + saved_value.htmlentities() + '</textarea>'; }
 
-    return ret;
+    ret += '<br/><button onclick="editable_preview($(\'' + e.id + '\')); return false;">Preview</button>';
+
+    return '<p>' + ret + '</p>';
 }
 
 function editable_save (submit_flag)
@@ -86,16 +98,25 @@ function editable_save (submit_flag)
 	editable_save_request = false;
     }
     params = editable_save_result;
+    if (!params)
+	params = {};
     if (submit_flag)
 	params.submit_flag = true;
     params.save_time = (new Date()).getTime();
     editable_save_request = $('mainform').request({
 	    onSuccess: function(transport) {
+		if (!transport.responseJSON)
+		    // TODO: show error in message box
+		    return;
 		editable_save_result = transport.responseJSON;
 		editable_save_result.last_save_time = transport.request.parameters.save_time;
 		editable_check_unsaved_all ();
 		if (editable_save_result.please_reload)
 		    window.location.reload();
+		// TODO: show errors (if any) in message box
+	    },
+	    onFailure: function(transport) {
+		// TODO: show error in message box
 	    },
 	    parameters: params
 	});
@@ -108,20 +129,21 @@ function editable_get_draft ()
 
     var edit_ids = new Hash();
     $$('span.editable').each(function(e){
-	    if ((r = /_p_([0-9]+)_/.exec(e.id)))
+	    if ((r = /_p_([a-z0-9A-Z_]+?)__/.exec(e.id)))
 		edit_ids.set(r[1], 1);
 	});
-    new Ajax.Request ('/getdraft.php', {
+    new Ajax.Request ('getdraft.php', {
 	    method: 'get',
 	    parameters: { edit_ids: edit_ids.keys().join('-') },
 	    onSuccess: function(transport) {
-		editable_save_result = transport.responseJSON;
+		if (transport.responseJSON)
+		    editable_save_result = transport.responseJSON;
 		editable_check_unsaved_all ();
 		$$('span.editable').each(function(e){
-			if (eval ('editable_save_result.saved__'
-				  + (/__p_([0-9]+)_/.exec(e.id))[1]
-				  + '__'
-				  + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1])) {
+			if ((saved = eval ('editable_save_result.saved__'
+					   + (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
+					   + '__'
+					   + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]))) {
 			    editable_click(e);
 			}
 		    });
@@ -142,8 +164,9 @@ function editable_check_unsaved (e, norecurse)
     e_saved = $(e.id.sub("edited","saved"));
     if (e_saved)
 	e_saved_value = e_saved.value;
-    else if ((e_saved_value = eval ('editable_save_result.saved__'
-				    + (/__p_([0-9]+)_/.exec(e.id))[1]
+    else if (editable_save_result &&
+	     (e_saved_value = eval ('editable_save_result.saved__'
+				    + (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
 				    + '__'
 				    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1])))
 	;
@@ -231,14 +254,18 @@ function editable_update_last_saved ()
 
 // Bootstrap: attach the click handler to class="editable" spans
 
+function editable_init_single (e)
+{
+    p = $('preview_'+e.id);
+    Event.observe(p, 'click', function () { editable_click (e); });
+    Event.observe(p, 'mouseover', function () { editable_highlight (e, true); });
+    Event.observe(p, 'mouseout', function () { editable_highlight (e, false); });
+}
+
 function editable_init ()
 {
     if (!$('mainform')) return;
-    $$('span.editable').each(function(e){
-	    Event.observe(e, 'click', function () { editable_click (e); });
-	    Event.observe(e, 'mouseover', function () { editable_highlight (e, true); });
-	    Event.observe(e, 'mouseout', function () { editable_highlight (e, false); });
-	});
+    $$('span.editable').each(function(e){ editable_init_single (e); });
     new PeriodicalExecuter (editable_update_last_saved, 5);
     new Form.Observer ($('mainform'), 3, editable_check_unsaved_all);
     editable_get_draft();

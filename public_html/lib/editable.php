@@ -11,6 +11,7 @@ function editable($id, $content)
 {
   global $gTheTextile;
   $html = $gTheTextile->textileThis ($content);
+  if (trim($html) == "") $html = "<P>&nbsp;</P>";
 
   if (!getCurrentUser()) return $html;
 

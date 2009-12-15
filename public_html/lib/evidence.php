@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS edits (
   
   INDEX (variant_id,edit_timestamp),
   INDEX (edit_oid, edit_timestamp),
-  INDEX (previous_edit_id, edit_oid)
+  INDEX (previous_edit_id, edit_oid),
+  INDEX (variant_id, article_pmid, genome_id, edit_timestamp)
 )");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS snap_latest LIKE edits");

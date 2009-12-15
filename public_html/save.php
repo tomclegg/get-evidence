@@ -22,8 +22,16 @@ foreach ($_POST as $param => $newvalue)
   if (!ereg ("_v_([0-9]+)_", $param, $regs)) continue;
   $variant_id = $regs[1];
 
-  if (!ereg ("_p_([0-9]+)_", $param, $regs)) continue;
+  if (!ereg ("_g_([0-9]+)_", $param, $regs)) $genome_id = 0;
+  else $genome_id = $regs[1];
+
+  if (!ereg ("_a_([0-9]+)_", $param, $regs)) $article_pmid = 0;
+  else $article_pmid = $regs[1];
+
+  if (!preg_match ("/_p_([a-zA-Z0-9_]+?)__/", $param, $regs)) continue;
   $previous_edit_id = $regs[1];
+  $clients_previous_edit_id = $previous_edit_id;
+  $no_previous_edit_id = ereg ("[^0-9]", $previous_edit_id);
 
   if (!preg_match ("/_f_([a-z_0-9]+?)__/", $param, $regs)) continue;
   $field_id = $regs[1];
@@ -31,6 +39,16 @@ foreach ($_POST as $param => $newvalue)
 
   if (!($edit_id = $response["edit_id__$previous_edit_id"]) &&
       !($client_sent_edit_id = $_POST["edit_id__$previous_edit_id"])) {
+    if ($no_previous_edit_id) {
+      theDb()->query ("INSERT INTO edits
+			SET edit_timestamp=NOW(), edit_oid=?, is_draft=1,
+			variant_id=?, article_pmid=?, genome_id=?",
+		      array (getCurrentUser("oid"),
+			     $variant_id, $article_pmid, $genome_id));
+      $previous_edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
+      $newrow = array ("previous_edit_id" => $previous_edit_id);
+      evidence_submit ($previous_edit_id);
+    }
     $oldrow = theDb()->getRow ("SELECT * FROM edits WHERE edit_id=? AND is_draft=0",
 			       array($previous_edit_id));
     if (theDb()->isError($oldrow) || !$oldrow) {
@@ -66,21 +84,27 @@ foreach ($_POST as $param => $newvalue)
   }
   if (!$edit_id)
     $edit_id = theDb()->getOne ("SELECT MIN(edit_id) FROM edits
-				WHERE previous_edit_id=? AND edit_oid=? AND is_draft=1",
-				array ($previous_edit_id, getCurrentUser("oid")));
+				WHERE (previous_edit_id=?
+				       OR (variant_id=? AND article_pmid=? AND genome_id=?))
+				AND edit_oid=? AND is_draft=1",
+				array ($previous_edit_id,
+				       $variant_id,
+				       $article_pmid,
+				       $genome_id,
+				       getCurrentUser("oid")));
   if ($new_edit_id && $new_edit_id != $edit_id) {
     // I just created a new row but this user already has edits in another row
     theDb()->query ("DELETE FROM edits WHERE edit_id=?", $new_edit_id);
   }
 
   // Tell the client to provide this edit id next time
-  $response["edit_id__$previous_edit_id"] = $edit_id;
+  $response["edit_id__$clients_previous_edit_id"] = $edit_id;
 
   $q = theDb()->query ("UPDATE edits SET $field_id=?, edit_timestamp=NOW()
 			WHERE edit_id=? AND edit_oid=? AND is_draft=1",
 		       array($newvalue, $edit_id, getCurrentUser("oid")));
   if (!theDb()->isError($q))
-    $response["saved__${previous_edit_id}__${field_id}"] = $newvalue;
+    $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;
   else
     $response["errors"][] = $q->getMessage();
 
