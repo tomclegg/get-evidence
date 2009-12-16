@@ -31,6 +31,11 @@ if (getCurrentUser()) {
 						true);
     $response["latest_edit_v${variant_id}a${article_pmid}g${genome_id}"] = $latest_edit_id;
     $response["latest_edit_id"] = $latest_edit_id;
+    $response["html"] = evidence_render_row
+      (theDb()->getRow ("SELECT * FROM edits WHERE edit_id=?",
+			array($latest_edit_id)));
+    ereg ("id=\"([^\"]+)", $response["html"], $regs);
+    $response["e_id"] = $regs[1];
   }
 
   header ("Content-type: application/json");

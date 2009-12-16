@@ -69,32 +69,11 @@ $sections = array ("Publications" => "",
 		   "Genomes" => "");
 foreach ($report as $row)
 {
-  if ($firstrow)
-    {
-      $firstrow = false;
-      continue;
-    }
-
-  $id_prefix = "v_${variant_id}__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
-  $title = "";
-
   if ($row["article_pmid"] > 0)
-    {
-      $section = "Publications";
-      $title = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
-    }
+    $section = "Publications";
   else if ($row["genome_id"] > 0)
-    {
-      $section = "Genomes";
-      $title = "Genome $row[genome_id]";
-    }
-  $item = editable ("${id_prefix}f_summary_short__70x5__textile",
-		    $row[summary_short],
-		    $title);
-  if ($row[summary_long])
-    $item .= editable ("${id_prefix}f_summary_long__70x5__textile",
-		       $row[summary_long]);
-  $sections[$section] .= "$item\n";
+    $section = "Genomes";
+  $sections[$section] .= evidence_render_row ($row);
 }
 
 $newPublicationForm = '

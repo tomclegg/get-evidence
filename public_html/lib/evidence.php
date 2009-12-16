@@ -60,6 +60,8 @@ function evidence_get_variant_id ($gene,
     else
       return null;
   }
+  else if (!is_numeric($aa_pos) || !aa_sane($aa_from) || !aa_sane($aa_to))
+    return null;
 
   $aa_from = aa_long_form ($aa_from);
   $aa_to = aa_long_form ($aa_to);
@@ -207,6 +209,7 @@ function evidence_get_report ($snap, $variant_id)
 function evidence_get_latest_edit ($variant_id, $article_pmid, $genome_id,
 				   $create_flag=false)
 {
+  if (!$variant_id) return null;
   $edit_id = theDb()->getOne
     ("SELECT MAX(edit_id) FROM edits
 	WHERE variant_id=? AND article_pmid=? AND genome_id=?
@@ -222,6 +225,27 @@ function evidence_get_latest_edit ($variant_id, $article_pmid, $genome_id,
     evidence_submit ($edit_id);
   }
   return $edit_id + 0;
+}
+
+function evidence_render_row (&$row)
+{
+  $id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
+  $title = "";
+
+  if ($row["article_pmid"] > 0)
+    $title = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
+  else if ($row["genome_id"] > 0)
+    $title = "Genome $row[genome_id]";
+
+  $item = editable ("${id_prefix}f_summary_short__70x5__textile",
+		    $row[summary_short],
+		    $title);
+
+  if ($row[summary_long])
+    $item .= editable ("${id_prefix}f_summary_long__70x5__textile",
+		       $row[summary_long]);
+
+  return $item;
 }
 
 ?>

@@ -10,17 +10,14 @@ function evidence_add_article (v, a)
 		var a = transport.request.parameters.article_pmid;
 		var v = transport.request.parameters.variant_id;
 		var p = transport.responseJSON.latest_edit_id;
-		var id = 'v_'+v+'__a_'+a+'__g_0__p_'+p+'__f_summary_short__70x5__textile';
-		if ($(id)) {
+		var e_id = transport.responseJSON.e_id;
+		if ($(e_id)) {
 		    // TODO: show error -- article already listed
-		    editable_click ($(id));
+		    editable_click ($(e_id));
 		    return;
 		}
-		$('article_new').insert('<LI><a href="http://www.ncbi.nlm.nih.gov/pubmed/'+a+'">'+
-					'PMID '+a+'</A><BR />'+
-					editable_make(id, '(no summary)')+
-					'</LI>');
-		editable_init_single ($(id));
+		$('article_new').insert(transport.responseJSON.html);
+		editable_init_single ($(e_id));
 	    }
     });
 }
