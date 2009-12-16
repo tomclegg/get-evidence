@@ -34,6 +34,10 @@ p,cite,code,ul {
 	padding-bottom: 1.2em;
 	background-color: transparent;
 }
+blockquote,cite {
+	margin-left: 4em;
+	margin-right: 4em;
+}
 h1 {
 	font-size: 1.4em;
 	margin-bottom: 4px;
