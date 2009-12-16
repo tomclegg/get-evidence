@@ -89,6 +89,9 @@ h1,h2,h3 {
 	height: 92px;
 	margin-left: 24px;
 	padding: 0 16px;
+	position: absolute;
+	right: 0px;
+	top: 0px;
 }
 .navigation a {
 	color: #FFF;
@@ -155,8 +158,10 @@ h1,h2,h3 {
 	margin-bottom: 6px;
 }
 .content li {
-	list-style: url(img/li.gif);
 	margin-left: 18px;
+}
+.content ul li {
+	list-style: url(img/li.gif);
 }
 
 .toolbar {
