@@ -61,11 +61,15 @@ function editable_highlight (e, flag)
 
 function editable_preview (e)
 {
+    editable_check_unsaved_all ();
+    if (editable_have_unsaved) {
+	editable_save (false, preview);
+	// TODO: say "updating preview..." or something
+    }
     preview = $('preview_' + e.id.sub('^edited_',''));
     edited = $('edited_' + e.id.sub('^edited_',''));
     e = $(e.id.sub('^edited_',''));
     if (edited && preview) {
-	preview.update(superTextile(edited.value));
 	preview.style.display='inline';
 	edited.style.display='none';
 	$('pbutton_' + e.id).style.backgroundColor='#fff';
@@ -108,7 +112,7 @@ function editable_input (e)
     return '<p>' + ret + '</p>';
 }
 
-function editable_save (submit_flag)
+function editable_save (submit_flag, want_preview)
 {
     if (editable_save_request) {
 	editable_save_request.transport.abort();
@@ -119,6 +123,8 @@ function editable_save (submit_flag)
 	params = {};
     if (submit_flag)
 	params.submit_flag = true;
+    if (want_preview)
+	params.want_preview_id = want_preview.id;
     params.save_time = (new Date()).getTime();
     editable_save_request = $('mainform').request({
 	    onSuccess: function(transport) {
@@ -131,6 +137,12 @@ function editable_save (submit_flag)
 		if (editable_save_result.please_reload)
 		    window.location.reload();
 		// TODO: show errors (if any) in message box
+
+		$$('span.editable').each(function(e){
+			p = eval('transport.responseJSON.preview_'+e.id);
+			if (p)
+			    $('preview_'+e.id).update(p);
+		    });
 	    },
 	    onFailure: function(transport) {
 		// TODO: show error in message box
@@ -157,12 +169,15 @@ function editable_get_draft ()
 		    editable_save_result = transport.responseJSON;
 		editable_check_unsaved_all ();
 		$$('span.editable').each(function(e){
-			if ((saved = eval ('editable_save_result.saved__'
-					   + (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
-					   + '__'
-					   + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]))) {
+			var draft_id = (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
+			    + '__'
+			    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1];
+			if ((saved = eval ('editable_save_result.saved__' + draft_id))) {
 			    editable_click(e);
 			}
+			p = eval('editable_save_result.preview__' + draft_id);
+			if (p)
+			    $('preview_'+e.id).update(p);
 		    });
 	    }
 	});

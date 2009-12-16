@@ -10,7 +10,7 @@ $gTheTextile = new Textile;
 function editable($id, $content, $title="")
 {
   global $gTheTextile;
-  $html = $gTheTextile->textileThis ($content);
+  $html = $gTheTextile->textileRestricted ($content);
   if (trim($html) == "") $html = "<P>&nbsp;</P>";
 
   if (!getCurrentUser()) return $html;

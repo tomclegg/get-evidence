@@ -27,12 +27,15 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
       if (!$row[draft_differs]) {
 	// draft saved, but content is identical -- just delete it
 	theDb()->query ("DELETE FROM edits WHERE edit_id=? AND edit_oid=?",
-			array($row["edit_id"], getCurrenetUser("oid")));
+			array($row["edit_id"], getCurrentUser("oid")));
 	continue;
       }
       // Existing draft
       foreach (array_keys ($fields_allowed) as $field) {
-	$response["saved__${edit_id}__${field}"] = isset($row[$field]) ? $row[$field] : $row["d.$field"];
+	$response["saved__${edit_id}__${field}"]
+	  = isset($row[$field]) ? $row[$field] : $row["d.$field"];
+	$response["preview__${edit_id}__${field}"]
+	  = $gTheTextile->textileRestricted($response["saved__${edit_id}__${field}"]);
       }
     }
   }

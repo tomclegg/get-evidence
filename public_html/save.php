@@ -2,6 +2,8 @@
 
 include "lib/setup.php";
 
+global $gTheTextile;
+
 foreach (array ("variant_impact", "variant_dominance",
 		"summary_short", "summary_long", "talk_text",
 		"article_pmid") as $k) {
@@ -103,8 +105,10 @@ foreach ($_POST as $param => $newvalue)
   $q = theDb()->query ("UPDATE edits SET $field_id=?, edit_timestamp=NOW()
 			WHERE edit_id=? AND edit_oid=? AND is_draft=1",
 		       array($newvalue, $edit_id, getCurrentUser("oid")));
-  if (!theDb()->isError($q))
+  if (!theDb()->isError($q)) {
     $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;
+    $response["preview_".ereg_replace("^edited_","",$param)] = $gTheTextile->textileRestricted ($newvalue);
+  }
   else
     $response["errors"][] = $q->getMessage();
 

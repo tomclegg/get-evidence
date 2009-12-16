@@ -47,8 +47,8 @@ function frag($tag)
 		</div>
 
 		<div class="navigation">
-			<a href="/">Browse</a>
-			<a href="/about.php">About</a>
+			<a href="/edits">Recent changes</a>
+			<a href="/about">About</a>
 			<a href="/contact.php">Contact</a>
 <?php if (isset($_SESSION) && array_key_exists("user",$_SESSION)): ?>
 			<a href="/logout.php"><u>Log out</u></a>

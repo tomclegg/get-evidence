@@ -9,7 +9,7 @@ if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
 else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)$", $_GET["q"], $regs) &&
 	 aa_sane ($aa = $regs[2])) {
-  $gene = $regs[1];
+  $gene = strtoupper($regs[1]);
   $variant_id = evidence_get_variant_id ("$gene $aa");
   if (!$variant_id) {
     $aa_long = aa_long_form ($aa);
@@ -99,7 +99,7 @@ foreach ($report as $row)
 
 $newPublicationForm = '
 <div id="article_new"></div>
-<li>PMID&nbsp;<input type="text" id="article_pmid" size=12 />&nbsp;<button onclick="evidence_add_article('.$variant_id.', $(\'article_pmid\').value); $(\'article_pmid\').value=\'\'; return false;">Add</button></li>
+<P>PMID&nbsp;<input type="text" id="article_pmid" size=12 />&nbsp;<button onclick="evidence_add_article('.$variant_id.', $(\'article_pmid\').value); $(\'article_pmid\').value=\'\'; return false;">Add</button></P>
 ';
 
 $html = "";
