@@ -170,6 +170,11 @@ h1,h2,h3 {
 	padding: 0px 0px 0px 3px;
 	position: relative;
 }
+.toolbar_span {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+}
 .toolbar_tab {
 	text-decoration: none;
 	list-style: none;
