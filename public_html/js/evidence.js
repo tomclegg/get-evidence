@@ -18,6 +18,7 @@ function evidence_add_article (v, a)
 		}
 		$('article_new').insert(transport.responseJSON.html);
 		editable_init_single ($(e_id));
+		editable_click ($(e_id));
 	    }
     });
 }

@@ -41,6 +41,8 @@ function print_content($x)
 
     print "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$row[variant_gene] $row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]</A>";
 
+    if ($row["is_delete"] && !$row["article_pmid"] && !$row["genome_id"])
+      print " deleted by ";
     if (!$row["previous_edit_id"] && !$row["article_pmid"] && !$row["genome_id"])
       print " added by ";
     else
@@ -50,7 +52,11 @@ function print_content($x)
 	   (htmlspecialchars ($row["fullname"] ? $row["fullname"] : $row["nickname"])).
 	   "</A>");
 
-    if ($row["article_pmid"] && !$row["previous_edit_id"])
+    if ($row["article_pmid"] && $row["is_delete"])
+      print " (PMID $row[article_pmid] removed)";
+    else if ($row["genome_id"] && $row["is_delete"])
+      print " (genome $row[genome_id] removed)";
+    else if ($row["article_pmid"] && !$row["previous_edit_id"])
       print " (PMID $row[article_pmid] added)";
     else if ($row["genome_id"] && !$row["previous_edit_id"])
       print " (genome $row[genome_id] added)";

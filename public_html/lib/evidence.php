@@ -162,6 +162,7 @@ function evidence_submit ($edit_id)
 		  array($edit_id, getCurrentUser("oid")));
   theDb()->query ("REPLACE INTO snap_latest SELECT * FROM edits WHERE edit_id=? AND edit_oid=?",
 		  array($edit_id, getCurrentUser("oid")));
+  theDb()->query ("DELETE FROM snap_latest WHERE is_delete=1");
 }
 
 function evidence_signoff ($edit_id)

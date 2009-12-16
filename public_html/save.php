@@ -60,8 +60,11 @@ foreach ($_POST as $param => $newvalue)
     }
     $newrow = $oldrow;
     $newrow["previous_edit_id"] = $oldrow["edit_id"];
+    if ($oldrow["is_delete"])
+      $newrow["previous_edit_id"] = null;
     $newrow["edit_oid"] = getCurrentUser("oid");
     $newrow["is_draft"] = 1;
+    $newrow["is_delete"] = 0;
     unset($newrow["edit_timestamp"]);
     unset($newrow["edit_id"]);
     $columnlist = "";

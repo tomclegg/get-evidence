@@ -20,7 +20,26 @@ function editable_decorate (e)
     if (!$('toolbar_'+e.id))
 	e.insert({top: '<P id="toolbar_'+e.id+'" class="toolbar"></P>'});
     $('toolbar_'+e.id).className = 'toolbar';
-    $('toolbar_'+e.id).insert('<SPAN class="toolbar_span"><A href="#" id="pbutton_'+e.id+'" onclick="return editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A><A href="#" id="ebutton_'+e.id+'" onclick="return editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A></SPAN>');
+    $('toolbar_'+e.id).insert('<SPAN class="toolbar_span"><A href="#" id="pbutton_'+e.id+'" onclick="return editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A><A href="#" id="ebutton_'+e.id+'" onclick="return editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A><A href="#" id="ebutton_'+e.id+'" onclick="return editable_delete($(\''+e.id+'\'))" class="toolbar_tab">Delete</A></SPAN>');
+}
+
+function editable_delete (e)
+{
+    if (!confirm ("Are you sure you want to delete this item?"))
+	return;
+    v = (/_v_([0-9]+?)__/.exec('_'+e.id))[1];
+    a = (/_a_([0-9]+?)__/.exec('_'+e.id))[1];
+    g = (/_g_([0-9]+?)__/.exec('_'+e.id))[1];
+    var x = {
+	method: "post",
+	parameters: { v: v, a: a, g: g, e_id: e.id },
+	onSuccess: function(transport) {
+	    if (transport.responseJSON.deleted)
+		e.remove();
+	}
+    };
+    new Ajax.Request ('/delete.php', x);
+    return false;
 }
 
 function editable_click (e)
@@ -32,8 +51,8 @@ function editable_click (e)
     $('edited_' + e.id).style.display='inline';
     $('edited_' + e.id).focus();
     $('pbutton_' + e.id).style.display='inline';
-    $('pbutton_' + e.id).style.backgroundColor='#ddd';
-    $('ebutton_' + e.id).style.backgroundColor='#fff';
+    $('pbutton_' + e.id).className='toolbar_tab';
+    $('ebutton_' + e.id).className='toolbar_tab toolbar_tab_current';
     $('edited_' + e.id).style.width='100%';
     return false;
 }
@@ -61,19 +80,21 @@ function editable_highlight (e, flag)
 
 function editable_preview (e)
 {
+    preview = $('preview_' + e.id.sub('^edited_',''));
+    edited = $('edited_' + e.id.sub('^edited_',''));
+    e = $(e.id.sub('^edited_',''));
+
     editable_check_unsaved_all ();
     if (editable_have_unsaved) {
 	editable_save (false, preview);
 	// TODO: say "updating preview..." or something
     }
-    preview = $('preview_' + e.id.sub('^edited_',''));
-    edited = $('edited_' + e.id.sub('^edited_',''));
-    e = $(e.id.sub('^edited_',''));
+
     if (edited && preview) {
 	preview.style.display='inline';
 	edited.style.display='none';
-	$('pbutton_' + e.id).style.backgroundColor='#fff';
-	$('ebutton_' + e.id).style.backgroundColor='#ddd';
+	$('pbutton_' + e.id).className='toolbar_tab toolbar_tab_current';
+	$('ebutton_' + e.id).className='toolbar_tab';
     }
     return false;
 }
