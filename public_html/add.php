@@ -13,17 +13,27 @@ if (getCurrentUser()) {
   else $genome_id = 0;
 
   if (ereg ("^[0-9]+$", $_POST["variant_id"], $regs)) $variant_id = $regs[0];
-  else {
-    $variant_id = evidence_get_variant_id ($_POST["variant_gene"],
-					   $_POST["variant_aa_pos"],
-					   $_POST["variant_aa_from"],
-					   $_POST["variant_aa_to"],
+  else if (aa_sane($_POST["variant_aa_change"])) {
+    if (ereg ("^([^0-9]+)([0-9]+)([^0-9]+)$",
+	      aa_long_form ($_POST["variant_aa_change"]),
+	      $regs)) {
+      $aa_from = $regs[1];
+      $aa_pos = $regs[2];
+      $aa_to = $regs[3];
+    }
+    $gene = strtoupper ($_POST["variant_gene"]);
+    $variant_id = evidence_get_variant_id ($gene,
+					   $aa_pos, $aa_from, $aa_to,
 					   true);
     $edit_id = evidence_get_latest_edit ($variant_id, 0, 0, true);
     $response["latest_edit_v${variant_id}a0g0"] = $edit_id;
     $response["latest_edit_id"] = $edit_id;
     $response["variant_id"] = $variant_id;
     $response["please_reload"] = true;
+    $response["variant_key"] = "$gene ".aa_short_form("$aa_from$aa_pos$aa_to");
+  }
+  else {
+    die ("Invalid variant specified");
   }
 
   if ($article_pmid || $genome_id) {

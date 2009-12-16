@@ -60,8 +60,10 @@ function evidence_get_variant_id ($gene,
     else
       return null;
   }
-  else if (!is_numeric($aa_pos) || !aa_sane($aa_from) || !aa_sane($aa_to))
+  else if (!aa_sane("$aa_from$aa_pos$aa_to"))
     return null;
+
+  $gene = strtoupper ($gene);
 
   $aa_from = aa_long_form ($aa_from);
   $aa_to = aa_long_form ($aa_to);

@@ -5,8 +5,12 @@ if (!array_key_exists ("title", $gOut)) $gOut["title"] = $gOut["site_title"];
 
 function frag($tag)
 {
-   global $gOut;
-   if(array_key_exists($tag, $gOut))
+   global $gOut, $gTheTextile;
+   if(array_key_exists($tag."_textile", $gOut))
+     {
+       print $gTheTextile->textileThis($gOut[$tag."_textile"]);
+     }
+   else if(array_key_exists($tag, $gOut))
      {
        print $gOut[$tag];
      }

@@ -16,7 +16,22 @@ else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)$", $_GET["q"],
     $aa_short = aa_short_form ($aa_long);
     header ("HTTP/1.1 404 Not found");
     $gOut["title"] = "$gene $aa_short";
-    $gOut["content"] = "<h1>$gene $aa_short</h1>\n<p>($gene $aa_long)</p><p>Not found.</p>\n";
+    $gOut["content_textile"] = <<<EOF
+h1. $gene $aa_short
+
+($gene $aa_long)
+
+There is no Evidence Base entry for this variant.
+
+EOF
+;
+    if (getCurrentUser())
+      $gOut["content_textile"] .= <<<EOF
+&nbsp;
+
+<BUTTON onclick="return evidence_add_variant('$gene','$aa_long');">Create new entry</BUTTON>
+EOF
+;
     go();
     exit;
   }

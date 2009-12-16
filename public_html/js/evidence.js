@@ -21,4 +21,24 @@ function evidence_add_article (v, a)
 		editable_click ($(e_id));
 	    }
     });
+    return false;
+}
+
+function evidence_add_variant (gene, aa_change)
+{
+    var x = {
+	    method: 'post',
+	    parameters:
+	    {
+		variant_gene: gene,
+		variant_aa_change: aa_change
+	    },
+	    onSuccess: function(transport)
+	    {
+		if (transport.responseJSON.variant_id)
+		    window.location.reload();
+	    }
+    };
+    new Ajax.Request('add.php', x);
+    return false;
 }
