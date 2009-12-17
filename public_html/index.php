@@ -75,9 +75,9 @@ $gOut["content"] = "
 
 <p>($row0[variant_gene] $aa_long)</p>
 
-<p>$row0[summary_short]</p>
-
 ";
+
+$gOut["content"] .= evidence_render_row ($row0);
 
 $firstrow = true;
 $sections = array ("Publications" => "",

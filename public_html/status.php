@@ -5,7 +5,8 @@ $gOut["title"] = "Evidence Base: Status";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
 h1. Next steps
 
-* make variant summary editable
+In expected approximate chronological order:
+
 * fix "PMIDs missing when not logged in"
 * add "download latest db"
 * make variant_dominance and variant_impact visible/editable
@@ -17,6 +18,9 @@ h1. Next steps
 
 h1. Recent steps
 
+In reverse chronological order:
+
+* make variant summary editable
 * add "status" page
 
 EOF
