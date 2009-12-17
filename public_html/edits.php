@@ -39,7 +39,7 @@ function print_content($x)
 
     print strftime ("%b %e ", $row["t"]);
 
-    print "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$row[variant_gene] $row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]</A>";
+    print "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$row[variant_gene] ".aa_short_form("$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]")."</A>";
 
     if ($row["is_delete"] && !$row["article_pmid"] && !$row["genome_id"])
       print " deleted by ";
