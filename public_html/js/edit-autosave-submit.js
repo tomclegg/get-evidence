@@ -1,4 +1,4 @@
-// Copyright 2009 President and Fellows of Harvard College
+// Copyright 2009 Scalable Computing Experts
 // Author: Tom Clegg
 
 var editable_currently_highlighted = false;

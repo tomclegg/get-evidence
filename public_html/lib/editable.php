@@ -1,6 +1,6 @@
 <?php
 
-  // Copyright 2009 President and Fellows of Harvard College
+  // Copyright 2009 Scalable Computing Experts
   // Author: Tom Clegg
 
 require_once (dirname(dirname(dirname(__FILE__)))."/textile-2.0.0/classTextile.php");

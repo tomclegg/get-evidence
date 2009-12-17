@@ -131,7 +131,7 @@ function frag($tag)
 
 </div>
 
-<div class="footer">&copy; 2009 President and Fellows of Harvard College</div>
+<div class="footer">&copy; 2009 Scalable Computing Experts</div>
 <!--
 Template from <a href="http://arcsin.se">Arcsin</a>
 -->
