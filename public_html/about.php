@@ -32,7 +32,7 @@ All contributions are listed in the "latest" database snapshot as soon as they a
 
 Contributions are then considered by curators for inclusion in the "release" database snapshot.
 
-All submissions must be available for free public distribution under a CC-BY-SA license.
+All submissions must be available for free public distribution under a CC0 license.
 EOF
 );
 
