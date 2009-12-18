@@ -131,7 +131,7 @@ function frag($tag)
 
 </div>
 
-<div class="footer">&copy; 2009 Scalable Computing Experts</div>
+<div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2009 Scalable Computing Experts.</div>
 <!--
 Template from <a href="http://arcsin.se">Arcsin</a>
 -->
