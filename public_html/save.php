@@ -30,10 +30,10 @@ foreach ($_POST as $param => $newvalue)
   if (!ereg ("_a_([0-9]+)_", $param, $regs)) $article_pmid = 0;
   else $article_pmid = $regs[1];
 
-  if (!preg_match ("/_p_([a-zA-Z0-9_]+?)__/", $param, $regs)) continue;
+  if (!preg_match ("/_p_([a-zA-Z0-9_]*?)__/", $param, $regs)) continue;
   $previous_edit_id = $regs[1];
   $clients_previous_edit_id = $previous_edit_id;
-  $no_previous_edit_id = ereg ("[^0-9]", $previous_edit_id);
+  $no_previous_edit_id = !ereg ("^[0-9]+$", $previous_edit_id);
 
   if (!preg_match ("/_f_([a-z_0-9]+?)__/", $param, $regs)) continue;
   $field_id = $regs[1];

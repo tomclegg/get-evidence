@@ -43,7 +43,7 @@ function print_content($x)
 
     if ($row["is_delete"] && !$row["article_pmid"] && !$row["genome_id"])
       print " deleted by ";
-    if (!$row["previous_edit_id"] && !$row["article_pmid"] && !$row["genome_id"])
+    else if (!$row["previous_edit_id"] && !$row["article_pmid"] && !$row["genome_id"])
       print " added by ";
     else
       print " edited by ";

@@ -198,14 +198,17 @@ function evidence_get_report ($snap, $variant_id)
 {
   // Get all items relating to the given variant
 
-  $v =& theDb()->getAll ("SELECT * from snap_$snap
-			LEFT JOIN variants ON variants.variant_id=snap_$snap.variant_id
-			WHERE snap_$snap.variant_id=?
+  $v =& theDb()->getAll ("SELECT *, variants.variant_id variant_id from variants
+			LEFT JOIN snap_$snap ON variants.variant_id=snap_$snap.variant_id
+			WHERE variants.variant_id=?
 			ORDER BY
 			genome_id,
 			article_pmid,
 			edit_timestamp",
 			 array ($variant_id));
+  if (!theDb()->isError($v) && $v && $v[0])
+    foreach (array ("article_pmid", "genome_id") as $x)
+      if (!$v[0][$x]) $v[0][$x] = 0;
   return $v;
 }
 
@@ -239,6 +242,8 @@ function evidence_render_row (&$row)
     $title = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
   else if ($row["genome_id"] > 0)
     $title = "Genome $row[genome_id]";
+  else
+    $title = "Clinical significance of variant";
 
   $item = editable ("${id_prefix}f_summary_short__70x5__textile",
 		    $row[summary_short],

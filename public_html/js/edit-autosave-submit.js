@@ -20,7 +20,14 @@ function editable_decorate (e)
     if (!$('toolbar_'+e.id))
 	e.insert({top: '<P id="toolbar_'+e.id+'" class="toolbar"></P>'});
     $('toolbar_'+e.id).className = 'toolbar';
-    $('toolbar_'+e.id).insert('<SPAN class="toolbar_span"><A href="#" id="pbutton_'+e.id+'" onclick="return editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A><A href="#" id="ebutton_'+e.id+'" onclick="return editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A><A href="#" id="ebutton_'+e.id+'" onclick="return editable_delete($(\''+e.id+'\'))" class="toolbar_tab">Delete</A></SPAN>');
+    $('toolbar_'+e.id).insert
+	('<SPAN class="toolbar_span">'
+	 + '<A href="#" id="pbutton_'+e.id+'" onclick="return editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A>'
+	 + '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A>'
+	 + ((/_a_0_/.exec(e.id) && /_g_0_/.exec(e.id))
+	    ? ''
+	    : '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_delete($(\''+e.id+'\'))" class="toolbar_tab">Delete</A>')
+	 + '</SPAN>');
 }
 
 function editable_delete (e)
