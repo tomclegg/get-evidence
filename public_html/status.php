@@ -8,6 +8,7 @@ h1. Next steps
 In expected approximate chronological order:
 
 * make variant_dominance and variant_impact visible/editable
+* return to departure page after openid login
 * deploy at evidence.personalgenomes.org
 * add EB data source to trait-o-matic
 * update "genome evidence" using json data from snp.med
