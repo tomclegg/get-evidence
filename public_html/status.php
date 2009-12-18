@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add "download latest db"
 * make variant_dominance and variant_impact visible/editable
 * deploy at evidence.personalgenomes.org
 * add EB data source to trait-o-matic
@@ -21,6 +20,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "download latest db"
 * fix "PMIDs missing when not logged in"
 * make variant summary editable
 * add "status" page

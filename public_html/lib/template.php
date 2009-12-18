@@ -53,7 +53,7 @@ function frag($tag)
 		<div class="navigation">
 			<a href="/edits">Recent changes</a>
 			<a href="/about">About</a>
-			<a href="/contact.php">Contact</a>
+			<a href="/download">Download</a>
 <?php if (isset($_SESSION) && array_key_exists("user",$_SESSION)): ?>
 			<a href="/logout.php"><u>Log out</u></a>
 <?php endif; ?>
