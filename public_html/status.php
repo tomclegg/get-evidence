@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add "summary_long" field
 * add hints about what you should enter in each field
 * return to departure page instead of front page after openid login
 * deploy at evidence.personalgenomes.org
@@ -24,6 +23,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "summary_long" field
 * "dominance" => "inheritance"
 * when reloading page with saved draft, only open "edit" tabs where content has changed
 * make variant_dominance and variant_impact visible/editable

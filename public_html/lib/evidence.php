@@ -250,7 +250,7 @@ function evidence_render_row (&$row)
   else {
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
-		       "Clinical significance of variant");
+		       "Summary");
     $html .= editable ("${id_prefix}f_variant_impact__",
 		       $row[variant_impact],
 		       "Impact",
@@ -265,6 +265,9 @@ function evidence_render_row (&$row)
 		       array ("select_options" => array ("unknown" => "unknown",
 							 "dominant" => "dominant",
 							 "recessive" => "recessive")));
+    $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
+		       $row[summary_long],
+		       "Clinical significance");
   }
 
   if ($row[summary_long])
