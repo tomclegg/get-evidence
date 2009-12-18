@@ -261,7 +261,7 @@ function evidence_render_row (&$row)
 							 "benign" => "benign")));
     $html .= editable ("${id_prefix}f_variant_dominance__",
 		       $row[variant_dominance],
-		       "Dominance",
+		       "Inheritance pattern",
 		       array ("select_options" => array ("unknown" => "unknown",
 							 "dominant" => "dominant",
 							 "recessive" => "recessive")));

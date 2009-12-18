@@ -27,7 +27,9 @@ if ($snap) {
 		      "variant_dominance",
 		      "variant_impact",
 		      "summary_short");
-  print ereg_replace ("\tvariant_", "\t", implode ("\t", $fieldlist));
+  print ereg_replace ("\tvariant_", "\t",
+		      ereg_replace ("variant_dominance", "variant_inheritance",
+				    implode ("\t", $fieldlist)));
   print "\n";
 
   ini_set ("output_buffering", true);
