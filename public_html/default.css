@@ -173,6 +173,7 @@ h1,h2,h3 {
 	margin: 0;
 	padding: 0px 0px 0px 3px;
 	position: relative;
+	font-weight: bold;
 }
 .toolbar_span {
 	position: absolute;
