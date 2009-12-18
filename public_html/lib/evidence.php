@@ -237,23 +237,41 @@ function evidence_render_row (&$row)
 {
   $id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
   $title = "";
+  $html = "";
 
   if ($row["article_pmid"] > 0)
-    $title = "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />";
+    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+		       $row[summary_short],
+		       "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />");
   else if ($row["genome_id"] > 0)
-    $title = "Genome $row[genome_id]";
-  else
-    $title = "Clinical significance of variant";
-
-  $item = editable ("${id_prefix}f_summary_short__70x5__textile",
-		    $row[summary_short],
-		    $title);
+    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+		       $row[summary_short],
+		       "Genome $row[genome_id]");
+  else {
+    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+		       $row[summary_short],
+		       "Clinical significance of variant");
+    $html .= editable ("${id_prefix}f_variant_impact__",
+		       $row[variant_impact],
+		       "Impact",
+		       array ("select_options" => array ("pathogenic" => "pathogenic",
+							 "putative pathogenic" => "putative pathogenic",
+							 "unknown" => "unknown",
+							 "putative benign" => "putative benign",
+							 "benign" => "benign")));
+    $html .= editable ("${id_prefix}f_variant_dominance__",
+		       $row[variant_dominance],
+		       "Dominance",
+		       array ("select_options" => array ("unknown" => "unknown",
+							 "dominant" => "dominant",
+							 "recessive" => "recessive")));
+  }
 
   if ($row[summary_long])
-    $item .= editable ("${id_prefix}f_summary_long__70x5__textile",
+    $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
 		       $row[summary_long]);
 
-  return $item;
+  return $html;
 }
 
 ?>

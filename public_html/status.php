@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* make variant_dominance and variant_impact visible/editable
 * return to departure page after openid login
 * deploy at evidence.personalgenomes.org
 * add EB data source to trait-o-matic
@@ -22,6 +21,8 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* when reloading page with saved draft, only open "edit" tabs where content has changed
+* make variant_dominance and variant_impact visible/editable
 * add "download latest db"
 * fix "PMIDs missing when not logged in"
 * make variant summary editable

@@ -55,12 +55,14 @@ function editable_click (e)
 	e.insert(editable_input(e));
     }
     $('preview_' + e.id).style.display='none';
-    $('edited_' + e.id).style.display='inline';
+    $('edited_' + e.id).style.display='';
+    $('edited_' + e.id).parentNode.style.display='';
     $('edited_' + e.id).focus();
-    $('pbutton_' + e.id).style.display='inline';
+    $('pbutton_' + e.id).style.display='';
     $('pbutton_' + e.id).className='toolbar_tab';
     $('ebutton_' + e.id).className='toolbar_tab toolbar_tab_current';
-    $('edited_' + e.id).style.width='100%';
+    if ($('edited_' + e.id).nodeName != 'SELECT')
+	$('edited_' + e.id).style.width='100%';
     return false;
 }
 
@@ -98,8 +100,10 @@ function editable_preview (e)
     }
 
     if (edited && preview) {
-	preview.style.display='inline';
+	preview.style.display='';
 	edited.style.display='none';
+	if (edited.parentNode.nodeName == 'P')
+	    edited.parentNode.style.display='none';
 	$('pbutton_' + e.id).className='toolbar_tab toolbar_tab_current';
 	$('ebutton_' + e.id).className='toolbar_tab';
     }
@@ -134,8 +138,12 @@ function editable_input (e)
 
     // Build the input (textarea or input, depending on target size)
     ids = 'name="edited_' + e.id + '" id="edited_' + e.id + '" onkeyup="editable_check_unsaved(this)" onblur="editable_unfocus(this)"';
-    if (xy[1] == 1) { ret = '<input ' + ids + ' type="text" size="' + xy[0] + '" value="' + saved_value.htmlentities() + '" />'; }
-    else { ret = '<textarea ' + ids + ' type="text" rows="' + xy[1] + '" cols="' + xy[0] + '">' + saved_value.htmlentities() + '</textarea>'; }
+    if (xy[1] == 1) {
+	ret = '<input ' + ids + ' type="text" size="' + xy[0] + '" value="' + saved_value.htmlentities() + '" />';
+    }
+    else {
+	ret = '<textarea ' + ids + ' type="text" rows="' + xy[1] + '" cols="' + xy[0] + '">' + saved_value.htmlentities() + '</textarea>';
+    }
 
     return '<p>' + ret + '</p>';
 }
@@ -201,7 +209,11 @@ function editable_get_draft ()
 			    + '__'
 			    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1];
 			if ((saved = eval ('editable_save_result.saved__' + draft_id))) {
-			    editable_click(e);
+			    if (saved != $('orig_'+e.id).value) {
+				if ($('edited_'+e.id))
+				    $('edited_'+e.id).value = saved;
+				editable_click(e);
+			    }
 			}
 			p = eval('editable_save_result.preview__' + draft_id);
 			if (p)
@@ -214,7 +226,7 @@ function editable_get_draft ()
 function editable_check_unsaved (e, norecurse)
 {
     if (!e) return;
-    if (norecurse && editable_have_unsaved && editable_have_unpublished) return;
+    if (norecurse && editable_have_unsaved && editable_have_unsubmitted) return;
 
     e_orig_value = $(e.id.sub("edited","orig")).value;
 
