@@ -7,8 +7,12 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* return to departure page after openid login
+* "dominance" => "inheritance"
+* add "summary_long" field
+* add hints about what you should enter in each field
+* return to departure page instead of front page after openid login
 * deploy at evidence.personalgenomes.org
+* put notice on -dev site that this is a sandbox so don't do real editing here
 * add EB data source to trait-o-matic
 * update "genome evidence" using json data from snp.med
 * get PMID summary from pubmed when adding and show author/title in PMID section heading
