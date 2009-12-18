@@ -9,6 +9,8 @@ In expected approximate chronological order:
 
 * add "download latest db"
 * make variant_dominance and variant_impact visible/editable
+* deploy at evidence.personalgenomes.org
+* add EB data source to trait-o-matic
 * update "genome evidence" using json data from snp.med
 * get PMID summary from pubmed when adding and show first author in PMID section heading?
 * use blosum score
