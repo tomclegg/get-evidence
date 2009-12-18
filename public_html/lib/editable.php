@@ -13,7 +13,8 @@ function editable($id, $content, $title="")
   $html = $gTheTextile->textileRestricted ($content);
   if (trim($html) == "") $html = "<P>&nbsp;</P>";
 
-  if (!getCurrentUser()) return $html;
+  if (!getCurrentUser()) return ("<P class=\"toolbar\">$title</P>" .
+				 $html);
 
   return ("<SPAN id=\"$id\" class=\"editable\">" .
 	  "<P id=\"toolbar_$id\" class=\"toolbar\">$title</P>" .

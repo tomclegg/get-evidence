@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* fix "PMIDs missing when not logged in"
 * add "download latest db"
 * make variant_dominance and variant_impact visible/editable
 * update "genome evidence" using json data from snp.med
@@ -20,6 +19,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* fix "PMIDs missing when not logged in"
 * make variant summary editable
 * add "status" page
 
