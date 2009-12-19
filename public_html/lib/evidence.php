@@ -270,10 +270,6 @@ function evidence_render_row (&$row)
 		       "Clinical significance");
   }
 
-  if ($row[summary_long])
-    $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
-		       $row[summary_long]);
-
   return $html;
 }
 
