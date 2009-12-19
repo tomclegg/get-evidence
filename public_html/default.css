@@ -13,12 +13,14 @@ Feel free to use and modify but please provide credits.
 	margin: 0;
 	padding: 0;
 }
+/*
 a {
 	color: #F70;
 }
 a:hover {
 	color: #C60;
 }
+*/
 body {
 	background: #0094D6 url(img/bg.gif) repeat-x;
 	/* color: #466; */
