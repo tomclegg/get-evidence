@@ -1,6 +1,7 @@
 <?php
 
 include "lib/setup.php";
+include "lib/openid.php";
 
 evidence_create_tables();
 openid_create_tables();
