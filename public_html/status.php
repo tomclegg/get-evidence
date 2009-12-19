@@ -12,12 +12,19 @@ In expected approximate chronological order:
 * deploy at evidence.personalgenomes.org
 * put notice on -dev site that this is a sandbox so don't do real editing here
 * add EB data source to trait-o-matic
-* update "genome evidence" using json data from snp.med
-* get PMID summary from pubmed when adding and show author/title in PMID section heading
-* use blosum score
-* show frequency data
+* update "genome evidence" using json data from snp.med -- so all nsSNPs on snp.med are listed
+* update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
+* update "web search results" section of long summary using yahoo search API
+* better edit history / stats
+** show list of contributors on variant page
+** show "top contributors"
+* get summary from pubmed when adding publication; show author/title in PMID section heading
+* show frequency data (hapmap via T-o-m)
 * handle edit conflicts
 * prevent "you have unsaved changes" from scrolling off the top on long pages
+* auto-complete and sanity-check gene names based on refFlat
+* support publications without PMIDs (other namespaces? original contributions? OWW?)
+* graph frequency vs. odds ratio
 
 h1. Recent steps
 
