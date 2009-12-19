@@ -3,15 +3,17 @@
 include "lib/setup.php";
 
 evidence_create_tables();
-
-if (!getCurrentUser("is_admin"))
-  {
-    die ("yours is not an admin account.");
-  }
-
+openid_create_tables();
 
 if ($_REQUEST["test-insert"])
    {
+
+     if (!getCurrentUser("is_admin"))
+       {
+	 die ("yours is not an admin account.");
+       }
+
+
      header ("Content-type: text/plain");
 
 
