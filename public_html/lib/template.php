@@ -55,7 +55,7 @@ function frag($tag)
 			<a href="/about">About</a>
 			<a href="/download">Download</a>
 <?php if (isset($_SESSION) && array_key_exists("user",$_SESSION)): ?>
-			<a href="/logout.php"><u>Log out</u></a>
+			<a href="/logout.php?return_url=<?=urlencode($_SERVER["REQUEST_URI"])?>"><u>Log out</u></a>
 <?php endif; ?>
 			<div class="clearer"><span></span></div>
 		</div>
@@ -95,14 +95,16 @@ function frag($tag)
 			foreach ($gOpenidEasyProviders as $url => $name) {
 ?>
 				<form action="/openid_start.php" method="post">
-				<input type="hidden" name="auth_url" class="styled" id="auth_url" value="<?=htmlentities($url)?>">
+				<input type="hidden" name="return_url" value="<?=htmlentities($_SERVER["REQUEST_URI"])?>">
+				<input type="hidden" name="auth_url" id="auth_url" value="<?=htmlentities($url)?>">
 				<input type="submit" value="<?=htmlentities($name)?> login" class="button" />
 				</form>
 				<br />
 <?php
 			}
 ?>
-			  <form action="/openid_start.php" method="post">
+			<form action="/openid_start.php" method="post">
+			<input type="hidden" name="return_url" value="<?=htmlentities($_SERVER["REQUEST_URI"])?>">
 				  OpenID URL:<br /><input type="text" name="auth_url" class="styled" id="auth_url"
 <?php
 			if (isset($_SESSION) && array_key_exists ("auth_url", $_SESSION)):

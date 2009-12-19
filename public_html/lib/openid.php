@@ -18,9 +18,10 @@ function getScheme() {
 }
 
 function getReturnTo() {
-    return sprintf("%s://%s:%s/openid_verify.php",
+    return sprintf("%s://%s:%s/openid_verify.php?return_url=%s",
                    getScheme(), $_SERVER['SERVER_NAME'],
-                   $_SERVER['SERVER_PORT']);
+                   $_SERVER['SERVER_PORT'],
+		   urlencode($_REQUEST["return_url"]));
 }
 
 function getTrustRoot() {

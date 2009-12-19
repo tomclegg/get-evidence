@@ -5,7 +5,10 @@ session_start();
 
 if (!isset ($_REQUEST["nosession"])) {
   unset ($_SESSION["user"]);
-  header ("Location: /");
+  if (ereg ("/[^:]*$", $_REQUEST["return_url"], $regs))
+    header ("Location: $regs[0]");
+  else
+    header ("Location: /");
   exit;
 }
 
@@ -25,5 +28,8 @@ if (ini_get("session.use_cookies")) {
 // Finally, destroy the session.
 session_destroy();
 
-header("Location: /");
+if (ereg ("/[^:]*$", $_REQUEST["return_url"], $regs))
+  header ("Location: $regs[0]");
+else
+  header ("Location: /");
 ?>

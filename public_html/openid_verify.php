@@ -5,5 +5,8 @@ require_once "lib/openid.php";
 
 session_start();
 openid_verify();
-header ("Location: /");
+if (ereg ("/[^:]*$", $_REQUEST["return_url"], $regs))
+  header ("Location: $regs[0]");
+else
+  header ("Location: /");
 ?>
