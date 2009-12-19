@@ -64,7 +64,14 @@ function frag($tag)
 
 	<div class="main">
 		
-		<div class="content"><form id="mainform" action="save.php" method="POST">
+			<div class="content"><?php if (ereg ("evidence-dev", $_SERVER["HTTP_HOST"])) { ?>
+
+<div style="outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px; margin: 0 0 10px 0;">
+			    <P style="margin: 0; padding: 0;">Note: This is <strong>not</strong> the real GET-Evidence site.  It is a <strong>development sandbox</strong>.  If you expect the site to be stable and you want your edits to be saved, use <A href="http://evidence.personalgenomes.org/">evidence.personalgenomes.org</A> instead.</P>
+</div>
+
+
+			<?php } ?><form id="mainform" action="save.php" method="POST">
 
 			<?php frag("content"); ?>
 
