@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add hints about what you should enter in each field
 * add EB data source to trait-o-matic
 * add {rsid,variant} table
 * update "genome evidence" using json data from snp.med -- so all nsSNPs on snp.med are listed (and {rsid,variant} mappings and hapmap frequency data are updated)
@@ -28,6 +27,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add hints about what you should enter in each field
 * put notice on -dev site that this is a sandbox so don't do real editing here
 * deploy at evidence.personalgenomes.org
 * return to departure page instead of front page after openid login
