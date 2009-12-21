@@ -26,6 +26,7 @@ function editable($id, $content, $title="", $options=false)
     $selector .= "</SELECT></P>";
   }
   return ("<SPAN id=\"$id\" class=\"editable\">" .
+	  (strlen($options["tip"]) ? "<P class=\"csshide\" id=\"tip_$id\">$options[tip]</P>" : "") .
 	  "<P id=\"toolbar_$id\" class=\"toolbar\">$title</P>" .
 	  "<SPAN id=\"preview_$id\">".$html."</SPAN>" .
 	  $selector .

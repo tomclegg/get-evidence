@@ -242,23 +242,29 @@ function evidence_render_row (&$row)
   if ($row["article_pmid"] > 0)
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
-		       "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />");
+		       "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />",
+		       array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
+
   else if ($row["genome_id"] > 0)
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
 		       "Genome $row[genome_id]");
+
   else {
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
-		       "Summary");
+		       "Summary",
+		       array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
     $html .= editable ("${id_prefix}f_variant_impact__",
 		       $row[variant_impact],
 		       "Impact",
-		       array ("select_options" => array ("pathogenic" => "pathogenic",
-							 "putative pathogenic" => "putative pathogenic",
-							 "unknown" => "unknown",
-							 "putative benign" => "putative benign",
-							 "benign" => "benign")));
+		       array ("select_options"
+			      => array ("pathogenic" => "pathogenic",
+					"putative pathogenic" => "putative pathogenic",
+					"unknown" => "unknown",
+					"putative benign" => "putative benign",
+					"benign" => "benign"),
+			      "tip" => "Categorize the expected impact of this variant."));
     $html .= editable ("${id_prefix}f_variant_dominance__",
 		       $row[variant_dominance],
 		       "Inheritance pattern",
@@ -267,7 +273,8 @@ function evidence_render_row (&$row)
 							 "recessive" => "recessive")));
     $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
 		       $row[summary_long],
-		       "Clinical significance");
+		       "Clinical significance",
+		       array ("tip" => "Describe the clinical significance of this variant."));
   }
 
   return $html;

@@ -53,6 +53,17 @@ function editable_click (e)
 {
     if (!$('edited_' + e.id)) {
 	e.insert(editable_input(e));
+	if ($('tip_' + e.id)) {
+	    Event.observe($('edited_' + e.id), 'mouseover',
+			  function () { TagToTip('tip_' + e.id,
+						 FIX, ['edited_'+e.id, 0, 0],
+						 FOLLOWMOUSE, false,
+						 BALLOON, true,
+						 ABOVE, true,
+						 WIDTH, -240); });
+	    Event.observe($('edited_' + e.id), 'mouseout',
+			  function () { UnTip(); });
+	}
     }
     $('preview_' + e.id).style.display='none';
     $('edited_' + e.id).style.display='';
@@ -89,6 +100,7 @@ function editable_highlight (e, flag)
 
 function editable_preview (e)
 {
+    unTip();
     preview = $('preview_' + e.id.sub('^edited_',''));
     edited = $('edited_' + e.id.sub('^edited_',''));
     e = $(e.id.sub('^edited_',''));

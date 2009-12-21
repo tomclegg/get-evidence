@@ -41,6 +41,8 @@ function frag($tag)
 </head>
 
 <body>
+<script type="text/javascript" src="/js/wz_tooltip.js"></script>
+<script type="text/javascript" src="/js/tip_balloon.js"></script>
 
 <div class="container">
 
