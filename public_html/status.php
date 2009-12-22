@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* update snp.med.harvard.edu so it has EB data source, mark as "beta"
 * add {rsid,variant} table
 * update "genome evidence" using json data from snp.med -- so all nsSNPs on snp.med are listed (and {rsid,variant} mappings and hapmap frequency data are updated)
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
@@ -27,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* update snp.med.harvard.edu so it has EB data source, mark as "beta"
 * add EB data source to trait-o-matic -- snp-dev2.freelogy.org
 * add hints about what you should enter in each field
 * put notice on -dev site that this is a sandbox so don't do real editing here
