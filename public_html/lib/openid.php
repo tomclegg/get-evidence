@@ -158,6 +158,13 @@ function openid_user_update ($openid, $sreg)
   $_SESSION["user"] = $user;
 }
 
+function openid_login_as_robot ($robot_name)
+{
+  openid_user_update ($_SESSION["oid"] = "none:///".md5($robot_name),
+		      array ("nickname" => $robot_name,
+			     "fullname" => $robot_name));
+}
+
 function openid_create_tables ()
 {
   theDb()->query ('

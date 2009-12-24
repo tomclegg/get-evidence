@@ -1,4 +1,5 @@
-all: php-openid-2.1.3 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
+all: update_genomes
+install: php-openid-2.1.3 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
 
 php-openid-2.1.3:
 	wget -c http://openidenabled.com/files/php-openid/packages/php-openid-2.1.3.tar.bz2
@@ -25,3 +26,19 @@ public_html/js/tip_balloon.js:
 	mkdir -p public_html/js/tip_balloon
 	cp -p wz_tooltip/tip_balloon/* public_html/js/tip_balloon/
 	perl -p -e 's:".*?":"/js/tip_balloon/": if m:^config\.\s*BalloonImgPath:' < wz_tooltip/tip_balloon.js > public_html/js/tip_balloon.js
+
+TRAITOMATICHOST?=snp.oxf.freelogy.org
+CACHEDIR=./tmp
+CACHEFILE=$(CACHEDIR)/allsnps-$(TRAITOMATICHOST).txt
+ALLSNPSURL?=http://$(TRAITOMATICHOST)/browse/allsnps/public
+PID:=$(shell echo $$PPID)
+update_genomes: remove_cachefile import_genomes
+remove_cachefile:
+	rm -f $(CACHEFILE) $(CACHEFILE).tmp.*
+$(CACHEFILE):
+	mkdir -p $(CACHEDIR)
+	rm -f $(CACHEFILE).tmp.*
+	wget -O$(CACHEFILE).tmp.$(PID) $(ALLSNPSURL)
+	mv $(CACHEFILE).tmp.$(PID) $(CACHEFILE)
+import_genomes: $(CACHEFILE)
+	./import_genomes.php $(CACHEFILE)

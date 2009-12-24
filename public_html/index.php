@@ -97,11 +97,15 @@ $newPublicationForm = '
 ';
 
 $html = "";
-$html .= "<H2>$section<BR />&nbsp;</H2>\n<DIV id=\"publications\">"
+$html .= "<H2>Publications<BR />&nbsp;</H2>\n<DIV id=\"publications\">"
   . $sections["Publications"]
   . "</DIV>"
   . $newPublicationForm;
-// $html .= "<UL>$section\n" . $sections["Genomes"] . "</UL>\n";
+
+if ($sections["Genomes"] != "")
+  $html .= "<H2>Genomes<BR />&nbsp;</H2>\n<DIV id=\"genomes\">"
+    . $sections["Genomes"]
+    . "</DIV>";
 
 $gOut["content"] .= $html;
 

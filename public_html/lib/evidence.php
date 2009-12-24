@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS edits (
   summary_long TEXT,
   talk_text TEXT,
   article_pmid INT UNSIGNED,
-  genome_id BIGINT UNSIGNED,
+  genome_id VARCHAR(16) NOT NULL,
   
   INDEX (variant_id,edit_timestamp),
   INDEX (edit_oid, edit_timestamp),
@@ -42,6 +42,12 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE snap_latest ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
   theDb()->query ("CREATE TABLE IF NOT EXISTS snap_release LIKE edits");
   theDb()->query ("ALTER TABLE snap_release ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS genomes (
+  genome_id VARCHAR(16) NOT NULL,
+  global_human_id VARCHAR(16) NOT NULL,
+  name VARCHAR(128),
+  UNIQUE(genome_id))");
 }
 
 function evidence_get_variant_id ($gene,
@@ -198,14 +204,22 @@ function evidence_get_report ($snap, $variant_id)
 {
   // Get all items relating to the given variant
 
-  $v =& theDb()->getAll ("SELECT *, variants.variant_id variant_id from variants
-			LEFT JOIN snap_$snap ON variants.variant_id=snap_$snap.variant_id
+  $v =& theDb()->getAll ("SELECT *,
+			variants.variant_id AS variant_id,
+			snap_$snap.genome_id AS genome_id
+			FROM variants
+			LEFT JOIN snap_$snap
+				ON variants.variant_id = snap_$snap.variant_id
+			LEFT JOIN genomes
+				ON snap_$snap.genome_id <> '0'
+				AND snap_$snap.genome_id = genomes.genome_id
 			WHERE variants.variant_id=?
 			ORDER BY
-			genome_id,
+			snap_$snap.genome_id,
 			article_pmid,
 			edit_timestamp",
 			 array ($variant_id));
+  if (theDb()->isError($v)) die ($v->getMessage());
   if (!theDb()->isError($v) && $v && $v[0])
     foreach (array ("article_pmid", "genome_id") as $x)
       if (!$v[0][$x]) $v[0][$x] = 0;
@@ -239,17 +253,31 @@ function evidence_render_row (&$row)
   $title = "";
   $html = "";
 
-  if ($row["article_pmid"] > 0)
+  if ($row["article_pmid"] != '0' && strlen($row["article_pmid"]) > 0)
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
 		       "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />",
 		       array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
 
-  else if ($row["genome_id"] > 0)
+  else if ($row["genome_id"] != '0' && strlen($row["genome_id"]) > 0) {
+
+    // Pick the most human-readable name for this genome/person
+    if (!($name = $row["name"]))
+      if (!($name = $row["global_human_id"]))
+	$name = "[" . $row["genome_id"] . "]";
+    $name = htmlspecialchars ($name);
+
+    // Link to the full genome
+    $url = FALSE;
+    if (ereg ("^(T/snp/)?([0-9]+)$", $row["genome_id"], $regs))
+      $url = "http://snp.med.harvard.edu/results/human/$regs[2]";
+    if ($url)
+      $name = "<A href=\"$url\">$name</A>";
+
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
-		       "Genome $row[genome_id]");
-
+		       $name);
+  }
   else {
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],

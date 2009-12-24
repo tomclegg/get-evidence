@@ -9,7 +9,7 @@ Install prerequisites:
 
 Download and extract php-openid-2.1.3 and textile-2.0.0 and apply patch(es):
 
- make
+ make install
 
 Create MySQL db and user:
 
@@ -22,3 +22,13 @@ Point apache DocumentRoot to public_html
 Put real database password in public_html/config.php like this
 
  <?php $gDbPassword = "shakespeare"; ?>
+
+Visit http://{host}/install.php to create tables.
+
+Run "make" to import genomes from Trait-o-matic.
+
+ make
+
+Set up a cron job to run "make" periodically.
+
+ echo "12 3 * * * $USER cd $HOME && make" | tee /etc/cron.d/get-evidence
