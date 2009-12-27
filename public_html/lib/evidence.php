@@ -48,6 +48,12 @@ CREATE TABLE IF NOT EXISTS edits (
   global_human_id VARCHAR(16) NOT NULL,
   name VARCHAR(128),
   UNIQUE(genome_id))");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_rsid (
+  variant_id BIGINT UNSIGNED NOT NULL,
+  rsid BIGINT UNSIGNED NOT NULL,
+  genome_id VARCHAR(16) NOT NULL,
+  UNIQUE(variant_id,rsid,genome_id))");
 }
 
 function evidence_get_variant_id ($gene,

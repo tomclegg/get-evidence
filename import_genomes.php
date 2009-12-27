@@ -31,6 +31,7 @@ openid_login_as_robot ("Genome Importing Robot");
 theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  variant_id BIGINT UNSIGNED NOT NULL,
  genome_id VARCHAR(16) NOT NULL,
+ rsid BIGINT UNSIGNED,
  INDEX(variant_id,genome_id),
  INDEX(genome_id))");
 
@@ -38,6 +39,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
 
 print "Importing ";
 $ops = 0;
+$saw_human_id = array();
 while (($line = fgets ($fh)) !== FALSE)
     {
 	if (++$ops % 1000 == 0)
@@ -50,10 +52,15 @@ while (($line = fgets ($fh)) !== FALSE)
 	    = explode ("\t", ereg_replace ("\r?\n$", "", $line));
 	$variant_id = evidence_get_variant_id ("$gene $aa_change", false, false, false, true);
 	$edit_id = evidence_get_latest_edit ($variant_id, 0, 0, true);
-	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?",
-			array ($variant_id, $human_id));
-	theDb()->query ("REPLACE INTO genomes SET genome_id=?, global_human_id=?, name=?",
-			array ($human_id, $global_human_id, $human_name));
+	if (ereg("^(rs?)([0-9]+)$", $rsid, $regs)) $rsid=$regs[2];
+	else $rsid=null;
+	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, rsid=?",
+			array ($variant_id, $human_id, $rsid));
+	if (!isset($saw_human_id[$human_id])) {
+	    theDb()->query ("REPLACE INTO genomes SET genome_id=?, global_human_id=?, name=?",
+			    array ($human_id, $global_human_id, $human_name));
+	    $saw_human_id[$human_id] = 1;
+	}
 
 	// quick mode for testing
 	//	if ($variant_id >= 1000)
@@ -79,6 +86,11 @@ print "\n";
 print "Pushing new associations to snap_latest";
 theDb()->query ("INSERT IGNORE INTO snap_latest SELECT * FROM edits WHERE edit_oid=? and edit_timestamp=?",
 		array (getCurrentUser("oid"), $timestamp));
+print "\n";
+
+
+print "Updating variant_rsid table";
+theDb()->query ("INSERT IGNORE INTO variant_rsid (variant_id, rsid, genome_id) SELECT variant_id, rsid, genome_id FROM import_genomes_tmp");
 print "\n";
 
 
