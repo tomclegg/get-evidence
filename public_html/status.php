@@ -7,8 +7,7 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add {rsid,variant} table
-* update {rsid,variant} mappings and hapmap frequency data when importing from snp.med
+* update hapmap frequency data when importing from snp.med
 * change genome_id column type and fix "is numeric" assumptions, so snp genome ids can be entered as "T/snp/#", etc.
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
 * update "web search results" section of long summary using yahoo search API
@@ -27,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add {rsid,variant} table, update when importing from snp.med
 * update "genome evidence" using "/browse/allsnps" report from snp.med
 * update snp.med.harvard.edu so it has EB data source, mark as "beta"
 * add EB data source to trait-o-matic -- snp-dev2.freelogy.org
