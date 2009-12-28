@@ -106,7 +106,7 @@ function editable_highlight (e, flag)
 
 function editable_preview (e)
 {
-    unTip();
+    UnTip();
     preview = $('preview_' + e.id.sub('^edited_',''));
     edited = $('edited_' + e.id.sub('^edited_',''));
     e = $(e.id.sub('^edited_',''));
