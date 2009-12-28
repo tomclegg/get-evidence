@@ -7,6 +7,14 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* fix "search is case-sensitive"
+* link to a specific job-id on snp.med instead of just human-id (currently GMC links go to the PGP result which doesn't have HFE H63D for example)
+* (trait-o-matic) auto-update get-evidence results when db changes
+* "suggested edits": pages with impact=[p]pathogenic and no short summary?
+* curator sign-off on latest version... and add link to download resulting "release" snapshot
+* "curator's report": pages with un-signed-off edits
+* (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
+* get summary from pubmed when adding publication; show author/title in PMID section heading
 * update hapmap frequency data when importing from snp.med
 * change genome_id column type and fix "is numeric" assumptions, so snp genome ids can be entered as "T/snp/#", etc.
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
@@ -14,18 +22,17 @@ In expected approximate chronological order:
 * better edit history / stats
 ** show list of contributors on variant page
 ** show "top contributors"
-* get summary from pubmed when adding publication; show author/title in PMID section heading
 * handle edit conflicts
 * prevent "you have unsaved changes" from scrolling off the top on long pages
 * auto-complete and sanity-check gene names based on refFlat
 * graph frequency vs. odds ratio
 * support publications without PMIDs (other namespaces? original contributions? OWW?)
-* curator sign-off on latest version... and add link to download resulting "release" snapshot
 
 h1. Recent steps
 
 In reverse chronological order:
 
+* (trait-o-matic) make sure "update results" works on snp-dev2 and snp.med
 * add {rsid,variant} table, update when importing from snp.med
 * update "genome evidence" using "/browse/allsnps" report from snp.med
 * update snp.med.harvard.edu so it has EB data source, mark as "beta"
