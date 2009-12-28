@@ -39,7 +39,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
 
 print "Importing ";
 $ops = 0;
-$saw_human_id = array();
+$saw_genome_id = array();
 while (($line = fgets ($fh)) !== FALSE)
     {
 	if (++$ops % 1000 == 0)
@@ -48,18 +48,18 @@ while (($line = fgets ($fh)) !== FALSE)
 	list ($gene, $aa_change,
 	      $chr, $chr_pos, $rsid,
 	      $ref_allele, $alleles, $hom_or_het,
-	      $human_id, $global_human_id, $human_name)
+	      $genome_id, $global_human_id, $human_name)
 	    = explode ("\t", ereg_replace ("\r?\n$", "", $line));
 	$variant_id = evidence_get_variant_id ("$gene $aa_change", false, false, false, true);
 	$edit_id = evidence_get_latest_edit ($variant_id, 0, 0, true);
 	if (ereg("^(rs?)([0-9]+)$", $rsid, $regs)) $rsid=$regs[2];
 	else $rsid=null;
 	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, rsid=?",
-			array ($variant_id, $human_id, $rsid));
-	if (!isset($saw_human_id[$human_id])) {
+			array ($variant_id, $genome_id, $rsid));
+	if (!isset($saw_genome_id[$genome_id])) {
 	    theDb()->query ("REPLACE INTO genomes SET genome_id=?, global_human_id=?, name=?",
-			    array ($human_id, $global_human_id, $human_name));
-	    $saw_human_id[$human_id] = 1;
+			    array ($genome_id, $global_human_id, $human_name));
+	    $saw_genome_id[$genome_id] = 1;
 	}
 
 	// quick mode for testing
