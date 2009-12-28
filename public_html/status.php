@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* fix "search is case-sensitive"
 * link to a specific job-id on snp.med instead of just human-id (currently GMC links go to the PGP result which doesn't have HFE H63D for example)
 * (trait-o-matic) auto-update get-evidence results when db changes
 * "suggested edits": pages with impact=[p]pathogenic and no short summary?
@@ -32,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* fix "search is case-sensitive"
 * (trait-o-matic) make sure "update results" works on snp-dev2 and snp.med
 * add {rsid,variant} table, update when importing from snp.med
 * update "genome evidence" using "/browse/allsnps" report from snp.med

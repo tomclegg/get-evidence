@@ -36,7 +36,7 @@ function aa_long__ ($in)
 function aa_long_form ($in)
 {
   global $aa_13;
-  if (strlen ($in) == 1) return $aa_13[$in];
+  if (strlen ($in) == 1) return $aa_13[strtoupper($in)];
   return preg_replace_callback ('/[A-Za-z\\*]+/', 'aa_long__', $in);
 }
 
@@ -57,7 +57,7 @@ function aa_sane ($in)
   global $aa_31, $aa_13;
   if (ereg ("^([A-Za-z]+)([0-9]+)([A-Za-z\\*]+)$", $in, $regs) &&
       ( ($aa_31[ucfirst(strtolower($regs[1]))] && $aa_31[ucfirst(strtolower($regs[3]))]) ||
-	($aa_13[$regs[1]] && $aa_13[$regs[3]])))
+	($aa_13[strtoupper($regs[1])] && $aa_13[strtoupper($regs[3])])))
     return true;
   else
     return false;
