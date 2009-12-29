@@ -240,7 +240,8 @@ function evidence_get_report ($snap, $variant_id)
 			variants.variant_id AS variant_id,
 			snap_$snap.genome_id AS genome_id,
 			COUNT(datasets.dataset_id) AS dataset_count,
-			MAX(dataset_url) AS dataset_url
+			MAX(dataset_url) AS dataset_url,
+			MIN(dataset_url) AS dataset_url_2
 			FROM variants
 			LEFT JOIN snap_$snap
 				ON variants.variant_id = snap_$snap.variant_id
@@ -308,10 +309,24 @@ function evidence_render_row (&$row)
 	$name = "[" . $row["genome_id"] . "]";
     $name = htmlspecialchars ($name);
 
-    // Link to the full genome
-    $url = $row["dataset_url"];
-    if ($url)
-      $name = "<A href=\"$url\">$name</A>";
+    // Link to the full genome(s)
+    if ($row["dataset_count"] > 0)
+      $name = "<A href=\"$row[dataset_url]\">$name</A>";
+    if ($row["dataset_count"] > 1) {
+      $more = $row["dataset_count"] - 1;
+      $name .= " (";
+      if ($row["dataset_url_2"]) {
+	$name .= "<A href=\"$row[dataset_url_2]\">alternate</A>, ";
+	--$more;
+      }
+      if ($more > 1)
+	$name .= "$more other data sets";
+      else if ($more == 1)
+	$name .= "1 other data set";
+      else
+	$name = ereg_replace (", $", "", $name);
+      $name .= ")";
+    }
 
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],

@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* link to multiple job-ids per genome, if applicable
 * (trait-o-matic) auto-update get-evidence results when db changes
 * "suggested edits": pages with impact=[p]pathogenic and no short summary?
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
@@ -31,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* link to multiple job-ids per genome, if applicable
 * delete variant_occurs rows if necessary during import_genomes
 * link to a specific job-id on snp.med instead of just human-id (currently GMC links go to the PGP result which doesn't have HFE H63D for example)
 * fix "search is case-sensitive"
