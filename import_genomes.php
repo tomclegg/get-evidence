@@ -31,7 +31,7 @@ openid_login_as_robot ("Genome Importing Robot");
 
 theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  variant_id BIGINT UNSIGNED NOT NULL,
- genome_id BIGINT NOT NULL,
+ genome_id BIGINT UNSIGNED NOT NULL,
  rsid BIGINT UNSIGNED,
  dataset_id VARCHAR(16) NOT NULL,
  INDEX(variant_id,dataset_id),
