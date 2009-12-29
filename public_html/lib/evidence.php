@@ -320,9 +320,9 @@ function evidence_render_row (&$row)
 	--$more;
       }
       if ($more > 1)
-	$name .= "$more other data sets";
+	$name .= "plus $more other data sets";
       else if ($more == 1)
-	$name .= "1 other data set";
+	$name .= "plus 1 other data set";
       else
 	$name = ereg_replace (", $", "", $name);
       $name .= ")";
