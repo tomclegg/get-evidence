@@ -34,8 +34,11 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  genome_id BIGINT NOT NULL,
  rsid BIGINT UNSIGNED,
  dataset_id VARCHAR(16) NOT NULL,
- INDEX(variant_id,genome_id),
- INDEX(genome_id))");
+ INDEX(variant_id,dataset_id),
+ INDEX(dataset_id))");
+theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
+ dataset_id VARCHAR(16) NOT NULL,
+ UNIQUE(dataset_id))");
 
 // Dump current list of variants into import_genomes_tmp table
 
@@ -82,6 +85,8 @@ while (($line = fgets ($fh)) !== FALSE)
 	    theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, dataset_url=?",
 			    array ("T/snp/$job_id", $genome_id,
 				   "http://snp.med.harvard.edu/results/job/$job_id"));
+	    theDb()->query ("INSERT INTO imported_datasets SET dataset_id=?",
+			    array ("T/snp/$job_id"));
 	    $job2genome[$job_id] = $genome_id;
 	}
 
@@ -121,23 +126,68 @@ print theDb()->affectedRows();
 print "\n";
 
 
-// Look for variant+genome_id associations in snap_latest where the
-// genome_id is listed in import_genomes_tmp, but that particular
-// variant is not.  Add "remove" edits for those variant+genome_id
-// associations and remove them from snap_latest.
+// Look for variant+dataset associations in variant_occurs that are no
+// longer supported by the latest imported data in import_genomes_tmp
 
-print "Entering \"remove\" edits for existing variants no longer reported in these genomes...";
+print "Finding variant_occurs rows disputed by this import...";
+theDb()->query ("
+CREATE TEMPORARY TABLE variant_occurs_not
+SELECT v.variant_id, v.rsid, v.dataset_id FROM variant_occurs v
+LEFT JOIN imported_datasets
+ ON v.dataset_id=imported_datasets.dataset_id
+LEFT JOIN datasets d
+ ON v.dataset_id=d.dataset_id
+LEFT JOIN import_genomes_tmp i
+ ON v.variant_id=i.variant_id
+ AND d.dataset_id=i.dataset_id
+WHERE imported_datasets.dataset_id IS NOT NULL
+ AND i.variant_id IS NULL
+");
+print theDb()->affectedRows();
+print "\n";
+
+
+// Delete the no-longer-occurring variants from variant_occurs
+
+print "Deleting disputed rows from variant_occurs...";
+theDb()->query ("DELETE v.*
+FROM variant_occurs_not n, variant_occurs v
+WHERE n.variant_id=v.variant_id
+ AND n.dataset_id=v.dataset_id");
+print theDb()->affectedRows();
+print "\n";
+
+
+// For each deleted variant+genome_id assoc, if the latest edit was
+// made by this program (i.e., nobody has written any comments about
+// this variant+genome_id association), and there is no longer any
+// evidence in variant_occurs supporting it, add a "delete" edit and
+// remove the entry from snap_latest.
+
+print "Entering \"delete\" edits for \"genome\" comment which have no supporting evidence after deleting those disputed rows and have not been edited by users...";
 $q = theDb()->query ("
 INSERT IGNORE INTO edits
-(variant_id, genome_id, article_pmid, previous_edit_id, is_draft, is_delete, edit_oid, edit_timestamp)
+(variant_id, genome_id, article_pmid, previous_edit_id, is_draft, is_delete,
+ edit_oid, edit_timestamp)
 SELECT old.variant_id, old.genome_id, 0, old.edit_id, 0, 1, ?, ?
-FROM snap_latest old
-LEFT JOIN import_genomes_tmp i ON old.variant_id=i.variant_id AND old.genome_id=i.genome_id
-WHERE old.article_pmid=0
- AND old.genome_id IN (SELECT DISTINCT genome_id FROM import_genomes_tmp)
- AND old.genome_id IS NOT NULL
- AND i.variant_id IS NULL
-", array (getCurrentUser("oid"), $timestamp));
+FROM variant_occurs_not del
+LEFT JOIN datasets deld
+ ON deld.dataset_id=del.dataset_id
+LEFT JOIN snap_latest old
+ ON old.variant_id=del.variant_id
+ AND old.article_pmid=0
+ AND old.genome_id=deld.genome_id
+ AND old.edit_oid=?
+LEFT JOIN variant_occurs v
+ ON old.variant_id=v.variant_id
+LEFT JOIN datasets d
+ ON v.dataset_id=d.dataset_id
+ AND d.genome_id=deld.genome_id
+WHERE old.edit_id IS NOT NULL
+ AND d.dataset_id IS NULL
+GROUP BY del.variant_id, deld.genome_id
+", array (getCurrentUser("oid"), $timestamp,
+	  getCurrentUser("oid")));
 if (theDb()->isError($q)) print $q->getMessage();
 print ($count_removals = theDb()->affectedRows());
 print "\n";
@@ -161,6 +211,7 @@ if (getenv("DEBUG")) {
   theDb()->query ("INSERT INTO import_genomes_last SELECT * FROM import_genomes_tmp");
 }
 
+theDb()->query ("DROP TEMPORARY TABLE variant_occurs_not");
 theDb()->query ("DROP TEMPORARY TABLE import_genomes_tmp");
 
 ?>

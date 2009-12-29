@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS edits (
   variant_id BIGINT UNSIGNED NOT NULL,
   rsid BIGINT UNSIGNED NOT NULL,
   dataset_id VARCHAR(16) NOT NULL,
-  UNIQUE(variant_id,rsid,dataset_id))");
+  UNIQUE(variant_id,dataset_id,rsid))");
 }
 
 function evidence_get_genome_id ($global_human_id)
