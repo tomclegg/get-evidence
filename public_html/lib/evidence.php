@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS edits (
   summary_long TEXT,
   talk_text TEXT,
   article_pmid INT UNSIGNED,
-  genome_id BIGINT NOT NULL,
+  genome_id BIGINT UNSIGNED NOT NULL,
   
   INDEX (variant_id,edit_timestamp),
   INDEX (edit_oid, edit_timestamp),
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS edits (
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
   dataset_id VARCHAR(16) NOT NULL,
-  genome_id VARCHAR(16) NOT NULL,
+  genome_id BIGINT UNSIGNED NOT NULL,
   dataset_url VARCHAR(255),
   INDEX(genome_id,dataset_id),
   UNIQUE(dataset_id))");
