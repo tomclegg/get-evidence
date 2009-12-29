@@ -25,9 +25,10 @@ function print_content($x)
   global $report_title, $where_sql, $where_param;
   print "<h1>$report_title</h1>\n\n";
 
-  $q = theDb()->query ("SELECT *, UNIX_TIMESTAMP(edit_timestamp) t FROM edits
+  $q = theDb()->query ("SELECT *, edits.genome_id genome_id, UNIX_TIMESTAMP(edit_timestamp) t FROM edits
 	LEFT JOIN eb_users ON edit_oid=oid
 	LEFT JOIN variants ON variants.variant_id=edits.variant_id
+	LEFT JOIN genomes ON edits.genome_id>0 AND edits.genome_id=genomes.genome_id
 	WHERE $where_sql AND is_draft=0
 	ORDER BY edit_timestamp DESC LIMIT 30",
 		       $where_param);
@@ -52,14 +53,20 @@ function print_content($x)
 	   (htmlspecialchars ($row["fullname"] ? $row["fullname"] : $row["nickname"])).
 	   "</A>");
 
+    if ($row["genome_id"])
+      if (!($genome_name = $row["name"]))
+	if (!($genome_name = $row["global_human_id"]))
+	  $genome_name = "#".$row["genome_id"];
+    $genome_name = htmlspecialchars ($genome_name);
+
     if ($row["article_pmid"] && $row["is_delete"])
       print " (PMID $row[article_pmid] removed)";
     else if ($row["genome_id"] && $row["is_delete"])
-      print " (genome $row[genome_id] removed)";
+      print " ($genome_name removed)";
     else if ($row["article_pmid"] && !$row["previous_edit_id"])
       print " (PMID $row[article_pmid] added)";
     else if ($row["genome_id"] && !$row["previous_edit_id"])
-      print " (genome $row[genome_id] added)";
+      print " ($genome_name added)";
     print "</LI>\n";
   }
   print "</UL>\n";

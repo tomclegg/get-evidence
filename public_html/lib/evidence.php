@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS edits (
   summary_long TEXT,
   talk_text TEXT,
   article_pmid INT UNSIGNED,
-  genome_id VARCHAR(16) NOT NULL,
+  genome_id BIGINT NOT NULL,
   
   INDEX (variant_id,edit_timestamp),
   INDEX (edit_oid, edit_timestamp),
@@ -44,16 +44,42 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE snap_release ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS genomes (
-  genome_id VARCHAR(16) NOT NULL,
+  genome_id SERIAL,
   global_human_id VARCHAR(16) NOT NULL,
   name VARCHAR(128),
-  UNIQUE(genome_id))");
+  UNIQUE(global_human_id))");
 
-  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_rsid (
+  theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
+  dataset_id VARCHAR(16) NOT NULL,
+  genome_id VARCHAR(16) NOT NULL,
+  dataset_url VARCHAR(255),
+  INDEX(genome_id,dataset_id),
+  UNIQUE(dataset_id))");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_occurs (
   variant_id BIGINT UNSIGNED NOT NULL,
   rsid BIGINT UNSIGNED NOT NULL,
-  genome_id VARCHAR(16) NOT NULL,
-  UNIQUE(variant_id,rsid,genome_id))");
+  dataset_id VARCHAR(16) NOT NULL,
+  UNIQUE(variant_id,rsid,dataset_id))");
+}
+
+function evidence_get_genome_id ($global_human_id)
+{
+  $genome_id = theDb()->getOne ("SELECT genome_id FROM genomes WHERE global_human_id=?",
+				array ($global_human_id));
+  if ($genome_id > 0)
+    return $genome_id;
+  $q = theDb()->query ("INSERT INTO genomes SET global_human_id=?",
+		       array ($global_human_id));
+  if (theDb()->isError($q)) {
+    $genome_id = theDb()->getOne ("SELECT genome_id FROM genomes WHERE global_human_id=?",
+				  array ($global_human_id));
+    if ($genome_id > 0)
+      return $genome_id;
+    die ("evidence_get_genome_id: DB error: " . $q->getMessage() . " -- lookup failed");
+  }
+  else
+    return theDb()->query ("SELECT LAST_INSERT_ID()");
 }
 
 function evidence_get_variant_id ($gene,
@@ -212,14 +238,23 @@ function evidence_get_report ($snap, $variant_id)
 
   $v =& theDb()->getAll ("SELECT *,
 			variants.variant_id AS variant_id,
-			snap_$snap.genome_id AS genome_id
+			snap_$snap.genome_id AS genome_id,
+			COUNT(datasets.dataset_id) AS dataset_count,
+			MAX(dataset_url) AS dataset_url
 			FROM variants
 			LEFT JOIN snap_$snap
 				ON variants.variant_id = snap_$snap.variant_id
 			LEFT JOIN genomes
-				ON snap_$snap.genome_id <> '0'
+				ON snap_$snap.genome_id > 0
 				AND snap_$snap.genome_id = genomes.genome_id
+			LEFT JOIN variant_occurs
+				ON snap_$snap.variant_id = variant_occurs.variant_id
+			LEFT JOIN datasets
+				ON variant_occurs.dataset_id = datasets.dataset_id
+				AND datasets.genome_id = snap_$snap.genome_id
 			WHERE variants.variant_id=?
+				AND (datasets.genome_id = snap_$snap.genome_id OR datasets.genome_id IS NULL)
+			GROUP BY snap_$snap.genome_id, snap_$snap.article_pmid, snap_$snap.genome_id
 			ORDER BY
 			snap_$snap.genome_id,
 			article_pmid,
@@ -274,9 +309,7 @@ function evidence_render_row (&$row)
     $name = htmlspecialchars ($name);
 
     // Link to the full genome
-    $url = FALSE;
-    if (ereg ("^(T/snp/)?([0-9]+)$", $row["genome_id"], $regs))
-      $url = "http://snp.med.harvard.edu/results/human/$regs[2]";
+    $url = $row["dataset_url"];
     if ($url)
       $name = "<A href=\"$url\">$name</A>";
 

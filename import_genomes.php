@@ -24,14 +24,16 @@ require_once 'lib/genomes.php';
 require_once 'lib/openid.php';
 
 ini_set ("output_buffering", FALSE);
+ini_set ("memory_limit", 67108864);
 
 genomes_create_tables ();
 openid_login_as_robot ("Genome Importing Robot");
 
 theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  variant_id BIGINT UNSIGNED NOT NULL,
- genome_id VARCHAR(16) NOT NULL,
+ genome_id BIGINT NOT NULL,
  rsid BIGINT UNSIGNED,
+ dataset_id VARCHAR(16) NOT NULL,
  INDEX(variant_id,genome_id),
  INDEX(genome_id))");
 
@@ -39,7 +41,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
 
 print "Importing ";
 $ops = 0;
-$saw_genome_id = array();
+$job2genome = array();
 while (($line = fgets ($fh)) !== FALSE)
     {
 	if (++$ops % 1000 == 0)
@@ -48,31 +50,59 @@ while (($line = fgets ($fh)) !== FALSE)
 	list ($gene, $aa_change,
 	      $chr, $chr_pos, $rsid,
 	      $ref_allele, $alleles, $hom_or_het,
-	      $genome_id, $global_human_id, $human_name)
+	      $job_id, $global_human_id, $human_name)
 	    = explode ("\t", ereg_replace ("\r?\n$", "", $line));
-	$variant_id = evidence_get_variant_id ("$gene $aa_change", false, false, false, true);
-	$edit_id = evidence_get_latest_edit ($variant_id, 0, 0, true);
+
+	if (!$global_human_id)
+	  continue;
+
+	$variant_id = evidence_get_variant_id ("$gene $aa_change");
+	if (!$variant_id) {
+	    // create the variant, and an "initial edit/add" row in edits table
+	    $variant_id = evidence_get_variant_id ("$gene $aa_change",
+						   false, false, false,
+						   true);
+	    $edit_id = evidence_get_latest_edit ($variant_id,
+						 0, 0,
+						 true);
+	}
 	if (ereg("^(rs?)([0-9]+)$", $rsid, $regs)) $rsid=$regs[2];
 	else $rsid=null;
-	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, rsid=?",
-			array ($variant_id, $genome_id, $rsid));
-	if (!isset($saw_genome_id[$genome_id])) {
-	    theDb()->query ("REPLACE INTO genomes SET genome_id=?, global_human_id=?, name=?",
-			    array ($genome_id, $global_human_id, $human_name));
-	    $saw_genome_id[$genome_id] = 1;
+
+	if (isset($job2genome[$job_id]))
+	  $genome_id = $job2genome[$job_id];
+	else
+	  $genome_id = evidence_get_genome_id ($global_human_id);
+
+	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, rsid=?, dataset_id=?",
+			array ($variant_id, $genome_id, $rsid, "T/snp/$job_id"));
+	if (!isset($job2genome[$job_id])) {
+	    theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
+			    array ($human_name, $genome_id));
+	    theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, dataset_url=?",
+			    array ("T/snp/$job_id", $genome_id,
+				   "http://snp.med.harvard.edu/results/job/$job_id"));
+	    $job2genome[$job_id] = $genome_id;
 	}
 
 	// quick mode for testing
-	//	if ($variant_id >= 1000)
-	//	    break;
+	if (getenv("MAX") && $ops >= getenv("MAX"))
+	  break;
 
     }
 print "$ops\n";
 
+
+print "Adding {dataset,variant} associations to variant_occurs table...";
+theDb()->query ("INSERT IGNORE INTO variant_occurs (variant_id, rsid, dataset_id) SELECT variant_id, rsid, dataset_id FROM import_genomes_tmp");
+print theDb()->affectedRows();
+print "\n";
+
+
 // Look for new variants in import_genomes_tmp that aren't in
 // snap_latest, and add suitable edits
 
-print "Looking for new {genome,variant} associations and adding them as edits";
+print "Looking for new {genome,variant} associations and adding them as edits...";
 $timestamp = theDb()->getOne ("SELECT NOW()");
 theDb()->query ("INSERT INTO edits
 	(variant_id, genome_id, article_pmid, is_draft, edit_oid, edit_timestamp)
@@ -81,16 +111,13 @@ theDb()->query ("INSERT INTO edits
 	LEFT JOIN snap_latest s ON s.variant_id = i.variant_id AND s.article_pmid = '0' AND s.genome_id = i.genome_id
 	WHERE s.variant_id IS NULL",
 		array (getCurrentUser("oid"), $timestamp));
+print theDb()->affectedRows();
 print "\n";
 
-print "Pushing new associations to snap_latest";
+print "Pushing new associations to snap_latest...";
 theDb()->query ("INSERT IGNORE INTO snap_latest SELECT * FROM edits WHERE edit_oid=? and edit_timestamp=?",
 		array (getCurrentUser("oid"), $timestamp));
-print "\n";
-
-
-print "Updating variant_rsid table";
-theDb()->query ("INSERT IGNORE INTO variant_rsid (variant_id, rsid, genome_id) SELECT variant_id, rsid, genome_id FROM import_genomes_tmp");
+print theDb()->affectedRows();
 print "\n";
 
 
@@ -99,10 +126,40 @@ print "\n";
 // variant is not.  Add "remove" edits for those variant+genome_id
 // associations and remove them from snap_latest.
 
-// (TODO)
+print "Entering \"remove\" edits for existing variants no longer reported in these genomes...";
+$q = theDb()->query ("
+INSERT IGNORE INTO edits
+(variant_id, genome_id, article_pmid, previous_edit_id, is_draft, is_delete, edit_oid, edit_timestamp)
+SELECT old.variant_id, old.genome_id, 0, old.edit_id, 0, 1, ?, ?
+FROM snap_latest old
+LEFT JOIN import_genomes_tmp i ON old.variant_id=i.variant_id AND old.genome_id=i.genome_id
+WHERE old.article_pmid=0
+ AND old.genome_id IN (SELECT DISTINCT genome_id FROM import_genomes_tmp)
+ AND old.genome_id IS NOT NULL
+ AND i.variant_id IS NULL
+", array (getCurrentUser("oid"), $timestamp));
+if (theDb()->isError($q)) print $q->getMessage();
+print ($count_removals = theDb()->affectedRows());
+print "\n";
 
+if ($count_removals > 0)
+{
+  print "Really removing them from snap_latest...";
+  theDb()->query ("
+DELETE FROM snap_latest
+WHERE edit_id IN (SELECT previous_edit_id FROM edits WHERE edit_oid=? AND edit_timestamp=? AND is_delete=1)
+", array (getCurrentUser("oid"), $timestamp));
+  print theDb()->affectedRows();
+  print "\n";
+}
 
 // Clean up
+
+if (getenv("DEBUG")) {
+  theDb()->query ("DROP TABLE IF EXISTS import_genomes_last");
+  theDb()->query ("CREATE TABLE import_genomes_last LIKE import_genomes_tmp");
+  theDb()->query ("INSERT INTO import_genomes_last SELECT * FROM import_genomes_tmp");
+}
 
 theDb()->query ("DROP TEMPORARY TABLE import_genomes_tmp");
 
