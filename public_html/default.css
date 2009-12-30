@@ -1,26 +1,14 @@
-/*#############################################################
-Name: Indigo
-Description: A lightweight (7kb images), simple and professional design.
-Date: 2006-07-27
-Author: Viktor Persson
-URL: http://arcsin.se
-
-Feel free to use and modify but please provide credits.
-#############################################################*/
+/*
+ * Adapted from "Indigo" by Viktor Persson http://arcsin.se
+ *
+ * License: "Feel free to use and modify but please provide credits."
+ */
 
 /* standard elements */
 * {
 	margin: 0;
 	padding: 0;
 }
-/*
-a {
-	color: #F70;
-}
-a:hover {
-	color: #C60;
-}
-*/
 body {
 	background: #0094D6 url(img/bg.gif) repeat-x;
 	/* color: #466; */
@@ -30,7 +18,7 @@ body {
 input,textarea {
 	font: normal 12px "Lucida Sans Unicode",sans-serif;
 }
-p,cite,code,ul {
+p,cite,code,ul,td,th {
 	/* font-size: 1.2em; */
 	font-size: 12px;
 	padding-bottom: 1.2em;
@@ -170,6 +158,29 @@ h1,h2,h3 {
 	list-style: url(img/li.gif);
 }
 
+/* report table */
+.report_table {
+	border-spacing: 0;
+	border-style: solid;
+	border-color: #bbb;
+	border-width: 0 0 1px 1px;
+	border-collapse: collapse;
+}
+.report_table td,.report_table th {
+	padding: 2px;
+	margin: 0px;
+	border-style: solid;
+	border-color: #bbb;
+	border-width: 1px 1px 0 0;
+	vertical-align: top;
+	text-align: left;
+}
+.report_table th {
+	font-weight: normal;
+	background: #ddd;
+}
+
+/* "editable" toolbar */
 .toolbar {
 	border-bottom: 3px solid #ddd;
 	margin: 0;

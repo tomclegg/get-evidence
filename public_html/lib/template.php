@@ -57,6 +57,7 @@ function frag($tag)
 			<a href="/editors">Contributors</a>
 			<a href="/about">About</a>
 			<a href="/download">Download</a>
+			<a href="/report">Reports</a>
 <?php if (isset($_SESSION) && array_key_exists("user",$_SESSION)): ?>
 			<a href="/logout.php?return_url=<?=urlencode($_SERVER["REQUEST_URI"])?>"><u>Log out</u></a>
 <?php endif; ?>

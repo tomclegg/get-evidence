@@ -7,9 +7,10 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* "actionable for population" report: pages with impact=[p]pathogenic
+* "suggested edits" report: pages with impact=[p]pathogenic and no short summary?
 * (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * (trait-o-matic) auto-update get-evidence results when db changes
-* "suggested edits": pages with impact=[p]pathogenic and no short summary?
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * update hapmap frequency data when importing from snp.med
 * change genome_id column type and fix "is numeric" assumptions, so snp genome ids can be entered as "T/snp/#", etc.
@@ -25,6 +26,7 @@ In expected approximate chronological order:
 * auto-complete and sanity-check gene names based on refFlat
 * graph frequency vs. odds ratio
 * support publications without PMIDs (other namespaces? original contributions? OWW?)
+* fix character encoding in pubmed summaries
 
 h1. Recent steps
 
