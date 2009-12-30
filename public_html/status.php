@@ -7,11 +7,9 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* get summary from pubmed when adding publication; show author/title in PMID section heading
+* (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * (trait-o-matic) auto-update get-evidence results when db changes
 * "suggested edits": pages with impact=[p]pathogenic and no short summary?
-* curator sign-off on latest version... and add link to download resulting "release" snapshot
-* "curator's report": pages with un-signed-off edits
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * update hapmap frequency data when importing from snp.med
 * change genome_id column type and fix "is numeric" assumptions, so snp genome ids can be entered as "T/snp/#", etc.
@@ -20,6 +18,8 @@ In expected approximate chronological order:
 * better edit history / stats
 ** show list of contributors on variant page
 ** show "top contributors"
+* curator sign-off on latest version... and add link to download resulting "release" snapshot
+* "curator's report": pages with un-signed-off edits
 * handle edit conflicts
 * prevent "you have unsaved changes" from scrolling off the top on long pages
 * auto-complete and sanity-check gene names based on refFlat
@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* get summary from pubmed when adding publication; show author/title in PMID section heading
 * link to multiple job-ids per genome, if applicable
 * delete variant_occurs rows if necessary during import_genomes
 * link to a specific job-id on snp.med instead of just human-id (currently GMC links go to the PGP result which doesn't have HFE H63D for example)

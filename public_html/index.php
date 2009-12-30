@@ -91,7 +91,9 @@ foreach ($report as $row)
   $sections[$section] .= evidence_render_row ($row);
 }
 
-$newPublicationForm = '
+$newPublicationForm = '';
+if (getCurrentUser("oid"))
+   $newPublicationForm = '
 <div id="article_new"></div>
 <P>PMID&nbsp;<input type="text" id="article_pmid" size=12 />&nbsp;<button onclick="evidence_add_article('.$variant_id.', $(\'article_pmid\').value); $(\'article_pmid\').value=\'\'; return false;">Add</button></P>
 ';

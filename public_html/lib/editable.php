@@ -13,7 +13,10 @@ function editable($id, $content, $title="", $options=false)
   $html = $gTheTextile->textileRestricted ($content);
   if (trim($html) == "") $html = "<P>&nbsp;</P>";
 
-  if (!getCurrentUser()) return ("<P class=\"toolbar\">$title</P>" .
+  if (strlen($title) <  60 && !preg_match ('{<(b|strong)\b}i', $title))
+    $title = "<strong>$title</strong>";
+
+  if (!getCurrentUser()) return ("<DIV class=\"toolbar\"><P class=\"toolbar_title\">$title</P></DIV>" .
 				 $html);
 
   $selector = "";
@@ -27,7 +30,7 @@ function editable($id, $content, $title="", $options=false)
   }
   return ("<SPAN id=\"$id\" class=\"editable\">" .
 	  (strlen($options["tip"]) ? "<P class=\"csshide\" id=\"tip_$id\">$options[tip]</P>" : "") .
-	  "<P id=\"toolbar_$id\" class=\"toolbar\">$title</P>" .
+	  "<DIV id=\"toolbar_$id\" class=\"toolbar\"><P class=\"toolbar_title\">$title</P></DIV>" .
 	  "<SPAN id=\"preview_$id\">".$html."</SPAN>" .
 	  $selector .
 	  "<INPUT type=\"hidden\" id=\"orig_$id\" value=\"".htmlentities($content)."\"/>" .

@@ -173,12 +173,16 @@ h1,h2,h3 {
 .toolbar {
 	border-bottom: 3px solid #ddd;
 	margin: 0;
-	padding: 0px 0px 0px 3px;
+	padding: 0;
 	position: relative;
-	font-weight: bold;
+}
+.toolbar_title {
+	width: 60%;
+	padding: 0;
 }
 .toolbar_span {
 	position: absolute;
+	padding: 0;
 	right: 0;
 	bottom: 0;
 }

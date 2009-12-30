@@ -1,5 +1,6 @@
 <?php
 
+require_once ("lib/article.php");
 
 function evidence_create_tables ()
 {
@@ -295,11 +296,13 @@ function evidence_render_row (&$row)
   $title = "";
   $html = "";
 
-  if ($row["article_pmid"] != '0' && strlen($row["article_pmid"]) > 0)
+  if ($row["article_pmid"] != '0' && strlen($row["article_pmid"]) > 0) {
+    $summary = article_get_summary ($row["article_pmid"]);
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
-		       "<A href=\"http://www.ncbi.nlm.nih.gov/pubmed/$row[article_pmid]\">PMID $row[article_pmid]</A><BR />",
+		       $summary . "<BR />",
 		       array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
+  }
 
   else if ($row["genome_id"] != '0' && strlen($row["genome_id"]) > 0) {
 
