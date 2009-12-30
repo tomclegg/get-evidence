@@ -7,12 +7,12 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* get summary from pubmed when adding publication; show author/title in PMID section heading
 * (trait-o-matic) auto-update get-evidence results when db changes
 * "suggested edits": pages with impact=[p]pathogenic and no short summary?
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
 * "curator's report": pages with un-signed-off edits
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
-* get summary from pubmed when adding publication; show author/title in PMID section heading
 * update hapmap frequency data when importing from snp.med
 * change genome_id column type and fix "is numeric" assumptions, so snp genome ids can be entered as "T/snp/#", etc.
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
