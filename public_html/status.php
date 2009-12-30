@@ -7,8 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* "actionable for population" report: pages with impact=[p]pathogenic
-* "suggested edits" report: pages with impact=[p]pathogenic and no short summary?
 * (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * (trait-o-matic) auto-update get-evidence results when db changes
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
@@ -32,6 +30,8 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* "actionable for population" report: pages with impact=[p]pathogenic
+* "suggested edits" report: pages with impact=[p]pathogenic and no short summary?
 * get summary from pubmed when adding publication; show author/title in PMID section heading
 * link to multiple job-ids per genome, if applicable
 * delete variant_occurs rows if necessary during import_genomes
