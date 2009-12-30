@@ -1,7 +1,7 @@
 Install prerequisites:
 
  sudo apt-get install \
-   php-db wget libapache2-mod-php5 php5-mysql mysql-server git git-core make patch unzip
+   php-db wget libapache2-mod-php5 php5-mysql php5-curl mysql-server git git-core make patch unzip
  sudo a2enmod php5
  sudo a2enmod rewrite
  sudo a2enmod expires
