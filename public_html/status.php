@@ -7,15 +7,14 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
-* (trait-o-matic) auto-update get-evidence results when db changes
-* (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
+* basic edit history / contributor list on variant page
 * update hapmap frequency data when importing from snp.med
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
 * update "web search results" section of long summary using yahoo search API
-* better edit history / stats
-** show list of contributors on variant page
-** show "top contributors"
+* inspect edit history for each page/item
+* (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
+* (trait-o-matic) auto-update get-evidence results when db changes
+* (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
 * "curator's report": pages with un-signed-off edits
 * handle edit conflicts
