@@ -40,44 +40,66 @@ function print_content ()
   global $sql_where;
   global $sql_having;
   global $snap;
-  $q = theDb()->query ($sql = "SELECT s.*, v.*, g.*, COUNT(ocount.dataset_id) dataset_count
+  global $gTheTextile;
+  $q = theDb()->query ($sql = "
+SELECT s.*, v.*, g.*,
+-- gs.summary_short AS g_summary_short,
+ COUNT(ocount.dataset_id) AS dataset_count
 FROM snap_$snap s
 LEFT JOIN variants v ON s.variant_id=v.variant_id
 LEFT JOIN variant_occurs o ON v.variant_id=o.variant_id
 LEFT JOIN variant_occurs ocount ON v.variant_id=ocount.variant_id
 LEFT JOIN datasets d ON o.dataset_id=d.dataset_id
 LEFT JOIN genomes g ON d.genome_id=g.genome_id
-WHERE $sql_where
-GROUP BY v.variant_id,o.dataset_id
+-- LEFT JOIN snap_$snap gs ON gs.variant_id=s.variant_id AND gs.article_pmid=0 AND gs.genome_id=g.genome_id
+WHERE s.article_pmid=0 AND s.genome_id=0 AND $sql_where
+GROUP BY v.variant_id,g.genome_id
 HAVING $sql_having
 ");
   if (theDb()->isError($q)) die ("DB Error: ".$q->getMessage());
   print "<TABLE class=\"report_table\">\n";
   print "<TR><TH>" . join ("</TH><TH>",
-			   array ("Genomes",
-				  "Variant",
+			   array ("Variant",
 				  "Impact",
 				  "Inheritance pattern",
-				  "Summary")) . "</TH></TR>\n";
-  $name_list = array();
+				  "Summary",
+				  "Genomes"
+				  )) . "</TH></TR>\n";
+  $genome_rows = array();
   for ($row =& $q->fetchRow();
        $row;
        $row =& $nextrow) {
-    $name_list[] = $row["name"] ? $row["name"] : "[".$row["global_human_id"]."]";
+    $row["name"] = $row["name"] ? $row["name"] : "[".$row["global_human_id"]."]";
+    $genome_rows[$row["genome_id"]] = $row;
     $nextrow =& $q->fetchRow();
     if ($nextrow && $row["variant_id"] == $nextrow["variant_id"]) {
       continue;
     }
     $gene = $row["variant_gene"];
     $aa = aa_short_form($row["variant_aa_from"] . $row["variant_aa_pos"] . $row["variant_aa_to"]);
-    printf ("<TR><TD>%s</TD><TD>%s</TD><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>\n",
-	    nl2br(htmlspecialchars(implode(",\n",$name_list))),
+
+    $rowspan = count($genome_rows);
+    if ($rowspan < 1) $rowspan = 1;
+    $rowspan = "rowspan=\"$rowspan\"";
+
+    printf ("<TR><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD>",
 	    "<A href=\"$gene-$aa\">$gene&nbsp;$aa</A>",
 	    ereg_replace ("^putative ", "p.", $row["variant_impact"]),
 	    $row["variant_dominance"],
 	    $row["summary_short"]
 	    );
-    $name_list = array();
+    $rownum = 0;
+    foreach ($genome_rows as $id => $row) {
+      if (++$rownum > 1) print "</TR>\n<TR>";
+      print "<TD width=\"15%\"><A href=\"$gene-$aa#g$id\">".htmlspecialchars($row["name"])."</A>";
+      /*
+      if ($row["g_summary_short"])
+	print " ".preg_replace('{^\s*<p>(.*)</p>\s*$}is', '$1', $gTheTextile->textileRestricted ($row["g_summary_short"]));
+      */
+      print "</TD>";
+    }
+    print "</TR>\n";
+    $genome_rows = array();
   }
   print "</TABLE>\n";
 }

@@ -297,6 +297,7 @@ function evidence_render_row (&$row)
   $html = "";
 
   if ($row["article_pmid"] != '0' && strlen($row["article_pmid"]) > 0) {
+    $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
     $summary = article_get_summary ($row["article_pmid"]);
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
@@ -305,6 +306,8 @@ function evidence_render_row (&$row)
   }
 
   else if ($row["genome_id"] != '0' && strlen($row["genome_id"]) > 0) {
+
+    $html .= "<A name=\"g".$row["genome_id"]."\"></A>\n";
 
     // Pick the most human-readable name for this genome/person
     if (!($name = $row["name"]))

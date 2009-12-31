@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* rearrange report format, link genome ids to anchors on variant page
 * "actionable for population" report: pages with impact=[p]pathogenic
 * "suggested edits" report: pages with impact=[p]pathogenic and no short summary?
 * get summary from pubmed when adding publication; show author/title in PMID section heading
