@@ -34,6 +34,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  genome_id BIGINT UNSIGNED NOT NULL,
  rsid BIGINT UNSIGNED,
  dataset_id VARCHAR(16) NOT NULL,
+ zygosity ENUM('heterozygous','homozygous') NOT NULL DEFAULT 'heterozygous',
  INDEX(variant_id,dataset_id),
  INDEX(dataset_id))");
 theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
@@ -45,6 +46,8 @@ theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
 print "Importing ";
 $ops = 0;
 $job2genome = array();
+$zygosity = array ('hom' => 'homozygous',
+		   'het' => 'heterozygous');
 while (($line = fgets ($fh)) !== FALSE)
     {
 	if (++$ops % 1000 == 0)
@@ -77,7 +80,7 @@ while (($line = fgets ($fh)) !== FALSE)
 	else
 	  $genome_id = evidence_get_genome_id ($global_human_id);
 
-	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, rsid=?, dataset_id=?",
+	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, rsid=?, dataset_id=?, zygosity='$zygosity[$hom_or_het]'",
 			array ($variant_id, $genome_id, $rsid, "T/snp/$job_id"));
 	if (!isset($job2genome[$job_id])) {
 	    theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
@@ -99,7 +102,7 @@ print "$ops\n";
 
 
 print "Adding {dataset,variant} associations to variant_occurs table...";
-theDb()->query ("INSERT IGNORE INTO variant_occurs (variant_id, rsid, dataset_id) SELECT variant_id, rsid, dataset_id FROM import_genomes_tmp");
+theDb()->query ("REPLACE INTO variant_occurs (variant_id, rsid, dataset_id, zygosity) SELECT variant_id, rsid, dataset_id, zygosity FROM import_genomes_tmp");
 print theDb()->affectedRows();
 print "\n";
 
