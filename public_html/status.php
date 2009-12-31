@@ -29,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* offer reports without "het SNP at recessive variant" occurrences
 * indicate "hom" SNPs in reports
 * import het/hom field so inheritance pattern can be matched against snp type
 * rearrange report format, link genome ids to anchors on variant page
