@@ -11,7 +11,6 @@ In expected approximate chronological order:
 * (trait-o-matic) auto-update get-evidence results when db changes
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * update hapmap frequency data when importing from snp.med
-* change genome_id column type and fix "is numeric" assumptions, so snp genome ids can be entered as "T/snp/#", etc.
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
 * update "web search results" section of long summary using yahoo search API
 * better edit history / stats
@@ -30,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* indicate "hom" SNPs in reports
 * import het/hom field so inheritance pattern can be matched against snp type
 * rearrange report format, link genome ids to anchors on variant page
 * "actionable for population" report: pages with impact=[p]pathogenic

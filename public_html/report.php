@@ -44,6 +44,7 @@ function print_content ()
   $q = theDb()->query ($sql = "
 SELECT s.*, v.*, g.*,
 -- gs.summary_short AS g_summary_short,
+ MAX(o.zygosity) AS max_zygosity,
  COUNT(ocount.dataset_id) AS dataset_count
 FROM snap_$snap s
 LEFT JOIN variants v ON s.variant_id=v.variant_id
@@ -92,6 +93,8 @@ HAVING $sql_having
     foreach ($genome_rows as $id => $row) {
       if (++$rownum > 1) print "</TR>\n<TR>";
       print "<TD width=\"15%\"><A href=\"$gene-$aa#g$id\">".htmlspecialchars($row["name"])."</A>";
+      if ($row["max_zygosity"] == 'homozygous')
+	print " (hom)";
       /*
       if ($row["g_summary_short"])
 	print " ".preg_replace('{^\s*<p>(.*)</p>\s*$}is', '$1', $gTheTextile->textileRestricted ($row["g_summary_short"]));
