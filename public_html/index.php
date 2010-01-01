@@ -109,6 +109,10 @@ if ($sections["Genomes"] != "")
     . $sections["Genomes"]
     . "</DIV>";
 
+$html .= "<H2>Edit history<BR />&nbsp;</H2>\n<DIV id=\"edit_history\">";
+$html .= evidence_render_history ($variant_id);
+$html .= "</DIV>";
+
 $gOut["content"] .= $html;
 
 go();

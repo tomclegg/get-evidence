@@ -372,4 +372,64 @@ function evidence_render_row (&$row)
   return $html;
 }
 
+function evidence_render_history ($variant_id)
+{
+  $html = "<UL>\n";
+  $thisyear = strftime ("%Y", time());
+  $today = strftime ("%b %e %Y", time());
+  $q = theDb()->query ("
+SELECT
+ UNIX_TIMESTAMP(edit_timestamp) AS edit_timestamp,
+ edit_oid,
+ u.fullname AS edit_fullname,
+ article_pmid,
+ s.genome_id AS genome_id,
+ IF(g.name IS NULL OR g.name='',concat('[',global_human_id,']'),g.name) AS genome_name,
+ is_delete,
+ previous_edit_id
+FROM edits s
+LEFT JOIN eb_users u ON u.oid=s.edit_oid
+LEFT JOIN genomes g ON g.genome_id=s.genome_id
+WHERE variant_id=? AND is_draft=0
+ORDER BY edit_timestamp DESC, previous_edit_id DESC
+",
+		       array ($variant_id));
+  if (theDb()->isError($q)) die ($q->getMessage());
+  $lastli = "";
+  while ($row =& $q->fetchRow()) {
+    $li = "<LI>";
+
+    $nicetime = strftime ("%b %e %Y %l:%M%P", $row["edit_timestamp"]);
+    $nicetime = str_replace ("  ", " ", $nicetime);
+    $nicetime = str_replace ("$today ", "", $nicetime);
+    $nicetime = str_replace ("$thisyear ", "", $nicetime);
+    $nicetime = ereg_replace (" [^ ]+$", "", $nicetime);
+    $li .= $nicetime;
+
+    $li .= " <A href=\"edits?oid=".urlencode($row["edit_oid"])."\">".htmlspecialchars($row["edit_fullname"])."</A> ";
+
+    $summary = "";
+    if ($row["is_delete"]) $li .= "removed ";
+    else if ($row["previous_edit_id"]) { $li .= "edited "; $summary = " summary"; }
+    else $li .= "added ";
+
+    if ($row["article_pmid"]) $li .= "article ".htmlspecialchars($row["article_pmid"]).$summary;
+    else if ($row["genome_id"]) $li .= htmlspecialchars($row["genome_name"]).$summary;
+    else $li .= "variant$summary";
+
+    $li .= "</LI>\n";
+
+    // Compress sequences of same type of edit (same person, date, etc.)
+    if ($li != $lastli)
+      $html .= $li;
+    else
+      // TODO: offer to expand these in case the person wants to
+      // recover an intermediate edit
+      ;
+    $lastli = $li;
+  }
+  $html .= "</UL>\n";
+  return $html;
+}
+
 ?>
