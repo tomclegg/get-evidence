@@ -22,6 +22,7 @@ chdir ('public_html');
 require_once 'lib/setup.php';
 require_once 'lib/genomes.php';
 require_once 'lib/openid.php';
+require_once 'lib/bp.php';
 
 ini_set ("output_buffering", FALSE);
 ini_set ("memory_limit", 67108864);
@@ -72,7 +73,17 @@ while (($line = fgets ($fh)) !== FALSE)
 	}
 	$trait_allele = ereg_replace("$ref_allele|[^ACGT]", "", $alleles);
 	if (strlen($trait_allele) != 1) {
-	  $trait_allele = NULL;
+	  // TODO: get trait-o-matic to specify which of these alleles
+	  // (if not both) caused the stated AA change, and store
+	  // evidence accordingly.  If ref A->C/G and C and G both
+	  // result in the same AA change then maybe record it as a
+	  // hom?  Maybe even if C/G result in different AA changes
+	  // but both are nonsynonymous?  For now, just store C/G as
+	  // "S" and let the users figure it out.
+	  $trait_allele = bp_flatten ($trait_allele);
+
+	  // TODO: figure out what maf means when given with compound
+	  // het (ref A -> C/G)
 	  $maf = NULL;
 	}
 

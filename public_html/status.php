@@ -26,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* make sure compound hets are imported/displayed correctly
 * update hapmap frequency data when importing from snp.med
 * basic edit history / contributor list on variant page
 * offer reports without "het SNP at recessive variant" occurrences

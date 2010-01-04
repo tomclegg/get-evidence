@@ -67,9 +67,9 @@ CREATE TABLE IF NOT EXISTS edits (
   ADD zygosity ENUM('heterozygous','homozygous')
   ");
   theDb()->query ("ALTER TABLE variant_occurs
-  ADD chr CHAR(6) NOT NULL,
-  ADD chr_pos INT UNSIGNED NOT NULL,
-  ADD allele CHAR(1) NOT NULL
+  ADD chr CHAR(6),
+  ADD chr_pos INT UNSIGNED,
+  ADD allele CHAR(1)
   ");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS maf (
