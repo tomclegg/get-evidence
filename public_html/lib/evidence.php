@@ -63,9 +63,22 @@ CREATE TABLE IF NOT EXISTS edits (
   dataset_id VARCHAR(16) NOT NULL,
   UNIQUE(variant_id,dataset_id,rsid)
   )");
-  theDb()->query ("ALTER TABLE variant_occurs ADD
-  zygosity ENUM('heterozygous','homozygous')
+  theDb()->query ("ALTER TABLE variant_occurs
+  ADD zygosity ENUM('heterozygous','homozygous')
   ");
+  theDb()->query ("ALTER TABLE variant_occurs
+  ADD chr CHAR(6) NOT NULL,
+  ADD chr_pos INT UNSIGNED NOT NULL,
+  ADD allele CHAR(1) NOT NULL
+  ");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS maf (
+  chr CHAR(6) NOT NULL,
+  chr_pos INT UNSIGNED NOT NULL,
+  allele CHAR(1) NOT NULL,
+  maf TEXT,
+  UNIQUE(chr, chr_pos, allele)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
@@ -244,7 +257,11 @@ function evidence_get_report ($snap, $variant_id)
   $v =& theDb()->getAll ("SELECT *,
 			variants.variant_id AS variant_id,
 			snap_$snap.genome_id AS genome_id,
+			variant_occurs.chr AS chr,
+			variant_occurs.chr_pos AS chr_pos,
+			variant_occurs.allele AS allele,
 			COUNT(datasets.dataset_id) AS dataset_count,
+			MAX(zygosity) AS zygosity,
 			MAX(dataset_url) AS dataset_url,
 			MIN(dataset_url) AS dataset_url_2
 			FROM variants
@@ -253,13 +270,16 @@ function evidence_get_report ($snap, $variant_id)
 			LEFT JOIN genomes
 				ON snap_$snap.genome_id > 0
 				AND snap_$snap.genome_id = genomes.genome_id
+			LEFT JOIN datasets
+				ON datasets.genome_id = snap_$snap.genome_id
 			LEFT JOIN variant_occurs
 				ON snap_$snap.variant_id = variant_occurs.variant_id
-			LEFT JOIN datasets
-				ON variant_occurs.dataset_id = datasets.dataset_id
-				AND datasets.genome_id = snap_$snap.genome_id
+				AND variant_occurs.dataset_id = datasets.dataset_id
+			LEFT JOIN maf
+				ON maf.chr=variant_occurs.chr
+				AND maf.chr_pos=variant_occurs.chr_pos
+				AND maf.allele=variant_occurs.allele
 			WHERE variants.variant_id=?
-				AND (datasets.genome_id = snap_$snap.genome_id OR datasets.genome_id IS NULL)
 			GROUP BY snap_$snap.genome_id, snap_$snap.article_pmid, snap_$snap.genome_id
 			ORDER BY
 			snap_$snap.genome_id,
@@ -336,6 +356,21 @@ function evidence_render_row (&$row)
       else
 	$name = ereg_replace (", $", "", $name);
       $name .= ")";
+    }
+
+    // Indicate the SNP that causes the variant
+    if ($row["chr"]) {
+      $name .= htmlspecialchars ("\n".substr($row["zygosity"],0,3)." ".$row["allele"]." @ ".$row["chr"].":".$row["chr_pos"]);
+      if ($row["maf"]) {
+	$maf = preg_replace ('/"(...)": 0\.([0-9][0-9]?)([0-9]?)[0-9]*/',
+			     '$1 $2.$3%',
+			     strtolower ($row["maf"]));
+	$maf = ereg_replace (' 0', ' ', $maf);
+	$maf = ereg_replace ('\.0%', '%', $maf);
+	$maf = ereg_replace (' \.%', ' 0%', $maf);
+	$name .= htmlspecialchars ("\n$maf");
+      }
+      $name = nl2br ($name);
     }
 
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
