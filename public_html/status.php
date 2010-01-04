@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* update hapmap frequency data when importing from snp.med
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
 * update "web search results" section of long summary using yahoo search API
 * inspect edit history for each page/item
@@ -27,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* update hapmap frequency data when importing from snp.med
 * basic edit history / contributor list on variant page
 * offer reports without "het SNP at recessive variant" occurrences
 * indicate "hom" SNPs in reports
