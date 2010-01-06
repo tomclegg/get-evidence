@@ -61,6 +61,7 @@ LEFT JOIN genomes g ON d.genome_id=g.genome_id
 WHERE s.article_pmid=0 AND s.genome_id=0 AND $sql_where
 GROUP BY v.variant_id,g.genome_id
 HAVING $sql_having
+LIMIT 100
 ");
   if (theDb()->isError($q)) die ("DB Error: ".$q->getMessage() . "<br>" . $sql);
   print "<TABLE class=\"report_table\">\n";
