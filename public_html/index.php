@@ -109,6 +109,27 @@ if ($sections["Genomes"] != "")
     . $sections["Genomes"]
     . "</DIV>";
 
+$external_refs = theDb()->getAll ("SELECT * FROM variant_external WHERE variant_id=? ORDER BY tag", array ($variant_id));
+if ($external_refs) {
+    $html .= "<H2>Other external references<BR />&nbsp;</H2><DIV id=\"external\">\n";
+    $lasttag = FALSE;
+    foreach ($external_refs as $r) {
+	if ($r["tag"] != $lasttag) {
+	    if ($lasttag !== FALSE)
+		$html .= "</UL>\n";
+	    $html .= "<UL><STRONG>" . htmlspecialchars ($r["tag"]) . "</STRONG>";
+	}
+	$html .= "<LI>" . htmlspecialchars ($r["content"]);
+	if ($r["url"])
+	    $html .= " <A href=\"" . htmlspecialchars ($r["url"]) . "\">" . htmlspecialchars ($r["url"]) . "</A>";
+	$html . "</LI>";
+	$lasttag = $r["tag"];
+    }
+    if ($lasttag !== FALSE)
+	$html .= "</UL>\n";
+    $html .= "</DIV>\n";
+}
+
 $html .= "<H2>Edit history<BR />&nbsp;</H2>\n<DIV id=\"edit_history\">";
 $html .= evidence_render_history ($variant_id);
 $html .= "</DIV>";
