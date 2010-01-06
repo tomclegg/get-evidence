@@ -79,6 +79,16 @@ CREATE TABLE IF NOT EXISTS edits (
   maf TEXT,
   UNIQUE(chr, chr_pos, allele)
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_external (
+  variant_id BIGINT UNSIGNED NOT NULL,
+  tag CHAR(16),
+  content TEXT,
+  url VARCHAR(255),
+  updated DATETIME,
+  INDEX(variant_id,tag),
+  INDEX(tag,variant_id)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
