@@ -7,8 +7,11 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* add "external data" section to variant page
+* spell out hapmap population names
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
-* update "web search results" section of long summary using yahoo search API
+* update "web search results" using yahoo search API
+* show total # matching variants in reports, and allow paging
 * inspect edit history for each page/item
 * (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * (trait-o-matic) auto-update get-evidence results when db changes
