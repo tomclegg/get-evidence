@@ -12,7 +12,6 @@ In expected approximate chronological order:
 * update "web search results" using yahoo search API
 * show total # matching variants in reports, and allow paging
 * inspect edit history for each page/item
-* (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * (trait-o-matic) auto-update get-evidence results when db changes
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
@@ -28,6 +27,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * add "external data" section to variant page
 * add OMIM Importing Robot (adds variants, changes impact of new/existing from unknown to p.path, and stores summary/url in yet-undisplayed "variant_external" table)
 * make sure compound hets are imported/displayed correctly
