@@ -111,7 +111,7 @@ $q = theDb()->query ("INSERT INTO edits
 	 summary_short, summary_long,
 	 ?, ?
 	FROM omim_a
-	LEFT JOIN snap_latest s ON omim_a.variant_id=s.variant_id
+	LEFT JOIN snap_latest s ON omim_a.variant_id=s.variant_id AND s.article_pmid=0 AND s.genome_id=0
 	WHERE s.variant_impact='unknown'",
 		     array ('putative pathogenic',
 			    getCurrentUser("oid"), $timestamp));
