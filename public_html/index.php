@@ -77,14 +77,18 @@ if ($max_edit_id) {
     $next_version = theDb()->getOne("SELECT MIN(edit_id) FROM edits
 					WHERE variant_id=? AND edit_id>? AND is_draft=0",
 				    array($variant_id, $max_edit_id));
+    $contributor = theDb()->getRow("SELECT oid, fullname FROM edits
+					LEFT JOIN eb_users ON edit_oid=oid
+					WHERE edit_id=?",
+				   array ($max_edit_id));
     $history_box .= "
 <DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\">
 <P style=\"margin: 0; padding: 0;\">You are viewing ";
     if ($next_version)
-	$history_box .= "an <STRONG>old version</STRONG> of this page that was saved on <STRONG>$version_date</STRONG>.";
+	$history_box .= "an <STRONG>old version</STRONG> of this page that was saved on <STRONG>$version_date</STRONG>";
     else
-	$history_box .= "the latest version of this page, saved on <STRONG>$version_date</STRONG>.";
-    $history_box .= "<UL>";
+	$history_box .= "the latest version of this page, saved on <STRONG>$version_date</STRONG>";
+    $history_box .= " by <A href=\"edits?oid=".urlencode($contributor["oid"])."\">".htmlspecialchars($contributor["fullname"])."</A>.<UL>";
 
     if ($previous_version)
 	$history_box .= "<LI>View the <A href=\"$gene-$aa;$previous_version\">previous version</A>";
