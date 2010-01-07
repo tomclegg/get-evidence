@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* spell out hapmap population names
 * inspect edit history for each page/item
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
 * update "web search results" using yahoo search API
@@ -27,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* spell out hapmap population names
 * (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * add "external data" section to variant page
 * add OMIM Importing Robot (adds variants, changes impact of new/existing from unknown to p.path, and stores summary/url in yet-undisplayed "variant_external" table)

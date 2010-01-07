@@ -4,6 +4,7 @@
   // Author: Tom Clegg
 
 require_once ("lib/article.php");
+require_once ("lib/hapmap.php");
 
 function evidence_create_tables ()
 {
@@ -377,11 +378,12 @@ function evidence_render_row (&$row)
       if ($row["maf"]) {
 	$maf = preg_replace ('/"(...)": 0\.([0-9][0-9]?)([0-9]?)[0-9]*/',
 			     '$1 $2.$3%',
-			     strtolower ($row["maf"]));
+			     $row["maf"]);
 	$maf = ereg_replace (' 0', ' ', $maf);
 	$maf = ereg_replace ('\.0%', '%', $maf);
 	$maf = ereg_replace (' \.%', ' 0%', $maf);
-	$name .= htmlspecialchars ("\n$maf");
+	$maf = hapmap_add_tips (htmlspecialchars ($maf));
+	$name .= "\n$maf";
       }
       $name = nl2br ($name);
     }
