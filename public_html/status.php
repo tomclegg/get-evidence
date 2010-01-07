@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* inspect edit history for each page/item
 * update omim/snpedia sections of long summary using latest omim/snpedia databases (use p.pathogenic for omim results; unknown for other T-o-m results; p.benign for the rest)
 * update "web search results" using yahoo search API
 * show total # matching variants in reports, and allow paging
@@ -26,6 +25,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* inspect edit history for each page/item
 * spell out hapmap population names
 * (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)
 * add "external data" section to variant page

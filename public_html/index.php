@@ -7,9 +7,10 @@ $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
-else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)$", $_GET["q"], $regs) &&
+else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
 	 aa_sane ($aa = $regs[2])) {
   $gene = strtoupper($regs[1]);
+  $max_edit_id = $regs[4];
   $variant_id = evidence_get_variant_id ("$gene $aa");
   if (!$variant_id) {
     $aa_long = aa_long_form ($aa);
@@ -62,7 +63,51 @@ if (!$variant_id)
 	exit;
       }
   }
-$report =& evidence_get_report ("latest", $variant_id);
+
+
+$history_box = "";
+if ($max_edit_id) {
+    $version_date = strftime ("%B %e, %Y at %l:%M%P",
+			      theDb()->getOne("SELECT UNIX_TIMESTAMP(edit_timestamp)
+						FROM edits WHERE edit_id=?",
+					      array($max_edit_id)));
+    $previous_version = theDb()->getOne("SELECT MAX(edit_id) FROM edits
+					WHERE variant_id=? AND edit_id<? AND is_draft=0",
+					array($variant_id, $max_edit_id));
+    $next_version = theDb()->getOne("SELECT MIN(edit_id) FROM edits
+					WHERE variant_id=? AND edit_id>? AND is_draft=0",
+				    array($variant_id, $max_edit_id));
+    $history_box .= "
+<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\">
+<P style=\"margin: 0; padding: 0;\">You are viewing ";
+    if ($next_version)
+	$history_box .= "an <STRONG>old version</STRONG> of this page that was saved on <STRONG>$version_date</STRONG>.";
+    else
+	$history_box .= "the latest version of this page, saved on <STRONG>$version_date</STRONG>.";
+    $history_box .= "<UL>";
+
+    if ($previous_version)
+	$history_box .= "<LI>View the <A href=\"$gene-$aa;$previous_version\">previous version</A>";
+
+    if ($next_version)
+	$history_box .= "<LI>View the <A href=\"$gene-$aa;$next_version\">next version</A>";
+
+    if ($next_version)
+	$history_box .= "<LI>View the <A href=\"$gene-$aa\">latest version";
+    else
+	$history_box .= "<LI>View <A href=\"$gene-$aa\">this version without highlighted changes";
+    $history_box .= "</A>";
+    if (getCurrentUser())
+	$history_box .= " and enable editing features";
+    $history_box .= "</LI>\n";
+
+    $history_box .= "</UL></P></DIV>";
+    $gDisableEditing = TRUE;
+}
+
+
+$report =& evidence_get_report (($history_box && $max_edit_id) ? 0 + $max_edit_id : "latest",
+				$variant_id);
 $row0 =& $report[0];
 
 $aa_long = "$row0[variant_aa_from]$row0[variant_aa_pos]$row0[variant_aa_to]";
@@ -75,7 +120,8 @@ $gOut["content"] = "
 
 <p>($row0[variant_gene] $aa_long)</p>
 
-";
+".$history_box;
+
 
 $gOut["content"] .= evidence_render_row ($row0);
 

@@ -154,9 +154,6 @@ h1,h2,h3 {
 .content li {
 	margin-left: 18px;
 }
-.content ul li {
-	list-style: url(img/li.gif);
-}
 
 /* report table */
 .report_table {

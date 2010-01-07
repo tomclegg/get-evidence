@@ -6,9 +6,11 @@
 require_once (dirname(dirname(dirname(__FILE__)))."/textile-2.0.0/classTextile.php");
 
 $gTheTextile = new Textile;
+$gDisableEditing = FALSE;
 
 function editable($id, $content, $title="", $options=false)
 {
+  global $gDisableEditing;
   global $gTheTextile;
   $html = $gTheTextile->textileRestricted ($content);
   if (trim($html) == "") $html = "<P>&nbsp;</P>";
@@ -16,8 +18,8 @@ function editable($id, $content, $title="", $options=false)
   if (strlen($title) <  60 && !preg_match ('{<(b|strong)\b}i', $title))
     $title = "<strong>$title</strong>";
 
-  if (!getCurrentUser()) return ("<DIV class=\"toolbar\"><P class=\"toolbar_title\">$title</P></DIV>" .
-				 $html);
+  if ($gDisableEditing || !getCurrentUser())
+    return ("<DIV class=\"toolbar\"><P class=\"toolbar_title\">$title</P></DIV>".$html);
 
   $selector = "";
   if ($options && is_array($options["select_options"])) {

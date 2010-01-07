@@ -266,40 +266,57 @@ function evidence_signoff ($edit_id)
 
 function evidence_get_report ($snap, $variant_id)
 {
+  $flag_edited_id = 0;
+  if ($snap == "latest" || $snap == "release") {
+    $table = "snap_$snap";
+    $and_max_edit_id = "";
+  }
+  else if (ereg ("^[0-9]+$", $snap)) {
+    $flag_edited_id = $snap;
+    $table = "edits";
+    $variant_id = 0 + $variant_id;
+    $and_max_edit_id = "AND $table.edit_id IN (SELECT MAX(edits.edit_id) FROM edits WHERE variant_id=$variant_id AND edit_id<=$snap AND is_draft=0 GROUP BY article_pmid, genome_id) AND ($table.edit_id=$snap OR $table.is_delete=0)";
+  }
+
   // Get all items relating to the given variant
 
-  $v =& theDb()->getAll ("SELECT *,
+  $v =& theDb()->getAll ("SELECT variants.*, $table.*, genomes.*, datasets.*, variant_occurs.*, maf.*,
 			variants.variant_id AS variant_id,
-			snap_$snap.genome_id AS genome_id,
+			$table.genome_id AS genome_id,
 			variant_occurs.chr AS chr,
 			variant_occurs.chr_pos AS chr_pos,
 			variant_occurs.allele AS allele,
 			COUNT(datasets.dataset_id) AS dataset_count,
 			MAX(zygosity) AS zygosity,
 			MAX(dataset_url) AS dataset_url,
-			MIN(dataset_url) AS dataset_url_2
+			MIN(dataset_url) AS dataset_url_2,
+			$table.edit_id=? AS flag_edited_id
 			FROM variants
-			LEFT JOIN snap_$snap
-				ON variants.variant_id = snap_$snap.variant_id
+			LEFT JOIN $table
+				ON variants.variant_id = $table.variant_id
 			LEFT JOIN genomes
-				ON snap_$snap.genome_id > 0
-				AND snap_$snap.genome_id = genomes.genome_id
+				ON $table.genome_id > 0
+				AND $table.genome_id = genomes.genome_id
 			LEFT JOIN datasets
-				ON datasets.genome_id = snap_$snap.genome_id
+				ON datasets.genome_id = $table.genome_id
 			LEFT JOIN variant_occurs
-				ON snap_$snap.variant_id = variant_occurs.variant_id
+				ON $table.variant_id = variant_occurs.variant_id
 				AND variant_occurs.dataset_id = datasets.dataset_id
 			LEFT JOIN maf
 				ON maf.chr=variant_occurs.chr
 				AND maf.chr_pos=variant_occurs.chr_pos
 				AND maf.allele=variant_occurs.allele
 			WHERE variants.variant_id=?
-			GROUP BY snap_$snap.genome_id, snap_$snap.article_pmid, snap_$snap.genome_id
+				$and_max_edit_id
+			GROUP BY
+				$table.genome_id,
+				$table.article_pmid,
+				$table.genome_id
 			ORDER BY
-			snap_$snap.genome_id,
-			article_pmid,
-			edit_timestamp",
-			 array ($variant_id));
+				$table.genome_id,
+				$table.article_pmid,
+				$table.edit_id DESC",
+			 array ($flag_edited_id, $variant_id));
   if (theDb()->isError($v)) die ($v->getMessage());
   if (!theDb()->isError($v) && $v && $v[0])
     foreach (array ("article_pmid", "genome_id") as $x)
@@ -333,6 +350,14 @@ function evidence_render_row (&$row)
   $id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
   $title = "";
   $html = "";
+
+  if ($row["is_delete"])
+    $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>Deleted in this revision:</P>";
+  else if ($row["flag_edited_id"]) {
+    if ($row["previous_edit_id"]) $edited = "Edited";
+    else $edited = "Added";
+    $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #dfd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>$edited in this revision:</P>";
+  }
 
   if ($row["article_pmid"] != '0' && strlen($row["article_pmid"]) > 0) {
     $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
@@ -419,6 +444,9 @@ function evidence_render_row (&$row)
 		       array ("tip" => "Describe the clinical significance of this variant."));
   }
 
+  if ($row["is_delete"] || $row["flag_edited_id"])
+    $html .= "</DIV>";
+
   return $html;
 }
 
@@ -436,12 +464,15 @@ SELECT
  s.genome_id AS genome_id,
  IF(g.name IS NULL OR g.name='',concat('[',global_human_id,']'),g.name) AS genome_name,
  is_delete,
- previous_edit_id
+ previous_edit_id,
+ edit_id,
+ v.*
 FROM edits s
+LEFT JOIN variants v ON v.variant_id=s.variant_id
 LEFT JOIN eb_users u ON u.oid=s.edit_oid
 LEFT JOIN genomes g ON g.genome_id=s.genome_id
-WHERE variant_id=? AND is_draft=0
-ORDER BY edit_timestamp DESC, previous_edit_id DESC
+WHERE s.variant_id=? AND is_draft=0
+ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
 ",
 		       array ($variant_id));
   if (theDb()->isError($q)) die ($q->getMessage());
@@ -466,6 +497,8 @@ ORDER BY edit_timestamp DESC, previous_edit_id DESC
     if ($row["article_pmid"]) $li .= "article ".htmlspecialchars($row["article_pmid"]).$summary;
     else if ($row["genome_id"]) $li .= htmlspecialchars($row["genome_name"]).$summary;
     else $li .= "variant$summary";
+
+    $li .= " <A href=\"".$row["variant_gene"]."-".$row["variant_aa_from"].$row["variant_aa_pos"].$row["variant_aa_to"].";".$row["edit_id"]."\">view</A>";
 
     $li .= "</LI>\n";
 
