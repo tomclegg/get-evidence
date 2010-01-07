@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 $aa_31 = array ("Ala" => "A",
 		"Arg" => "R",
 		"Asn" => "N",

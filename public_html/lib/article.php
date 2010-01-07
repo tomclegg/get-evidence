@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 function article_create_tables ()
 {
   theDb()->query ("CREATE TABLE IF NOT EXISTS articles (

@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 if (get_magic_quotes_gpc())
   {
     foreach ($_GET as $k => $v) { $_GET[$k] = stripslashes($v); }

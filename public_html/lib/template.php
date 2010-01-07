@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 global $gOut;
 if (!array_key_exists ("title", $gOut)) $gOut["title"] = $gOut["site_title"];
 

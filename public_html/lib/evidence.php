@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 require_once ("lib/article.php");
 
 function evidence_create_tables ()

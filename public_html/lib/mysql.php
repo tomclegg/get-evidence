@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 require_once "DB.php";
 
 function &theDb() { global $gDb; return $gDb; }

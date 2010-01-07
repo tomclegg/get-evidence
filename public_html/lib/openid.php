@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2009 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 ini_set ('include_path',
 	 dirname(dirname(dirname(__FILE__))) . "/php-openid-2.1.3"
 	 . PATH_SEPARATOR . ini_get('include_path'));
