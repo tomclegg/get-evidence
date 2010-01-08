@@ -21,6 +21,7 @@ ini_set ("memory_limit", 67108864);
 genomes_create_tables ();
 openid_login_as_robot ("OMIM Importing Robot");
 
+print "Creating temporary table...";
 theDb()->query ("CREATE TEMPORARY TABLE omim_a (
   `phenotype` VARCHAR(255) NOT NULL,
   `gene` VARCHAR(12) NOT NULL,
@@ -29,7 +30,10 @@ theDb()->query ("CREATE TEMPORARY TABLE omim_a (
   `word_count` INT,
   `allelic_variant_id` VARCHAR(24)
 )");
+print "\n";
 
+
+print "Importing data...";
 theDb()->query ("LOAD DATA LOCAL INFILE ? INTO TABLE omim_a FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'",
 		array ($_SERVER["argv"][1]));
 
@@ -38,6 +42,7 @@ theDb()->query ("ALTER TABLE omim_a ADD aa_from CHAR(4)");
 theDb()->query ("ALTER TABLE omim_a ADD aa_to CHAR(4)");
 theDb()->query ("ALTER TABLE omim_a ADD url VARCHAR(255)");
 theDb()->query ("ALTER TABLE omim_a ADD INDEX(gene,aa_from,codon,aa_to)");
+print "\n";
 
 
 print "Cleaning up gene/aa encoding...";
