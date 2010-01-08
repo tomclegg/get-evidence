@@ -25,6 +25,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* import GWAS database
 * inspect edit history for each page/item
 * spell out hapmap population names
 * (trait-o-matic) show get-evidence + pharmgkb results to authenticated / local users ('getevidence' user)

@@ -170,8 +170,12 @@ if ($external_refs) {
 	    $html .= "<UL><STRONG>" . htmlspecialchars ($r["tag"]) . "</STRONG>";
 	}
 	$html .= "<LI>" . htmlspecialchars ($r["content"]);
-	if ($r["url"])
-	    $html .= " <A href=\"" . htmlspecialchars ($r["url"]) . "\">" . htmlspecialchars ($r["url"]) . "</A>";
+	if ($r["url"]) {
+	    $url_abbrev = $r["url"];
+	    if (strlen ($url_abbrev) > 50)
+		$url_abbrev = ereg_replace ('\?.*', '', $url_abbrev);
+	    $html .= " <A href=\"" . htmlspecialchars ($r["url"]) . "\">" . htmlspecialchars ($url_abbrev) . "</A>";
+	}
 	$html . "</LI>";
 	$lasttag = $r["tag"];
     }
