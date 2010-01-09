@@ -185,8 +185,10 @@ h1,h2,h3 {
 	position: relative;
 }
 .toolbar_title {
-	width: 60%;
 	padding: 0;
+}
+.editable .toolbar_title {
+	width: 60%;
 }
 .toolbar_span {
 	position: absolute;
