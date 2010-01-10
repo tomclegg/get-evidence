@@ -94,6 +94,10 @@ CREATE TABLE IF NOT EXISTS edits (
   INDEX(variant_id,tag),
   INDEX(tag,variant_id)
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS genetests_genes (
+  gene CHAR(16) NOT NULL PRIMARY KEY
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)

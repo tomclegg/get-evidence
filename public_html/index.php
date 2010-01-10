@@ -189,7 +189,9 @@ if ($external_refs) {
 		$html .= "</UL>\n";
 	    $html .= "<UL><STRONG>" . htmlspecialchars ($r["tag"]) . "</STRONG>";
 	}
-	$html .= "<LI>" . htmlspecialchars ($r["content"]);
+	$content = $r["content"];
+	if ($r["tag"] != "Yahoo!") $content = htmlspecialchars ($content);
+	$html .= "<LI>" . $content;
 	if ($r["url"]) {
 	    $url_abbrev = $r["url"];
 	    if (strlen ($url_abbrev) > 64)
