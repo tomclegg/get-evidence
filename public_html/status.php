@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* figure out HNF1A-Ser574Gly (genomes) vs. HNF1A-Gly574Ser (omim)
 * update "web search results" using yahoo search API
 * show total # matching variants in reports, and allow paging
 * import 1000-genomes frequency data
@@ -22,6 +21,7 @@ In expected approximate chronological order:
 * graph frequency vs. odds ratio
 * support publications without PMIDs (other namespaces? original contributions? OWW?)
 * fix character encoding in pubmed summaries
+* figure out better solution to HNF1A-Ser574Gly (genomes) vs. HNF1A-Gly574Ser (omim)
 
 h1. Recent steps
 
