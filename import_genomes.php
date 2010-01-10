@@ -36,7 +36,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  chr CHAR(6) NOT NULL,
  chr_pos INT UNSIGNED NOT NULL,
  trait_allele CHAR(1),
- maf TEXT,
+ taf TEXT,
  rsid BIGINT UNSIGNED,
  dataset_id VARCHAR(16) NOT NULL,
  zygosity ENUM('heterozygous','homozygous') NOT NULL DEFAULT 'heterozygous',
@@ -62,14 +62,14 @@ while (($line = fgets ($fh)) !== FALSE)
 	list ($gene, $aa_change,
 	      $chr, $chr_pos, $rsid,
 	      $ref_allele, $alleles, $hom_or_het,
-	      $job_id, $global_human_id, $human_name, $maf)
+	      $job_id, $global_human_id, $human_name, $taf)
 	    = explode ("\t", ereg_replace ("\r?\n$", "", $line));
 
 	if (!$global_human_id)
 	  continue;
 
-	if (!ereg ("^{.+}$", $maf)) {
-	  $maf = NULL;
+	if (!ereg ("^{.+}$", $taf)) {
+	  $taf = NULL;
 	}
 	$trait_allele = ereg_replace("$ref_allele|[^ACGT]", "", $alleles);
 	if (strlen($trait_allele) != 1) {
@@ -82,9 +82,9 @@ while (($line = fgets ($fh)) !== FALSE)
 	  // "S" and let the users figure it out.
 	  $trait_allele = bp_flatten ($trait_allele);
 
-	  // TODO: figure out what maf means when given with compound
+	  // TODO: figure out what taf means when given with compound
 	  // het (ref A -> C/G)
-	  $maf = NULL;
+	  $taf = NULL;
 	}
 
 	$variant_id = evidence_get_variant_id ("$gene $aa_change");
@@ -105,8 +105,8 @@ while (($line = fgets ($fh)) !== FALSE)
 	else
 	  $genome_id = evidence_get_genome_id ($global_human_id);
 
-	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, maf=?, rsid=?, dataset_id=?, zygosity='$zygosity[$hom_or_het]'",
-			array ($variant_id, $genome_id, $chr, $chr_pos, $trait_allele, $maf, $rsid, "T/snp/$job_id"));
+	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity='$zygosity[$hom_or_het]'",
+			array ($variant_id, $genome_id, $chr, $chr_pos, $trait_allele, $taf, $rsid, "T/snp/$job_id"));
 	if (!isset($job2genome[$job_id])) {
 	    theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
 			    array ($human_name, $genome_id));
@@ -126,8 +126,8 @@ while (($line = fgets ($fh)) !== FALSE)
 print "$ops\n";
 
 
-print "Adding new/updated rows to maf table...";
-theDb()->query ("REPLACE INTO maf (chr, chr_pos, allele, maf) SELECT chr, chr_pos, trait_allele, maf FROM import_genomes_tmp WHERE maf IS NOT NULL GROUP BY chr, chr_pos, trait_allele");
+print "Adding new/updated rows to taf table...";
+theDb()->query ("REPLACE INTO taf (chr, chr_pos, allele, taf) SELECT chr, chr_pos, trait_allele, taf FROM import_genomes_tmp WHERE taf IS NOT NULL GROUP BY chr, chr_pos, trait_allele");
 print theDb()->affectedRows();
 print "\n";
 

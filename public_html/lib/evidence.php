@@ -77,11 +77,11 @@ CREATE TABLE IF NOT EXISTS edits (
   ADD allele CHAR(1)
   ");
 
-  theDb()->query ("CREATE TABLE IF NOT EXISTS maf (
+  theDb()->query ("CREATE TABLE IF NOT EXISTS taf (
   chr CHAR(6) NOT NULL,
   chr_pos INT UNSIGNED NOT NULL,
   allele CHAR(1) NOT NULL,
-  maf TEXT,
+  taf TEXT,
   UNIQUE(chr, chr_pos, allele)
   )");
 
@@ -281,7 +281,7 @@ function evidence_get_report ($snap, $variant_id)
 
   // Get all items relating to the given variant
 
-  $v =& theDb()->getAll ("SELECT variants.*, $table.*, genomes.*, datasets.*, variant_occurs.*, maf.*,
+  $v =& theDb()->getAll ("SELECT variants.*, $table.*, genomes.*, datasets.*, variant_occurs.*, taf.*,
 			variants.variant_id AS variant_id,
 			$table.genome_id AS genome_id,
 			variant_occurs.chr AS chr,
@@ -303,10 +303,10 @@ function evidence_get_report ($snap, $variant_id)
 			LEFT JOIN variant_occurs
 				ON $table.variant_id = variant_occurs.variant_id
 				AND variant_occurs.dataset_id = datasets.dataset_id
-			LEFT JOIN maf
-				ON maf.chr=variant_occurs.chr
-				AND maf.chr_pos=variant_occurs.chr_pos
-				AND maf.allele=variant_occurs.allele
+			LEFT JOIN taf
+				ON taf.chr=variant_occurs.chr
+				AND taf.chr_pos=variant_occurs.chr_pos
+				AND taf.allele=variant_occurs.allele
 			WHERE variants.variant_id=?
 				$and_max_edit_id
 			GROUP BY
@@ -401,15 +401,13 @@ function evidence_render_row (&$row)
     // Indicate the SNP that causes the variant
     if ($row["chr"]) {
       $name .= htmlspecialchars ("\n".substr($row["zygosity"],0,3)." ".$row["allele"]." @ ".$row["chr"].":".$row["chr_pos"]);
-      if ($row["maf"]) {
-	$maf = preg_replace ('/"(...)": 0\.([0-9][0-9]?)([0-9]?)[0-9]*/',
-			     '$1 $2.$3%',
-			     $row["maf"]);
-	$maf = ereg_replace (' 0', ' ', $maf);
-	$maf = ereg_replace ('\.0%', '%', $maf);
-	$maf = ereg_replace (' \.%', ' 0%', $maf);
-	$maf = hapmap_add_tips (htmlspecialchars ($maf));
-	$name .= "\n$maf";
+      if ($row["taf"]) {
+	$taf = preg_replace_callback
+	  ('/"(...)": ([01]\.[0-9][0-9]?)([0-9]?)[0-9]*/',
+	   create_function ('$x', '{ return ($x[1].": ".($x[2]*100+$x[3]/10)."%"); }'),
+	   $row["taf"]);
+	$taf = hapmap_add_tips (htmlspecialchars ($taf));
+	$name .= "\n$taf";
       }
       $name = nl2br ($name);
     }

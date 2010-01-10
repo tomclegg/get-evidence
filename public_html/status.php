@@ -8,7 +8,7 @@ h1. Next steps
 In expected approximate chronological order:
 
 * figure out HNF1A-Ser574Gly (genomes) vs. HNF1A-Gly574Ser (omim)
-* figure out MYOT-Q74K (100% C) reported as K74Q (0% C)
+* fix 100% C reported as 0% C in MYOT-K74Q
 * update "web search results" using yahoo search API
 * show total # matching variants in reports, and allow paging
 * import 1000-genomes frequency data
