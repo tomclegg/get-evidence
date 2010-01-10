@@ -30,8 +30,8 @@ if ($q && !theDb()->isError ($q)) {
     $n=0;
     while ($row =& $q->fetchRow()) {
 	yahoo_boss_update_external ($row["variant_id"]);
-	print ".";
 	++$n;
+	if ($n % 10 == 0) print ".";
     }
     print "$n";
 }
