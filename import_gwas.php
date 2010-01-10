@@ -62,7 +62,7 @@ $q = theDb()->query ("LOAD DATA LOCAL INFILE ? INTO TABLE gwas
  LINES TERMINATED BY '\n'
  IGNORE 1 LINES",
 		array ($_SERVER["argv"][1]));
-if (theDb()->isError($q)) print $q->getMessage;
+if (theDb()->isError($q)) print $q->getMessage();
 print theDb()->affectedRows();
 print "\n";
 
