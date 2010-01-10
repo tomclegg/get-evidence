@@ -26,10 +26,17 @@ openid_login_as_robot ("Yahoo! Search Robot");
 
 print "Updating variant_external for existing searches...";
 $q = theDb()->query ("SELECT DISTINCT variant_id FROM yahoo_boss_cache");
-while ($row =& $q->fetchRow()) {
-    yahoo_boss_update_external ($row["variant_id"]);
-    print ".";
+if ($q && !theDb()->isError ($q)) {
+    $n=0;
+    while ($row =& $q->fetchRow()) {
+	yahoo_boss_update_external ($row["variant_id"]);
+	print ".";
+	++$n;
+    }
+    print "$n";
 }
+else
+    print "(none)";
 print "\n";
 
 
