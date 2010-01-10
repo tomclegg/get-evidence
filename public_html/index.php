@@ -1,7 +1,22 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "Evidence Base";
+$gOut["title"] = "GET-Evidence";
+
+
+function seealso_related ($gene, $aa_pos, $skip_variant_id)
+{
+    $related_variants = theDb()->getAll ("SELECT v.variant_gene gene, CONCAT(v.variant_aa_from,v.variant_aa_pos,v.variant_aa_to) aa_long FROM variants v WHERE v.variant_gene=? AND v.variant_aa_pos=? AND v.variant_id <> ?", array ($gene, $aa_pos, $skip_variant_id));
+    $seealso = "";
+    foreach ($related_variants as $x)
+	{
+	    $seealso .= "<LI>See also: <A href=\"".$x["gene"]."-".$x["aa_long"]."\">".$x["gene"]." ".$x["aa_long"]."</A></LI>\n";
+	}
+    if ($seealso)
+	$seealso = "<DIV id=\"seealso\"><UL>$seealso</UL></DIV>\n";
+    return $seealso;
+}
+
 
 $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 
@@ -17,17 +32,19 @@ else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$",
     $aa_short = aa_short_form ($aa_long);
     header ("HTTP/1.1 404 Not found");
     $gOut["title"] = "$gene $aa_short";
-    $gOut["content_textile"] = <<<EOF
-h1. $gene $aa_short
+    $gOut["content"] = <<<EOF
+<H1>$gene $aa_short</H1>
 
-($gene $aa_long)
+<P>($gene $aa_long)</P>
 
-There is no Evidence Base entry for this variant.
+<P>There is no GET-Evidence entry for this variant.</P>
 
 EOF
 ;
+    if (ereg("[0-9]+", $aa, $regs))
+	$gOut["content"] .= seealso_related ($gene, $regs[0], 0);
     if (getCurrentUser())
-      $gOut["content_textile"] .= <<<EOF
+      $gOut["content"] .= <<<EOF
 &nbsp;
 
 <BUTTON onclick="return evidence_add_variant('$gene','$aa_long');">Create new entry</BUTTON>
@@ -117,14 +134,17 @@ $row0 =& $report[0];
 $aa_long = "$row0[variant_aa_from]$row0[variant_aa_pos]$row0[variant_aa_to]";
 $aa_short = aa_short_form($aa_long);
 
-$gOut["title"] = "$row0[variant_gene] $aa_short - Evidence Base";
+
+$gOut["title"] = "$row0[variant_gene] $aa_short - GET-Evidence";
 
 $gOut["content"] = "
 <h1>$row0[variant_gene] $aa_short</h1>
 
 <p>($row0[variant_gene] $aa_long)</p>
 
-".$history_box;
+"
+    .seealso_related($row0["variant_gene"], $row0["variant_aa_pos"], $variant_id)
+    .$history_box;
 
 
 $gOut["content"] .= evidence_render_row ($row0);
