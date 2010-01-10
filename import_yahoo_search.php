@@ -5,7 +5,7 @@
   // Author: Tom Clegg
 
 if (!getenv ("APIKEY"))
-    die ("Please set environment variable APIKEY to your Yahoo BOSS API key.");
+    die ("Please set environment variable APIKEY to your Yahoo BOSS API key.\n");
 
 chdir ('public_html');
 require_once 'lib/setup.php';
