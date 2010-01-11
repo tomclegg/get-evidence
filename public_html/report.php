@@ -17,6 +17,9 @@ if ($_GET["domorhom"])
   $sql_occur_filter = "(s.variant_dominance <> 'recessive' OR o.zygosity = 'homozygous')";
 
 
+$sql_orderby = "";
+
+
 if ($want_report_type == "population-actions") {
   $report_title = "Population Actions";
   $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic')";
@@ -26,6 +29,11 @@ else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
   $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic') AND (s.summary_short IS NULL OR s.summary_short='')";
 }
+else if ($want_report_type == "web-search") {
+  $report_title = "Web Results, No Summary";
+  $sql_where = "hitcount IS NOT NULL AND (s.summary_short IS NULL OR s.summary_short='')";
+  $sql_orderby = "ORDER BY hitcount DESC";
+}
 else {
   $gOut["title"] = "Evidence Base: Reports";
   $gOut["content"] = $gTheTextile->textileThis (<<<EOF
@@ -33,6 +41,7 @@ h1. Available reports
 
 * "Population Actions":report?type=population-actions -- pathogenic and putative pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
 * "Summaries Needed":report?type=need-summary -- pathogenic and putative pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
+* "Web Search":report?type=web-search -- variants with no summary available but plenty of web search hits (or, same report "omitting het SNPs for recessive variants":report?type=web-search&domorhom=1)
 EOF
 );
   go();
@@ -45,22 +54,26 @@ function print_content ()
   global $sql_where;
   global $sql_having;
   global $sql_occur_filter;
+  global $sql_orderby;
   global $snap;
   global $gTheTextile;
   $q = theDb()->query ($sql = "
 SELECT s.*, v.*, g.*,
 -- gs.summary_short AS g_summary_short,
  MAX(o.zygosity) AS max_zygosity,
- d.dataset_id AS d_dataset_id
+ d.dataset_id AS d_dataset_id,
+ y.hitcount AS hitcount
 FROM snap_$snap s
 LEFT JOIN variants v ON s.variant_id=v.variant_id
 LEFT JOIN variant_occurs o ON v.variant_id=o.variant_id AND $sql_occur_filter
 LEFT JOIN datasets d ON o.dataset_id=d.dataset_id
 LEFT JOIN genomes g ON d.genome_id=g.genome_id
+LEFT JOIN yahoo_boss_cache y ON s.variant_id=y.variant_id
 -- LEFT JOIN snap_$snap gs ON gs.variant_id=s.variant_id AND gs.article_pmid=0 AND gs.genome_id=g.genome_id
 WHERE s.article_pmid=0 AND s.genome_id=0 AND $sql_where
 GROUP BY v.variant_id,g.genome_id
 HAVING $sql_having
+$sql_orderby
 LIMIT 100
 ");
   if (theDb()->isError($q)) die ("DB Error: ".$q->getMessage() . "<br>" . $sql);
