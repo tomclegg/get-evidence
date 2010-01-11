@@ -29,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* fix "[]" links on reports for variants with no genome evidence
 * incorporate "web search results" using yahoo search API
 * fix 100% C reported as 0% C in MYOT-K74Q
 * import GWAS database

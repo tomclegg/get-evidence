@@ -62,6 +62,7 @@ SELECT s.*, v.*, g.*,
 -- gs.summary_short AS g_summary_short,
  MAX(o.zygosity) AS max_zygosity,
  d.dataset_id AS d_dataset_id,
+ g.genome_id AS g_genome_id,
  y.hitcount AS hitcount
 FROM snap_$snap s
 LEFT JOIN variants v ON s.variant_id=v.variant_id
@@ -111,13 +112,13 @@ LIMIT 100
     $rownum = 0;
     foreach ($genome_rows as $id => $row) {
       if (++$rownum > 1) print "</TR>\n<TR>";
+      if (!$row["g_genome_id"]) {
+	print "<TD></TD>";
+	continue;
+      }
       print "<TD width=\"15%\"><A href=\"$gene-$aa#g$id\">".htmlspecialchars($row["name"])."</A>";
       if ($row["max_zygosity"] == 'homozygous')
 	print " (hom)";
-      /*
-      if ($row["g_summary_short"])
-	print " ".preg_replace('{^\s*<p>(.*)</p>\s*$}is', '$1', $gTheTextile->textileRestricted ($row["g_summary_short"]));
-      */
       print "</TD>";
     }
     print "</TR>\n";
