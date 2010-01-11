@@ -38,8 +38,7 @@ function yahoo_boss_lookup ($variant_id)
 	    . aa_short_form($variant["variant_aa_to"]);
 	$ch = curl_init ();
 	$url = "http://boss.yahooapis.com/ysearch/web/v1/"
-	    . urlencode ($gene_aa .
-			 " -snp.med.harvard.edu -evidence.personalgenomes.org")
+	    . urlencode ($gene_aa)
 	    . "?appid="
 	    . urlencode(getenv("APIKEY"))
 	    . "&format=xml";
