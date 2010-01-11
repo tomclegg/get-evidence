@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* update "web search results" using yahoo search API
 * show total # matching variants in reports, and allow paging
 * import 1000-genomes frequency data
 * import snpedia data
@@ -27,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* incorporate "web search results" using yahoo search API
 * fix 100% C reported as 0% C in MYOT-K74Q
 * import GWAS database
 * inspect edit history for each page/item
