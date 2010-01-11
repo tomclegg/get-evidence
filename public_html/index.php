@@ -142,6 +142,8 @@ $gOut["content"] = "
 
 <p>($row0[variant_gene] $aa_long)</p>
 
+<!-- $variant_id -->
+
 "
     .seealso_related($row0["variant_gene"], $row0["variant_aa_pos"], $variant_id)
     .$history_box;

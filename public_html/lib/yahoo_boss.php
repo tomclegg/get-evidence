@@ -84,17 +84,10 @@ function yahoo_boss_update_external ($variant_id)
 	. aa_short_form($variant["variant_aa_to"]);
 
     $user_url = "http://search.yahoo.com/search?p=" . urlencode ($gene_aa);
-
-    $content = "<UL><STRONG>Web search results ("
-	. $cache["hitcount"]
-	. " hit"
-	. ($cache["hitcount"]==1?"":"s")
-	. " -- <A href=\""
-	. $user_url
-	. "\">see all</A>)</STRONG>";
+    $content = "";
+    $skipped_hits = 0;
 
     if ($cache["hitcount"] > 0) {
-
 	preg_match_all ('{<result>.*?</result>}is', $cache["xml"], $matches,
 			PREG_PATTERN_ORDER);
 	foreach ($matches[0] as $result) {
@@ -109,8 +102,10 @@ function yahoo_boss_update_external ($variant_id)
 		    continue;
 		}
 	    if (ereg ("snp\.med\.harvard\.edu|evidence\.personalgenomes\.org",
-		      $resulttag["url"]))
+		      $resulttag["url"])) {
+		$skipped_hits++;
 		continue;
+	    }
 	    if ($resulttag) {
 		$content .= "<LI><A href=\""
 		    . $resulttag["url"]
@@ -125,12 +120,40 @@ function yahoo_boss_update_external ($variant_id)
 	}
     }
 
-    $content .= "</UL>";
+    // If we skipped some hits (because they point to this page or
+    // Trait-o-matic), subtract them from the cached hitcount so "no
+    // web results except this page" gets counted as 0 for
+    // statistics/display.
+
+    if ($skipped_hits > 0 &&
+	preg_match ('/<resultset_web\b[^<]*\sdeephits="?(\d+)"?/s',
+		    $cache["xml"],
+		    $regs) &&
+	$regs[1] > $skipped_hits) {
+	$hitcount = $regs[1] - $skipped_hits;
+	if ($hitcount != $cache["hitcount"]) {
+	    $cache["hitcount"] = $hitcount;
+	    theDb()->query ("UPDATE yahoo_boss_cache SET hitcount=? WHERE variant_id=?",
+			    array ($hitcount, $variant_id));
+	    print "!($variant_id)";
+	}
+    }
+
+    // Build html display for variant page
+
+    $content = "<UL><STRONG>Web search results ("
+	. $cache["hitcount"]
+	. " hit"
+	. ($cache["hitcount"]==1?"":"s")
+	. " -- <A href=\""
+	. $user_url
+	. "\">see all</A>)</STRONG>"
+	. $content
+	. "</UL>";
 
     theDb()->query ("DELETE FROM variant_external WHERE variant_id=? AND tag=?", array ($variant_id, "Yahoo!"));
     $q = theDb()->query ("INSERT INTO variant_external SET variant_id=?, tag=?, content=?, url=NULL, updated=NOW()",
 			 array ($variant_id, "Yahoo!", $content));
-
 }
 
 ?>

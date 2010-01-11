@@ -27,6 +27,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* subtract local hits (snp.med and here) from hitcount stats
 * show the first few web search hits right on the variant page
 * exclude web search hits at snp.med.harvard.edu and here
 * fix "[]" links on reports for variants with no genome evidence
