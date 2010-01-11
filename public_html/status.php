@@ -7,6 +7,8 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* show the first few web search hits right on the variant page
+* exclude web search hits at snp.med.harvard.edu and here
 * show total # matching variants in reports, and allow paging
 * import 1000-genomes frequency data
 * import snpedia data
@@ -21,6 +23,7 @@ In expected approximate chronological order:
 * support publications without PMIDs (other namespaces? original contributions? OWW?)
 * fix character encoding in pubmed summaries
 * figure out better solution to HNF1A-Ser574Gly (genomes) vs. HNF1A-Gly574Ser (omim)
+* create separate impact category for susceptibility variants?
 
 h1. Recent steps
 
