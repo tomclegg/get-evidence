@@ -2,6 +2,9 @@
 
 include "lib/setup.php";
 
+define ("ROWSPERPAGE", 10);
+define ("MAXPAGES", 40);
+
 $snap = "latest";
 $sql_where = "1=1";
 $sql_having = "1=1";
@@ -35,7 +38,7 @@ else if ($want_report_type == "web-search") {
   $sql_orderby = "ORDER BY hitcount DESC";
 }
 else {
-  $gOut["title"] = "Evidence Base: Reports";
+  $gOut["title"] = "GET-Evidence: Reports";
   $gOut["content"] = $gTheTextile->textileThis (<<<EOF
 h1. Available reports
 
@@ -48,7 +51,7 @@ EOF
   exit;
 }
 
-$gOut["title"] = "Evidence Base: $report_title";
+$gOut["title"] = "GET-Evidence: $report_title";
 function print_content ()
 {
   global $sql_where;
@@ -75,10 +78,10 @@ WHERE s.article_pmid=0 AND s.genome_id=0 AND $sql_where
 GROUP BY v.variant_id,g.genome_id
 HAVING $sql_having
 $sql_orderby
-LIMIT 100
 ");
   if (theDb()->isError($q)) die ("DB Error: ".$q->getMessage() . "<br>" . $sql);
-  print "<TABLE class=\"report_table\">\n";
+  print "<TABLE class=\"report_table\" style=\"width: 100%\">\n";
+  print "<TR><TD colspan=\"5\" id=\"reportpage_turner_copy\" style=\"text-align: right;\">&nbsp;</TD></TR>\n";
   print "<TR><TH>" . join ("</TH><TH>",
 			   array ("Variant",
 				  "Impact",
@@ -86,6 +89,10 @@ LIMIT 100
 				  "Summary",
 				  "Genomes"
 				  )) . "</TH></TR>\n";
+  $output_row = 0;
+  $output_page = 0;
+  $output_cut_off_after = 0;
+  $tr_attrs = "";
   $genome_rows = array();
   for ($row =& $q->fetchRow();
        $row;
@@ -96,6 +103,21 @@ LIMIT 100
     if ($nextrow && $row["variant_id"] == $nextrow["variant_id"]) {
       continue;
     }
+
+    ++$output_row;
+    if ($output_row % ROWSPERPAGE == 1) {
+	++$output_page;
+	$tr_attrs = " class=\"reportpage reportpage_$output_page\"";
+	if ($output_page > 1) {
+	    $tr_attrs = " class=\"reportpage reportpage_$output_page csshide\"";
+	}
+    }
+    if ($output_page > MAXPAGES) {
+	if (!$output_cut_off_after)
+	    $output_cut_off_after = $output_row - 1;
+	continue;
+    }
+
     $gene = $row["variant_gene"];
     $aa = aa_short_form($row["variant_aa_from"] . $row["variant_aa_pos"] . $row["variant_aa_to"]);
 
@@ -103,7 +125,7 @@ LIMIT 100
     if ($rowspan < 1) $rowspan = 1;
     $rowspan = "rowspan=\"$rowspan\"";
 
-    printf ("<TR><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD>",
+    printf ("<TR$tr_attrs><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD>",
 	    "<A href=\"$gene-$aa\">$gene&nbsp;$aa</A>",
 	    ereg_replace ("^putative ", "p.", $row["variant_impact"]),
 	    $row["variant_dominance"],
@@ -111,7 +133,7 @@ LIMIT 100
 	    );
     $rownum = 0;
     foreach ($genome_rows as $id => $row) {
-      if (++$rownum > 1) print "</TR>\n<TR>";
+      if (++$rownum > 1) print "</TR>\n<TR$tr_attrs>";
       if (!$row["g_genome_id"]) {
 	print "<TD></TD>";
 	continue;
@@ -124,6 +146,23 @@ LIMIT 100
     print "</TR>\n";
     $genome_rows = array();
   }
+
+  if ($output_page > 1) {
+      print "<TR><TD colspan=\"5\" id=\"reportpage_turner\" style=\"text-align: right;\">Page: ";
+      for ($p=1; $p<=$output_page && $p<=MAXPAGES; $p++)
+	  print "<A class=\"reportpage_turnbutton\" href=\"#\" onclick=\"reportpage_goto($p);\">$p</A> ";
+      print "<BR /><STRONG>Total results: $output_row</STRONG>";
+      if ($output_cut_off_after)
+	  print "<BR />(Only displaying first $output_cut_off_after results)";
+      print "</TD></TR>\n";
+      print "<SCRIPT type=\"text/javascript\"><!--\n";
+      print "reportpage_init();\n";
+      print "\n// -->\n</SCRIPT>";
+  }
+  else {
+      print "<TR><TD colspan=\"5\" style=\"text-align: right;\"><STRONG>Total results: $output_row</STRONG></TD></TR>";
+  }
+
   print "</TABLE>\n";
 }
 

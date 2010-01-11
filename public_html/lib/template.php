@@ -39,6 +39,7 @@ function frag($tag)
 <script type="text/javascript" src="/js/message.js"></script>
 <script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
 <script type="text/javascript" src="/js/evidence.js"></script>
+<script type="text/javascript" src="/js/report.js"></script>
 <title><?php frag("title"); ?></title>
 </head>
 

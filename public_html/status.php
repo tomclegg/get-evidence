@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* show total # matching variants in reports, and allow paging
 * import 1000-genomes frequency data
 * import snpedia data
 * (trait-o-matic) auto-update get-evidence results when db changes
@@ -27,6 +26,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* show total # matching variants in reports, and allow paging
 * subtract local hits (snp.med and here) from hitcount stats
 * show the first few web search hits right on the variant page
 * exclude web search hits at snp.med.harvard.edu and here
