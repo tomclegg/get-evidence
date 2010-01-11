@@ -211,6 +211,12 @@ h1,h2,h3 {
 	background-color: #fff;
 }
 
+/* search results */
+.searchurl {
+	color: green;
+	margin: 0 0 0.5em 0;
+}
+
 /* search form */
 .styled {
 	border: 3px double #E5E5E5;

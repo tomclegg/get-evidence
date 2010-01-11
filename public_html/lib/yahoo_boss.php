@@ -38,7 +38,8 @@ function yahoo_boss_lookup ($variant_id)
 	    . aa_short_form($variant["variant_aa_to"]);
 	$ch = curl_init ();
 	$url = "http://boss.yahooapis.com/ysearch/web/v1/"
-	    . urlencode ($gene_aa)
+	    . urlencode ($gene_aa .
+			 " -snp.med.harvard.edu -evidence.personalgenomes.org")
 	    . "?appid="
 	    . urlencode(getenv("APIKEY"))
 	    . "&format=xml";
@@ -83,31 +84,54 @@ function yahoo_boss_update_external ($variant_id)
 	. $variant["variant_aa_pos"]
 	. aa_short_form($variant["variant_aa_to"]);
 
-    $url = "http://search.yahoo.com/search?p=" . urlencode ($gene_aa);
+    $user_url = "http://search.yahoo.com/search?p=" . urlencode ($gene_aa);
 
-    $content = $cache["hitcount"]." web search hit".($cache["hitcount"]==1?"":"s").".";
-
-    theDb()->query ("DELETE FROM variant_external WHERE variant_id=? AND tag=?", array ($variant_id, "Yahoo!"));
-    $q = theDb()->query ("INSERT INTO variant_external SET variant_id=?, tag=?, content=?, url=?, updated=NOW()",
-			 array ($variant_id, "Yahoo!", $content, $url));
+    $content = "<UL><STRONG>Web search results ("
+	. $cache["hitcount"]
+	. " hit"
+	. ($cache["hitcount"]==1?"":"s")
+	. " -- <A href=\""
+	. $user_url
+	. "\">see all</A>)</STRONG>";
 
     if ($cache["hitcount"] > 0) {
 
 	preg_match_all ('{<result>.*?</result>}is', $cache["xml"], $matches,
 			PREG_PATTERN_ORDER);
 	foreach ($matches[0] as $result) {
-	    if (preg_match ('{<url>(.*?)</url>}i', $result, $regs_url) &&
-		preg_match ('{<title>(.*?)</title>}i', $result, $regs_title)) {
-		$title = preg_replace ('{<\!\[CDATA\[(.*?)\]\]>}s', '$1', $regs_title[1]);
-		$url = $regs_url[1];
-
-		/*
-		  $q = theDb()->query ("INSERT INTO variant_external SET variant_id=?, tag=?, content=?, url=?, updated=NOW()",
-		  array ($variant_id, "Yahoo!", $title, $regs_url[1]));
-		*/
+	    $resulttag = array();
+	    foreach (array ("url", "dispurl", "abstract", "title") as $t)
+		if (preg_match ("{<$t>(.*?)</$t>}i", $result, $regs))
+		    $resulttag[$t] = preg_replace ('{<\!\[CDATA\[(.*?)\]\]>}s',
+						   '$1',
+						   $regs[1]);
+		else {
+		    $resulttag = FALSE;
+		    continue;
+		}
+	    if (ereg ("snp\.med\.harvard\.edu|evidence\.personalgenomes\.org",
+		      $resulttag["url"]))
+		continue;
+	    if ($resulttag) {
+		$content .= "<LI><A href=\""
+		    . $resulttag["url"]
+		    . "\">"
+		    . $resulttag["title"]
+		    . "</A><BR />"
+		    . $resulttag["abstract"]
+		    . "<BR /><DIV class=\"searchurl\""
+		    . $resulttag["dispurl"]
+		    . "</DIV></LI>";
 	    }
 	}
     }
+
+    $content .= "</UL>";
+
+    theDb()->query ("DELETE FROM variant_external WHERE variant_id=? AND tag=?", array ($variant_id, "Yahoo!"));
+    $q = theDb()->query ("INSERT INTO variant_external SET variant_id=?, tag=?, content=?, url=NULL, updated=NOW()",
+			 array ($variant_id, "Yahoo!", $content));
+
 }
 
 ?>

@@ -184,13 +184,19 @@ if ($external_refs) {
     $html .= "<H2>Other external references<BR />&nbsp;</H2><DIV id=\"external\">\n";
     $lasttag = FALSE;
     foreach ($external_refs as $r) {
+	$content = $r["content"];
 	if ($r["tag"] != $lasttag) {
 	    if ($lasttag !== FALSE)
 		$html .= "</UL>\n";
-	    $html .= "<UL><STRONG>" . htmlspecialchars ($r["tag"]) . "</STRONG>";
 	}
-	$content = $r["content"];
-	if ($r["tag"] != "Yahoo!") $content = htmlspecialchars ($content);
+	if (ereg ("^<", $content)) {
+	    $html .= $content;
+	    $lasttag = FALSE;
+	    continue;
+	}
+	if ($r["tag"] != $lasttag)
+	    $html .= "<UL><STRONG>" . htmlspecialchars ($r["tag"]) . "</STRONG>";
+	$content = htmlspecialchars ($content);
 	$html .= "<LI>" . $content;
 	if ($r["url"]) {
 	    $url_abbrev = $r["url"];

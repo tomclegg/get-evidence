@@ -7,8 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* show the first few web search hits right on the variant page
-* exclude web search hits at snp.med.harvard.edu and here
 * show total # matching variants in reports, and allow paging
 * import 1000-genomes frequency data
 * import snpedia data
@@ -29,6 +27,8 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* show the first few web search hits right on the variant page
+* exclude web search hits at snp.med.harvard.edu and here
 * fix "[]" links on reports for variants with no genome evidence
 * incorporate "web search results" using yahoo search API
 * fix 100% C reported as 0% C in MYOT-K74Q
