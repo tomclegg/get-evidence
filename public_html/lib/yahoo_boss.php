@@ -135,7 +135,6 @@ function yahoo_boss_update_external ($variant_id)
 	    $cache["hitcount"] = $hitcount;
 	    theDb()->query ("UPDATE yahoo_boss_cache SET hitcount=? WHERE variant_id=?",
 			    array ($hitcount, $variant_id));
-	    print "!($variant_id)";
 	}
     }
 
