@@ -3,7 +3,6 @@
 include "lib/setup.php";
 $gOut["title"] = "Evidence Base: About";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
-
 h1. Overview
 
 Evidence Base is a public database of human genome variations of **clinical interest**.
