@@ -7,6 +7,8 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* link to dbsnp page if rsid known
+* make report/dump with enough data for "frequency vs. OR" graph
 * import 1000-genomes frequency data
 * import snpedia data
 * (trait-o-matic) auto-update get-evidence results when db changes
