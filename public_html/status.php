@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* link to dbsnp page if rsid known
 * make report/dump with enough data for "frequency vs. OR" graph
 * import 1000-genomes frequency data
 * import snpedia data
@@ -28,6 +27,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* link to ncbi dbsnp page if rsid known
 * show total # matching variants in reports, and allow paging
 * subtract local hits (snp.med and here) from hitcount stats
 * show the first few web search hits right on the variant page

@@ -291,6 +291,7 @@ function evidence_get_report ($snap, $variant_id)
 			variant_occurs.chr AS chr,
 			variant_occurs.chr_pos AS chr_pos,
 			variant_occurs.allele AS allele,
+			variant_occurs.rsid AS rsid,
 			COUNT(datasets.dataset_id) AS dataset_count,
 			MAX(zygosity) AS zygosity,
 			MAX(dataset_url) AS dataset_url,

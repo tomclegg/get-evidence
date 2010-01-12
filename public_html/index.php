@@ -151,6 +151,8 @@ $gOut["content"] = "
 
 $gOut["content"] .= evidence_render_row ($row0);
 
+$rsid_seen = array();
+
 $firstrow = true;
 $sections = array ("Publications" => "",
 		   "Genomes" => "");
@@ -161,6 +163,8 @@ foreach ($report as $row)
   else if ($row["genome_id"] > 0)
     $section = "Genomes";
   $sections[$section] .= evidence_render_row ($row);
+  if ($row["rsid"])
+    $rsid_seen[$row["rsid"]] = 1;
 }
 
 $newPublicationForm = '';
@@ -182,7 +186,14 @@ if ($sections["Genomes"] != "")
     . "</DIV>";
 
 $external_refs = theDb()->getAll ("SELECT * FROM variant_external WHERE variant_id=? ORDER BY tag", array ($variant_id));
-if ($external_refs) {
+if (!$external_refs) $external_refs = array();
+foreach ($rsid_seen as $rsid => $dummy) {
+  array_unshift ($external_refs,
+		 array ("tag" => "dbSNP",
+			"content" => "rs$rsid",
+			"url" => "http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?searchType=adhoc_search&type=rs&rs=rs$rsid"));
+}
+if (count($external_refs)) {
     $html .= "<H2>Other external references<BR />&nbsp;</H2><DIV id=\"external\">\n";
     $lasttag = FALSE;
     foreach ($external_refs as $r) {
@@ -198,14 +209,17 @@ if ($external_refs) {
 	}
 	if ($r["tag"] != $lasttag)
 	    $html .= "<UL><STRONG>" . htmlspecialchars ($r["tag"]) . "</STRONG>";
+	if (!ereg ("[a-z]", $content))
+	  $content = ucfirst (strtolower ($content));
 	$content = htmlspecialchars ($content);
-	$html .= "<LI>" . $content;
+	$html .= "<LI>";
 	if ($r["url"]) {
-	    $url_abbrev = $r["url"];
+	    $url_abbrev = ereg_replace ("^https?://", "", $r["url"]);
 	    if (strlen ($url_abbrev) > 64)
 		$url_abbrev = ereg_replace ('\?.*', '', $url_abbrev);
-	    $html .= " <A href=\"" . htmlspecialchars ($r["url"]) . "\">" . htmlspecialchars ($url_abbrev) . "</A>";
-	}
+	    $html .= "<A href=\"" . htmlspecialchars ($r["url"]) . "\">" . $content . "</A><BR /><SPAN class=\"searchurl\">" . htmlspecialchars ($url_abbrev) . "</SPAN>";
+	} else
+	  $html .= $content;
 	$html . "</LI>";
 	$lasttag = $r["tag"];
     }
