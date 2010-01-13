@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* include OR in database dump
 * include #haplomes in db dump
 * include hapmap frequencies in overall frequency calculations
 * remove repetitive hapmap figures from genomes section
@@ -32,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* include max GWAS odds ratio in database dump
 * show search results in a paged report
 * show more GWAS fields in "external references"
 * include more fields in "database dump":download: dbsnp id, overall frequency (currently just 1000-genomes), #genomes, #web hits

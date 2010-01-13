@@ -132,6 +132,24 @@ print "\n";
 theDb()->query ("UNLOCK TABLES");
 
 
+print "Adding/updating gwas_or column in variants table...";
+theDb()->query ("ALTER TABLE variants ADD gwas_max_or DECIMAL(4,3)");
+theDb()->query ("CREATE TEMPORARY TABLE gwas_or_tmp
+ AS SELECT variant_id, MAX(or_or_beta) or_or_beta
+ FROM gwas
+ WHERE variant_id IS NOT NULL
+ AND or_or_beta IS NOT NULL
+ AND or_or_beta <> 'NR'
+ GROUP BY variant_id");
+theDb()->query ("UPDATE gwas_or_tmp
+ LEFT JOIN variants
+ ON variants.variant_id=gwas_or_tmp.variant_id
+ SET variants.gwas_max_or=or_or_beta
+ ");
+print theDb()->affectedRows();
+print "\n";
+
+
 if (getenv("DEBUG"))
     {
 	theDb()->query ("DROP TABLE IF EXISTS gwas_last");

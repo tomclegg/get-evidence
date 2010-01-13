@@ -41,6 +41,7 @@ if ($snap) {
 		      "overall_frequency_n",
 		      "overall_frequency_d",
 		      "overall_frequency",
+		      "gwas_max_or",
 		      "genome_hits",
 		      "web_hits",
 		      "summary_short");
