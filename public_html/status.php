@@ -7,9 +7,7 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* display 1000-genomes frequency in reports
 * include more fields in dump: dbsnp id, frequency (hapmap+1000-genomes), OR (gwas), #genomes, #haplomes, #web hits
-* web-hits reports: all, frequency < 5%, without OMIM, without OMIM + freq < 5%
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
 * update genetests gene list
 * import snpedia data
@@ -31,6 +29,8 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* web-hits reports: all, frequency < 5%, without OMIM, without OMIM + freq < 5%
+* display overall frequency in reports
 * import 1000-genomes frequency data
 * link to ncbi dbsnp page if rsid known
 * show total # matching variants in reports, and allow paging
