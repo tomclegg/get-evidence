@@ -26,7 +26,7 @@ $sql_orderby = "";
 if ($want_report_type == "population-actions") {
   $report_title = "Population Actions";
   $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic')";
-  $sql_having = " AND d_dataset_id IS NOT NULL";
+  $sql_having .= " AND d_dataset_id IS NOT NULL";
 }
 else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
