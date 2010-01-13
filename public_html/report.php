@@ -38,9 +38,9 @@ else if ($want_report_type == "web-search") {
   $sql_having .= " AND g.genome_id IS NOT NULL";
   $sql_orderby = "ORDER BY hitcount DESC";
   if ($_GET["noomim"])
-      $sql_where .= " AND (omim.variant_id IS NULL)";
+      $sql_having .= " AND MIN(omim.variant_id) IS NULL";
   if ($_GET["nodbsnp"])
-      $sql_where .= " AND rsid IS NULL";
+      $sql_having .= " AND MAX(o.rsid) IS NULL";
 }
 else {
   $gOut["title"] = "GET-Evidence: Reports";
