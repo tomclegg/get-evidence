@@ -7,9 +7,13 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* make report/dump with enough data for "frequency vs. OR" graph
-* import 1000-genomes frequency data
+* display 1000-genomes frequency in reports
+* include more fields in dump: dbsnp id, frequency (hapmap+1000-genomes), OR (gwas), #genomes, #haplomes, #web hits
+* web-hits reports: all, frequency < 5%, without OMIM, without OMIM + freq < 5%
+* find out why NA12878 has no chr:pos on CYP2C9-R144C
+* update genetests gene list
 * import snpedia data
+* omim - don't clobber unknown with p.path when importing existing variants
 * (trait-o-matic) auto-update get-evidence results when db changes
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
@@ -27,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* import 1000-genomes frequency data
 * link to ncbi dbsnp page if rsid known
 * show total # matching variants in reports, and allow paging
 * subtract local hits (snp.med and here) from hitcount stats
