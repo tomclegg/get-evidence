@@ -32,19 +32,19 @@ $q = theDb()->query ("CREATE TEMPORARY TABLE gwas (
   `date_added` date,
   `pmid` int unsigned,
   `first_author` varchar(64),
-  `pub_date` date,
+  `pub_date` VARCHAR(32),
   `journal` varchar(64),
   `url` varchar(255),
   `study` varchar(255),
   `disease_trait` varchar(255),
-  `initial_sample_size` INT UNSIGNED,
-  `replication_sample_size` int unsigned,
+  `initial_sample_size` VARCHAR(255),
+  `replication_sample_size` VARCHAR(255),
   `region` VARCHAR(255),
   `genes` VARCHAR(32),
   `risk_allele` VARCHAR(32),
   `snps` VARCHAR(32),
-  `risk_allele_frequency` DECIMAL,
-  `p_value` DECIMAL,
+  `risk_allele_frequency` VARCHAR(16),
+  `p_value` VARCHAR(32),
   `p_value_text` VARCHAR(32),
   `or_or_beta` VARCHAR(32),
   `ci_95_text` VARCHAR(32),
@@ -89,8 +89,25 @@ print theDb()->affectedRows();
 print "\n";
 
 
+print "Fixing up numeric fields...";
+theDb()->query ("
+UPDATE gwas
+SET risk_allele_frequency = IF(risk_allele_frequency IN ('NR','Pending'),NULL,risk_allele_frequency),
+ p_value = IF(p_value IN ('NS'),NULL,p_value),
+ p_value_text = REPLACE(p_value_text,char(255),'')
+");
+print theDb()->affectedRows();
+theDb()->query ("
+ALTER TABLE gwas
+ CHANGE risk_allele_frequency risk_allele_frequency DECIMAL(3,2),
+ CHANGE p_value p_value FLOAT
+");
+print "\n";
+
+
 print "Looking up rsid,allele -> variant_id via existing evidence...";
 theDb()->query ("ALTER TABLE gwas ADD variant_id BIGINT UNSIGNED");
+theDb()->query ("ALTER TABLE gwas ADD INDEX(variant_id)");
 $q = theDb()->query ("
 UPDATE gwas g
 LEFT JOIN variant_occurs o
@@ -107,7 +124,7 @@ theDb()->query ("LOCK TABLES variant_external WRITE");
 theDb()->query ("DELETE FROM variant_external WHERE tag='GWAS'");
 theDb()->query ("INSERT INTO variant_external
  (variant_id, tag, content, url, updated)
- SELECT variant_id, 'GWAS', CONCAT(disease_trait,' (',risk_allele,')'), url, NOW()
+ SELECT variant_id, 'GWAS', CONCAT(disease_trait,' (',risk_allele,')\n',first_author,' ',pub_date,' in ',journal,'\nOR: ',or_or_beta,IF(risk_allele_frequency is null,'',CONCAT('\nRisk allele frequency: ',risk_allele_frequency)),'\n95% CI: ',ci_95_text,IF(p_value is null,'',CONCAT('\np-value: ',p_value,' ',p_value_text)),'\nInitial sample: ',initial_sample_size,'\nReplication sample: ',replication_sample_size), url, NOW()
  FROM gwas
  WHERE variant_id > 0");
 print theDb()->affectedRows();
