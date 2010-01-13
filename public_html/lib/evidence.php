@@ -108,6 +108,13 @@ CREATE TABLE IF NOT EXISTS edits (
   denom INT UNSIGNED,
   UNIQUE(chr,chr_pos,allele,dbtag)
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_frequency (
+  variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  num INT UNSIGNED,
+  denom INT UNSIGNED,
+  f FLOAT,
+  INDEX(f))");
 }
 
 function evidence_get_genome_id ($global_human_id)
@@ -302,9 +309,9 @@ function evidence_get_report ($snap, $variant_id)
 			variant_occurs.chr_pos AS chr_pos,
 			variant_occurs.allele AS allele,
 			variant_occurs.rsid AS rsid,
-			SUM(af.num) AS allele_num,
-			SUM(af.denom) AS allele_denom,
-			SUM(af.num)/SUM(af.denom) AS allele_frequency,
+			vf.num AS variant_f_num,
+			vf.denom AS variant_f_denom,
+			vf.f AS variant_f,
 			COUNT(datasets.dataset_id) AS dataset_count,
 			MAX(zygosity) AS zygosity,
 			MAX(dataset_url) AS dataset_url,
@@ -325,10 +332,8 @@ function evidence_get_report ($snap, $variant_id)
 				ON taf.chr=variant_occurs.chr
 				AND taf.chr_pos=variant_occurs.chr_pos
 				AND taf.allele=variant_occurs.allele
-			LEFT JOIN allele_frequency af
-				ON af.chr=variant_occurs.chr
-				AND af.chr_pos=variant_occurs.chr_pos
-				AND af.allele=variant_occurs.allele
+			LEFT JOIN variant_frequency vf
+				ON vf.variant_id=variants.variant_id
 			WHERE variants.variant_id=?
 				$and_max_edit_id
 			GROUP BY

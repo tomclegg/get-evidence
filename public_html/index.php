@@ -166,25 +166,47 @@ foreach ($report as $row)
   $sections[$section] .= evidence_render_row ($row);
   if ($row["rsid"])
     $rsid_seen[$row["rsid"]] = 1;
-  if ($row["allele_num"])
-    $allele_frequency[$row["chr"]." ".$row["chr_pos"]." ".$row["allele"]]
-	= $row["allele_num"]." ".$row["allele_denom"]." ".$row["allele_frequency"];
+  if ($row["chr"])
+    $allele_frequency[$row["chr"]." ".$row["chr_pos"]." ".$row["allele"]] = 1;
 }
 
 $html = "";
 
-if (count ($allele_frequency)) {
-    $html .= "<H2>Allele frequency</H2>\n<DIV id=\"allele_frequency\">\n";
-    $html .= "<UL>\n";
-    foreach ($allele_frequency as $chr_pos_allele => $f) {
-	list ($chr, $pos, $allele) = explode (" ", $chr_pos_allele);
-	list ($num, $denom, $f) = explode (" ", $f);
-	$f = sprintf ("%.1f%%", $f*100);
-	$html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom)</LI>\n";
-    }
-    $html .= "</UL>\n";
-    $html .= "</DIV>\n";
+
+$gotsome = 0;
+$html .= "<H2>Allele frequency</H2>\n<DIV id=\"allele_frequency\">\n";
+$html .= "<UL>\n";
+foreach ($allele_frequency as $chr_pos_allele => $f) {
+  list ($chr, $pos, $allele) = explode (" ", $chr_pos_allele);
+  $frows = theDb()->getAll ("SELECT * FROM allele_frequency WHERE chr=? AND chr_pos=? AND allele=?", array ($chr, $pos, $allele));
+  foreach ($frows as $frow) {
+      if (!$frow["denom"])
+	continue;
+      $num = $frow["num"];
+      $denom = $frow["denom"];
+      $f = sprintf ("%.1f%%", 100 * $num / $denom);
+      $tag = $frow["dbtag"];
+      if ($tag == "1000g") $tag = "1000 Genomes";
+      if ($tag == "hapmap") $tag = "HapMap";
+      $html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom) in $tag</LI>\n";
+      $gotsome = 1;
+  }
 }
+if (isset ($row0["variant_f"])) {
+    $html .= "<LI>Overall frequency computed as "
+	. sprintf ("%.1f%% (%d/%d)",
+		   100 * $row0["variant_f"],
+		   $row0["variant_f_num"],
+		   $row0["variant_f_denom"])
+	. "</LI>\n";
+    $gotsome = 1;
+}
+if (!$gotsome) {
+    $html .= "<LI>None available.</LI>\n";
+}
+$html .= "</UL>\n";
+$html .= "</DIV>\n";
+
 
 $newPublicationForm = '';
 if (getCurrentUser("oid"))
