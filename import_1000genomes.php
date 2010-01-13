@@ -53,6 +53,9 @@ for ($i=1; $i<$_SERVER["argc"]; $i++) {
 	    }
 	    if (++$line_count % 100000 == 0)
 		printf ("\010\010\010\010\010\010\010\010\010\010\010\010\010%10d...", $line_count);
+	    if (getenv("MAX_ROWS_PER_FILE") &&
+		$line_count >= getenv("MAX_ROWS_PER_FILE"))
+		exit;
 	}
 	fclose ($fh);
 
@@ -85,9 +88,10 @@ for ($i=1; $i<$_SERVER["argc"]; $i++) {
     $q = theDb()->query ("DROP TEMPORARY TABLE import_1000genomes_onefile");
 }
 
-
+/*
 print "Looking up chr:pos in variant_occurs and assigning variant_ids...";
 print theDb()->affectedRows();
 print "\n";
+*/
 
 ?>
