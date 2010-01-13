@@ -46,7 +46,7 @@ else if ($want_report_type == "web-search") {
   $sql_orderby = "ORDER BY hitcount DESC";
   if ($_GET["rare"]) {
       $report_title .= ", rare";
-      $sql_having .= " AND allele_frequency < 0.05";
+      $sql_having .= " AND variant_frequency < 0.05";
   }
   if ($_GET["noomim"]) {
       $report_title .= ", no OMIM";
