@@ -129,7 +129,7 @@ function yahoo_boss_update_external ($variant_id)
 	preg_match ('/<resultset_web\b[^<]*\sdeephits="?(\d+)"?/s',
 		    $cache["xml"],
 		    $regs) &&
-	$regs[1] > $skipped_hits) {
+	$regs[1] >= $skipped_hits) {
 	$hitcount = $regs[1] - $skipped_hits;
 	if ($hitcount != $cache["hitcount"]) {
 	    $cache["hitcount"] = $hitcount;
