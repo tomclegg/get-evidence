@@ -33,14 +33,18 @@ else if ($want_report_type == "need-summary") {
   $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic') AND (s.summary_short IS NULL OR s.summary_short='')";
 }
 else if ($want_report_type == "web-search") {
-  $report_title = "Web Results, No Summary";
-  $sql_where = "hitcount IS NOT NULL AND (s.summary_short IS NULL OR s.summary_short='')";
+  $report_title = "Web Results";
+  $sql_where = "hitcount > 0";
   $sql_having .= " AND g.genome_id IS NOT NULL";
   $sql_orderby = "ORDER BY hitcount DESC";
-  if ($_GET["noomim"])
+  if ($_GET["noomim"]) {
+      $report_title .= ", no OMIM";
       $sql_having .= " AND MIN(omim.variant_id) IS NULL";
-  if ($_GET["nodbsnp"])
-      $sql_having .= " AND MAX(o.rsid) IS NULL";
+  }
+  if ($_GET["nodbsnp"]) {
+      $report_title .= ", no dbSNP";
+      $sql_having .= " AND NOT (MAX(o.rsid) > 0)";
+  }
 }
 else {
   $gOut["title"] = "GET-Evidence: Reports";
@@ -49,7 +53,10 @@ h1. Available reports
 
 * "Population Actions":report?type=population-actions -- pathogenic and putative pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
 * "Summaries Needed":report?type=need-summary -- pathogenic and putative pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
-* "Web Search but no OMIM":report?type=web-search&noomim=1 -- variants that have genome evidence and web search hits, but no OMIM annotations (or, "regardless of OMIM":report?type=web-search)
+* Variants with genome evidence and web search results, sorted by #hits:
+** "All":report?type=web-search
+** "Without OMIM entries":report?type=web-search&noomim=1
+** "Without dbSNP entries":report?type=web-search&nodbsnp=1
 EOF
 );
   go();
@@ -132,11 +139,17 @@ $sql_orderby
     if ($rowspan < 1) $rowspan = 1;
     $rowspan = "rowspan=\"$rowspan\"";
 
+    $summary_short = $gTheTextile->textileRestricted ($row["summary_short"]);
+    if ($row["hitcount"] > 0) {
+	$s = $row["hitcount"] == 1 ? "" : "s";
+	$summary_short .= "<P>($row[hitcount] web hit$s)</P>";
+    }
+
     printf ("<TR$tr_attrs><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD>",
 	    "<A href=\"$gene-$aa\">$gene&nbsp;$aa</A>",
 	    ereg_replace ("^putative ", "p.", $row["variant_impact"]),
 	    $row["variant_dominance"],
-	    $row["summary_short"]
+	    $summary_short
 	    );
     $rownum = 0;
     foreach ($genome_rows as $id => $row) {
