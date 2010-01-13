@@ -302,6 +302,9 @@ function evidence_get_report ($snap, $variant_id)
 			variant_occurs.chr_pos AS chr_pos,
 			variant_occurs.allele AS allele,
 			variant_occurs.rsid AS rsid,
+			SUM(af.num) AS allele_num,
+			SUM(af.denom) AS allele_denom,
+			SUM(af.num)/SUM(af.denom) AS allele_frequency,
 			COUNT(datasets.dataset_id) AS dataset_count,
 			MAX(zygosity) AS zygosity,
 			MAX(dataset_url) AS dataset_url,
@@ -322,12 +325,15 @@ function evidence_get_report ($snap, $variant_id)
 				ON taf.chr=variant_occurs.chr
 				AND taf.chr_pos=variant_occurs.chr_pos
 				AND taf.allele=variant_occurs.allele
+			LEFT JOIN allele_frequency af
+				ON af.chr=variant_occurs.chr
+				AND af.chr_pos=variant_occurs.chr_pos
+				AND af.allele=variant_occurs.allele
 			WHERE variants.variant_id=?
 				$and_max_edit_id
 			GROUP BY
 				$table.genome_id,
-				$table.article_pmid,
-				$table.genome_id
+				$table.article_pmid
 			ORDER BY
 				$table.genome_id,
 				$table.article_pmid,

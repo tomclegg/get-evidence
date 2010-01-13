@@ -152,6 +152,7 @@ $gOut["content"] = "
 $gOut["content"] .= evidence_render_row ($row0);
 
 $rsid_seen = array();
+$allele_frequency = array();
 
 $firstrow = true;
 $sections = array ("Publications" => "",
@@ -165,6 +166,24 @@ foreach ($report as $row)
   $sections[$section] .= evidence_render_row ($row);
   if ($row["rsid"])
     $rsid_seen[$row["rsid"]] = 1;
+  if ($row["allele_num"])
+    $allele_frequency[$row["chr"]." ".$row["chr_pos"]." ".$row["allele"]]
+	= $row["allele_num"]." ".$row["allele_denom"]." ".$row["allele_frequency"];
+}
+
+$html = "";
+
+if (count ($allele_frequency)) {
+    $html .= "<H2>Allele frequency</H2>\n<DIV id=\"allele_frequency\">\n";
+    $html .= "<UL>\n";
+    foreach ($allele_frequency as $chr_pos_allele => $f) {
+	list ($chr, $pos, $allele) = explode (" ", $chr_pos_allele);
+	list ($num, $denom, $f) = explode (" ", $f);
+	$f = sprintf ("%.1f%%", $f*100);
+	$html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom)</LI>\n";
+    }
+    $html .= "</UL>\n";
+    $html .= "</DIV>\n";
 }
 
 $newPublicationForm = '';
@@ -174,7 +193,6 @@ if (getCurrentUser("oid"))
 <P>PMID&nbsp;<input type="text" id="article_pmid" size=12 />&nbsp;<button onclick="evidence_add_article('.$variant_id.', $(\'article_pmid\').value); $(\'article_pmid\').value=\'\'; return false;">Add</button></P>
 ';
 
-$html = "";
 $html .= "<H2>Publications<BR />&nbsp;</H2>\n<DIV id=\"publications\">"
   . $sections["Publications"]
   . "</DIV>"

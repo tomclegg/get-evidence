@@ -37,6 +37,10 @@ else if ($want_report_type == "web-search") {
   $sql_where = "hitcount > 0";
   $sql_having .= " AND g.genome_id IS NOT NULL";
   $sql_orderby = "ORDER BY hitcount DESC";
+  if ($_GET["rare"]) {
+      $report_title .= ", rare";
+      $sql_having .= " AND allele_frequency < 0.05";
+  }
   if ($_GET["noomim"]) {
       $report_title .= ", no OMIM";
       $sql_having .= " AND MIN(omim.variant_id) IS NULL";
@@ -79,10 +83,12 @@ SELECT s.*, v.*, g.*,
  MAX(o.zygosity) AS max_zygosity,
  d.dataset_id AS d_dataset_id,
  g.genome_id AS g_genome_id,
- y.hitcount AS hitcount
+ y.hitcount AS hitcount,
+ SUM(af.num)/SUM(af.denom) AS allele_frequency
 FROM snap_$snap s
 LEFT JOIN variants v ON s.variant_id=v.variant_id
 LEFT JOIN variant_occurs o ON v.variant_id=o.variant_id AND $sql_occur_filter
+LEFT JOIN allele_frequency af ON af.chr=o.chr AND af.chr_pos=o.chr_pos AND af.allele=o.allele
 LEFT JOIN datasets d ON o.dataset_id=d.dataset_id
 LEFT JOIN genomes g ON d.genome_id=g.genome_id
 LEFT JOIN yahoo_boss_cache y ON s.variant_id=y.variant_id
@@ -139,6 +145,10 @@ $sql_orderby
     if ($rowspan < 1) $rowspan = 1;
     $rowspan = "rowspan=\"$rowspan\"";
 
+    $impact = ereg_replace ("^putative ", "p.", $row["variant_impact"]);
+    if (strlen($row["allele_frequency"]))
+	$impact .= sprintf (" f=%.3f", $row["allele_frequency"]);
+
     $summary_short = $gTheTextile->textileRestricted ($row["summary_short"]);
     if ($row["hitcount"] > 0) {
 	$s = $row["hitcount"] == 1 ? "" : "s";
@@ -147,7 +157,7 @@ $sql_orderby
 
     printf ("<TR$tr_attrs><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD>",
 	    "<A href=\"$gene-$aa\">$gene&nbsp;$aa</A>",
-	    ereg_replace ("^putative ", "p.", $row["variant_impact"]),
+	    $impact,
 	    $row["variant_dominance"],
 	    $summary_short
 	    );
