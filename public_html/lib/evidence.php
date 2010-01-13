@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("ALTER TABLE variant_occurs
   ADD chr CHAR(6),
   ADD chr_pos INT UNSIGNED,
-  ADD allele CHAR(1)
+  ADD allele CHAR(1),
+  ADD INDEX chr_pos_allele (chr,chr_pos,allele)
   ");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS taf (
