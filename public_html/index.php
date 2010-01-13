@@ -63,20 +63,26 @@ if (!$variant_id)
       }
     else
       {
-	$q = theDb()->query ("SELECT * FROM variants WHERE variant_gene LIKE ? ORDER BY variant_gene, variant_aa_pos, variant_aa_to LIMIT 30",
+	$rows =& theDb()->getAll("SELECT * FROM variants WHERE variant_gene LIKE ? ORDER BY variant_gene, variant_aa_pos, variant_aa_to LIMIT 2",
 			     array($_GET["q"]."%"));
-	if (theDb()->isError($q)) die ($q->getMessage());
-	$html = "";
-	while ($row =& $q->fetchRow()) {
-	  $html .= "<LI><A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$row[variant_gene] $row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]</A></LI>\n";
-	}
-	if ($html == "") {
-	  header ("HTTP/1.1 404 Not found");
-	  $gOut["content"] = '<h1>Not found</h1><p>No results were found for your query: <cite>'.htmlspecialchars($_GET["q"]).'</cite></p>';
-	}
+	if (count($rows) == 0)
+	  {
+	    header ("HTTP/1.1 404 Not found");
+	    $gOut["content"] = '<h1>Not found</h1><p>No results were found for your query: <cite>'.htmlspecialchars($_GET["q"]).'</cite></p>';
+	    go();
+	  }
+	else if (count($rows) == 1)
+	  {
+	    header ("Location: ".urlencode ($rows[0]["variant_gene"]
+					    . " "
+					    . $rows[0]["variant_aa_from"]
+					    . $rows[0]["variant_aa_pos"]
+					    . $rows[0]["variant_aa_to"]));
+	  }
 	else
-	  $gOut["content"] = "<h1>Search results</h1><p><ul>$html</ul></p>";
-	go();
+	  {
+	    header ("Location: report?type=search&q=".urlencode ($_GET["q"]));
+	  }
 	exit;
       }
   }

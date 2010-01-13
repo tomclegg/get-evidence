@@ -32,6 +32,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* show search results in a paged report
 * show more GWAS fields in "external references"
 * include more fields in "database dump":download: dbsnp id, overall frequency (currently just 1000-genomes), #genomes, #web hits
 * web-hits "reports":report: "all":report?type=web-search, "frequency < 5%":report?type=web-search&rare=1, "without OMIM":report?type=web-search&noomim=1, "without OMIM + freq < 5%":report?type=web-search&noomim=1&rare=1
