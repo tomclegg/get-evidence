@@ -6,6 +6,7 @@
 require_once "DB.php";
 
 function &theDb() { global $gDb; return $gDb; }
+function reconnectDb() { global $gDb, $gDsn; $gDb = DB::connect ($gDsn); }
 
 $gDsn = "mysql://$gDbUser:$gDbPassword@$gDbHost/$gDbDatabase";
 $gDb = DB::connect ($gDsn);
