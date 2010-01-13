@@ -59,7 +59,9 @@ h1. Available reports
 * "Summaries Needed":report?type=need-summary -- pathogenic and putative pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
 * Variants with genome evidence and web search results, sorted by #hits:
 ** "All":report?type=web-search
+** "f<0.05":report?type=web-search&rare=1
 ** "Without OMIM entries":report?type=web-search&noomim=1
+** "Without OMIM entries, f<0.05":report?type=web-search&noomim=1&rare=1
 ** "Without dbSNP entries":report?type=web-search&nodbsnp=1
 EOF
 );
