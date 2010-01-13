@@ -62,7 +62,7 @@ while (($line = fgets ($fh)) !== FALSE)
 	list ($gene, $aa_change,
 	      $chr, $chr_pos, $rsid,
 	      $ref_allele, $alleles, $hom_or_het,
-	      $job_id, $global_human_id, $human_name, $taf)
+	      $job_id, $global_human_id, $human_name, $sex, $taf)
 	    = explode ("\t", ereg_replace ("\r?\n$", "", $line));
 
 	if (!$global_human_id)
@@ -110,8 +110,8 @@ while (($line = fgets ($fh)) !== FALSE)
 	if (!isset($job2genome[$job_id])) {
 	    theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
 			    array ($human_name, $genome_id));
-	    theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, dataset_url=?",
-			    array ("T/snp/$job_id", $genome_id,
+	    theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, sex=?, dataset_url=?",
+			    array ("T/snp/$job_id", $genome_id, $sex,
 				   "http://snp.med.harvard.edu/results/job/$job_id"));
 	    theDb()->query ("INSERT INTO imported_datasets SET dataset_id=?",
 			    array ("T/snp/$job_id"));

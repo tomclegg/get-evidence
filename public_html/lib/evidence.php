@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS edits (
   dataset_id VARCHAR(16) NOT NULL,
   genome_id BIGINT UNSIGNED NOT NULL,
   dataset_url VARCHAR(255),
+  sex ENUM('M','F'),
   INDEX(genome_id,dataset_id),
   UNIQUE(dataset_id))");
 
