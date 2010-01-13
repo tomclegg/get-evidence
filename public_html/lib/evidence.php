@@ -98,6 +98,16 @@ CREATE TABLE IF NOT EXISTS edits (
   theDb()->query ("CREATE TABLE IF NOT EXISTS genetests_genes (
   gene CHAR(16) NOT NULL PRIMARY KEY
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS allele_frequency (
+  chr CHAR(6),
+  chr_pos INT UNSIGNED,
+  allele CHAR(1),
+  dbtag CHAR(6),
+  num INT UNSIGNED,
+  denom INT UNSIGNED,
+  UNIQUE(chr,chr_pos,allele,dbtag)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
