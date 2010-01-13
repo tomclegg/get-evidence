@@ -8,6 +8,8 @@ h1. Next steps
 In expected approximate chronological order:
 
 * include more fields in dump: dbsnp id, frequency (hapmap+1000-genomes), OR (gwas), #genomes, #haplomes, #web hits
+* include hapmap frequencies in overall frequency calculations
+* remove repetitive hapmap figures from genomes section
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
 * update genetests gene list
 * import snpedia data
