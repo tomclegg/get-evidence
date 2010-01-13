@@ -35,7 +35,7 @@ for ($i=1; $i<$_SERVER["argc"]; $i++) {
     $filename = $_SERVER["argv"][$i];
     print "Importing $filename...";
     $fifo = $rundir."/tmp/".$_SERVER["argv"][0].".fifo";
-    unlink ($fifo);
+    @unlink ($fifo);
     system ("mkfifo ".escapeshellarg($fifo));
     if (($child = pcntl_fork()) === 0) {
 	$ph = popen ("gzip -cdf ".escapeshellarg($filename), "r");
