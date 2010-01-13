@@ -26,7 +26,7 @@ $sql_orderby = "";
 if ($want_report_type == "population-actions") {
   $report_title = "Population Actions";
   $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic')";
-  $sql_having = "d_dataset_id IS NOT NULL";
+  $sql_having = " AND d_dataset_id IS NOT NULL";
 }
 else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
@@ -35,7 +35,12 @@ else if ($want_report_type == "need-summary") {
 else if ($want_report_type == "web-search") {
   $report_title = "Web Results, No Summary";
   $sql_where = "hitcount IS NOT NULL AND (s.summary_short IS NULL OR s.summary_short='')";
+  $sql_having .= " AND g.genome_id IS NOT NULL";
   $sql_orderby = "ORDER BY hitcount DESC";
+  if ($_GET["noomim"])
+      $sql_where .= " AND (omim.variant_id IS NULL)";
+  if ($_GET["nodbsnp"])
+      $sql_where .= " AND rsid IS NULL";
 }
 else {
   $gOut["title"] = "GET-Evidence: Reports";
@@ -44,12 +49,13 @@ h1. Available reports
 
 * "Population Actions":report?type=population-actions -- pathogenic and putative pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
 * "Summaries Needed":report?type=need-summary -- pathogenic and putative pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
-* "Web Search":report?type=web-search -- variants with no summary available but plenty of web search hits (or, same report "omitting het SNPs for recessive variants":report?type=web-search&domorhom=1)
+* "Web Search but no OMIM":report?type=web-search&noomim=1 -- variants that have genome evidence and web search hits, but no OMIM annotations (or, "regardless of OMIM":report?type=web-search)
 EOF
 );
   go();
   exit;
 }
+
 
 $gOut["title"] = "GET-Evidence: $report_title";
 function print_content ()
@@ -73,6 +79,7 @@ LEFT JOIN variant_occurs o ON v.variant_id=o.variant_id AND $sql_occur_filter
 LEFT JOIN datasets d ON o.dataset_id=d.dataset_id
 LEFT JOIN genomes g ON d.genome_id=g.genome_id
 LEFT JOIN yahoo_boss_cache y ON s.variant_id=y.variant_id
+LEFT JOIN variant_external omim ON omim.variant_id=s.variant_id AND omim.tag='OMIM'
 -- LEFT JOIN snap_$snap gs ON gs.variant_id=s.variant_id AND gs.article_pmid=0 AND gs.genome_id=g.genome_id
 WHERE s.article_pmid=0 AND s.genome_id=0 AND $sql_where
 GROUP BY v.variant_id,g.genome_id
