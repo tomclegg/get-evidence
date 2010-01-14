@@ -8,7 +8,6 @@ h1. Next steps
 In expected approximate chronological order:
 
 * include #haplomes in db dump
-* include hapmap frequencies in overall frequency calculations
 * remove repetitive hapmap figures from genomes section
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
 * update genetests gene list
@@ -31,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* include hapmap frequencies in overall frequency calculations
 * include max GWAS odds ratio in database dump
 * show search results in a paged report
 * show more GWAS fields in "external references"

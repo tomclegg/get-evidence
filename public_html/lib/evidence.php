@@ -304,7 +304,7 @@ function evidence_get_report ($snap, $variant_id)
 
   // Get all items relating to the given variant
 
-  $v =& theDb()->getAll ("SELECT variants.*, $table.*, genomes.*, datasets.*, variant_occurs.*, taf.*,
+  $v =& theDb()->getAll ("SELECT variants.*, $table.*, genomes.*, datasets.*, variant_occurs.*,
 			variants.variant_id AS variant_id,
 			$table.genome_id AS genome_id,
 			variant_occurs.chr AS chr,
@@ -330,10 +330,6 @@ function evidence_get_report ($snap, $variant_id)
 			LEFT JOIN variant_occurs
 				ON $table.variant_id = variant_occurs.variant_id
 				AND variant_occurs.dataset_id = datasets.dataset_id
-			LEFT JOIN taf
-				ON taf.chr=variant_occurs.chr
-				AND taf.chr_pos=variant_occurs.chr_pos
-				AND taf.allele=variant_occurs.allele
 			LEFT JOIN variant_frequency vf
 				ON vf.variant_id=variants.variant_id
 			WHERE variants.variant_id=?
@@ -429,14 +425,6 @@ function evidence_render_row (&$row)
     // Indicate the SNP that causes the variant
     if ($row["chr"]) {
       $name .= htmlspecialchars ("\n".substr($row["zygosity"],0,3)." ".$row["allele"]." @ ".$row["chr"].":".$row["chr_pos"]);
-      if ($row["taf"]) {
-	$taf = preg_replace_callback
-	  ('/"(...)": ([01]\.[0-9][0-9]?)([0-9]?)[0-9]*/',
-	   create_function ('$x', '{ return ($x[1].": ".($x[2]*100+$x[3]/10)."%"); }'),
-	   $row["taf"]);
-	$taf = hapmap_add_tips (htmlspecialchars ($taf));
-	$name .= "\n$taf";
-      }
       $name = nl2br ($name);
     }
 
