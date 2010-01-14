@@ -124,7 +124,7 @@ theDb()->query ("LOCK TABLES variant_external WRITE");
 theDb()->query ("DELETE FROM variant_external WHERE tag='GWAS'");
 theDb()->query ("INSERT INTO variant_external
  (variant_id, tag, content, url, updated)
- SELECT variant_id, 'GWAS', CONCAT(disease_trait,' (',risk_allele,')\n',first_author,' ',pub_date,' in ',journal,'\nOR: ',or_or_beta,IF(risk_allele_frequency is null,'',CONCAT('\nRisk allele frequency: ',risk_allele_frequency)),'\n95% CI: ',ci_95_text,IF(p_value is null,'',CONCAT('\np-value: ',p_value,' ',p_value_text)),'\nInitial sample: ',initial_sample_size,'\nReplication sample: ',replication_sample_size), url, NOW()
+ SELECT variant_id, 'GWAS', CONCAT(disease_trait,' (',risk_allele,')\n',first_author,' ',pub_date,' in ',journal,'\nOR or beta: ',or_or_beta,' ',ci_95_text,IF(risk_allele_frequency is null,'',CONCAT('\nRisk allele frequency: ',risk_allele_frequency)),IF(p_value is null,'',CONCAT('\np-value: ',p_value,' ',p_value_text)),'\nInitial sample: ',initial_sample_size,'\nReplication sample: ',replication_sample_size), url, NOW()
  FROM gwas
  WHERE variant_id > 0");
 print theDb()->affectedRows();
