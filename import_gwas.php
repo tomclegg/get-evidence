@@ -133,13 +133,14 @@ theDb()->query ("UNLOCK TABLES");
 
 
 print "Adding/updating gwas_or column in variants table...";
-theDb()->query ("ALTER TABLE variants ADD gwas_max_or DECIMAL(4,3)");
+theDb()->query ("ALTER TABLE variants ADD gwas_max_or DECIMAL(6,3)");
 theDb()->query ("CREATE TEMPORARY TABLE gwas_or_tmp
  AS SELECT variant_id, MAX(or_or_beta) or_or_beta
  FROM gwas
  WHERE variant_id IS NOT NULL
  AND or_or_beta IS NOT NULL
  AND or_or_beta <> 'NR'
+ AND (ci_95_text NOT LIKE '%] %' OR ci_95_text LIKE '%] (EA)')
  GROUP BY variant_id");
 theDb()->query ("UPDATE gwas_or_tmp
  LEFT JOIN variants
