@@ -126,6 +126,14 @@ CREATE TABLE IF NOT EXISTS edits (
   denom INT UNSIGNED,
   f FLOAT,
   INDEX(f))");
+
+  theDb()->query ("CREATE TABLE dbsnp (
+  id INT UNSIGNED NOT NULL PRIMARY KEY,
+  chr CHAR(7) NOT NULL,
+  chr_pos INT UNSIGNED NOT NULL,
+  orient TINYINT UNSIGNED NOT NULL,
+  INDEX chr_pos_orient (chr,chr_pos,orient)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)

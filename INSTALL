@@ -65,6 +65,12 @@ Look up gene/aa changes for GWAS SNPs:
 
  6. ./import_variant_locations.php /tmp/gwas.ns.tsv
 
+Import dbSNP:
+
+ wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/b130_SNPChrPosOnRef_36_3.bcp.gz
+ gunzip dbsnp.bcp.gz
+ ./import_dbsnp.php tmp/dbsnp.bcp.gz
+
 Import OMIM data using omim.tsv from Trait-o-matic import process:
 
  ./import_omim.php omim.tsv
