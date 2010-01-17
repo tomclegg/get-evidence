@@ -126,6 +126,7 @@ $q = theDb()->query ("
 UPDATE gwas g
 LEFT JOIN variant_locations l
  ON l.rsid = substr(g.snps,3,99)
+ AND l.allele = g.allele
 SET g.gene_aa=l.gene_aa
 WHERE g.variant_id IS NULL
 ");
