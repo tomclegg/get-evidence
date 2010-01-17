@@ -10,7 +10,8 @@ function seealso_related ($gene, $aa_pos, $skip_variant_id)
     $seealso = "";
     foreach ($related_variants as $x)
 	{
-	    $seealso .= "<LI>See also: <A href=\"".$x["gene"]."-".$x["aa_long"]."\">".$x["gene"]." ".$x["aa_long"]."</A></LI>\n";
+	    $x["aa_short"] = aa_short_form ($x["aa_long"]);
+	    $seealso .= "<LI>See also: <A href=\"".$x["gene"]."-".$x["aa_short"]."\">".$x["gene"]." ".$x["aa_short"]."</A></LI>\n";
 	}
     if ($seealso)
 	$seealso = "<DIV id=\"seealso\"><UL>$seealso</UL></DIV>\n";
@@ -22,7 +23,7 @@ $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
-else if (ereg ("^([A-Za-z0-9_]+)[- ]([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
+else if (ereg ("^([A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
 	 aa_sane ($aa = $regs[2])) {
   $gene = strtoupper($regs[1]);
   $max_edit_id = $regs[4];
@@ -73,11 +74,12 @@ if (!$variant_id)
 	  }
 	else if (count($rows) == 1)
 	  {
-	    header ("Location: ".urlencode ($rows[0]["variant_gene"]
-					    . " "
-					    . $rows[0]["variant_aa_from"]
-					    . $rows[0]["variant_aa_pos"]
-					    . $rows[0]["variant_aa_to"]));
+	    header ("Location: "
+		    .urlencode ($rows[0]["variant_gene"]
+				. "-"
+				. aa_short_form ($rows[0]["variant_aa_from"]
+						 . $rows[0]["variant_aa_pos"]
+						 . $rows[0]["variant_aa_to"])));
 	  }
 	else
 	  {
