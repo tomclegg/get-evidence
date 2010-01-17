@@ -36,17 +36,6 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Deleting rows in allele_frequency whose evidence has disappeared...";
-theDb()->query ("ALTER TABLE hapmap_tmp ADD INDEX(chr,chr_pos,allele)");
-theDb()->query ("DELETE af.*
- FROM allele_frequency af
- LEFT JOIN hapmap_tmp h ON h.chr=af.chr AND h.chr_pos=af.chr_pos AND h.allele=af.allele AND af.dbtag='HapMap'
- WHERE af.dbtag='HapMap' AND h.chr IS NULL
- ");
-print theDb()->affectedRows();
-print "\n";
-
-
 theDb()->query ("DROP TEMPORARY TABLE hapmap_tmp");
 
 

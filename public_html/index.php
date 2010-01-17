@@ -178,6 +178,16 @@ foreach ($report as $row)
     $allele_frequency[$row["chr"]." ".$row["chr_pos"]." ".$row["allele"]] = 1;
 }
 
+
+if ($morelocs = theDb()->getAll ("SELECT CONCAT(chr,' ',chr_pos,' ',allele) x
+	 FROM variant_locations
+	 WHERE variant_id=?", array ($variant_id))) {
+    foreach ($morelocs as $chr_pos_allele) {
+	$allele_frequency[$chr_pos_allele["x"]] = 1;
+    }
+}
+
+
 $html = "";
 
 

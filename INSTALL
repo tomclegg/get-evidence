@@ -33,6 +33,31 @@ Set up a cron job to run "make" periodically.
 
  echo "12 3 * * * $USER cd $HOME && make" | tee /etc/cron.d/get-evidence
 
+Import dbSNP:
+
+ wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/b130_SNPChrPosOnRef_36_3.bcp.gz
+ gunzip dbsnp.bcp.gz
+ ./import_dbsnp.php tmp/dbsnp.bcp.gz
+
+Import OMIM data using omim.tsv from Trait-o-matic import process:
+
+ ./import_omim.php omim.tsv
+
+Import gwas data using spreadsheet downloaded from web site (first
+convert from proprietary format to comma-separated, optionally
+doublequoted, fields):
+
+** IMPORTANT: the ordering of the following import steps is relevant.
+**
+** Run import_genomes.php first (see above)
+** Then import_variant_locations.php
+** Then import_gwas.php
+**      (relies on variant_locations to look up chr,pos->AA and add variants)
+** Then import_1000genomes.php
+**      (discards too many allele freqs if import_gwas hasn't added variants)
+** Then update_variant_frequency.php
+**      (merges frequencies from hapmap/import_genomes and import_1000genomes)
+
 Look up gene/aa changes for GWAS SNPs:
 
  1. perl -ne 'print "$1\n" while /\brs(\d+)\b/g' < gwas.csv \
@@ -65,19 +90,9 @@ Look up gene/aa changes for GWAS SNPs:
 
  6. ./import_variant_locations.php /tmp/gwas.ns.tsv
 
-Import dbSNP:
+ 7. copy ns.json from Trait-o-matic output directory and save to /tmp/gwas.ns.json
 
- wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/b130_SNPChrPosOnRef_36_3.bcp.gz
- gunzip dbsnp.bcp.gz
- ./import_dbsnp.php tmp/dbsnp.bcp.gz
-
-Import OMIM data using omim.tsv from Trait-o-matic import process:
-
- ./import_omim.php omim.tsv
-
-Import gwas data using spreadsheet downloaded from web site (first
-convert from proprietary format to comma-separated, optionally
-doublequoted, fields):
+ 8. ./import_hapmap_ns_json.php /tmp/gwas.ns.json
 
  ./import_gwas.php gwas.csv
 
