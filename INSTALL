@@ -84,3 +84,7 @@ doublequoted, fields):
 Import 1000genomes data:
 
  ./import_1000genomes.php /tmp/*.hap.2009_04.gz
+
+Merge variant frequencies from hapmap (via Trait-o-matic) and 1000-genomes:
+
+ ./update_variant_frequency.php

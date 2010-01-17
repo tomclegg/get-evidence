@@ -65,11 +65,21 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Attaching variant IDs...";
+print "Attaching variant IDs using variant_occurs...";
 theDb()->query ("UPDATE allele_frequency_merge afm
  LEFT JOIN variant_occurs o
   ON o.chr=afm.chr AND o.chr_pos=afm.chr_pos AND o.allele=afm.allele
  SET afm.variant_id=o.variant_id");
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Attaching variant IDs using variant_locations...";
+theDb()->query ("UPDATE allele_frequency_merge afm
+ LEFT JOIN variant_locations l
+  ON l.chr=afm.chr AND l.chr_pos=afm.chr_pos AND l.allele=afm.allele
+ SET afm.variant_id=l.variant_id
+ WHERE afm.variant_id IS NULL");
 print theDb()->affectedRows();
 print "\n";
 

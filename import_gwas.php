@@ -161,6 +161,8 @@ while ($row =& $q->fetchRow())
 	$did[$row["gene_aa"]] = $variant_id;
 	theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
 			array ($variant_id, $row["gene_aa"]));
+	theDb()->query ("UPDATE variant_locations SET variant_id=? WHERE gene_aa=?",
+			array ($variant_id, $row["gene_aa"]));
 
 	++$n;
 	if ($n % 100 == 0)

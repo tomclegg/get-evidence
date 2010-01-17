@@ -48,7 +48,7 @@ print "\n";
 
 
 print "Copying to variant_locations...";
-$q = theDb()->query ("REPLACE INTO variant_locations
+$q = theDb()->query ("INSERT IGNORE INTO variant_locations
  (chr, chr_pos, allele, rsid, gene_aa)
  SELECT chr, chr_pos, allele, rsid, gene_aa
  FROM var_loc");

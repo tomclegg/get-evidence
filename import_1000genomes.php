@@ -87,7 +87,11 @@ for ($i=1; $i<$_SERVER["argc"]; $i++) {
 	 ON import_1000genomes_onefile.chr=vo.chr
 	 AND import_1000genomes_onefile.chr_pos=vo.chr_pos
 	 AND import_1000genomes_onefile.allele=vo.allele
- WHERE vo.variant_id IS NOT NULL
+ LEFT JOIN variant_locations vl
+	 ON import_1000genomes_onefile.chr=vl.chr
+	 AND import_1000genomes_onefile.chr_pos=vl.chr_pos
+	 AND import_1000genomes_onefile.allele=vl.allele
+ WHERE (vo.variant_id IS NOT NULL OR vl.variant_id IS NOT NULL)
  GROUP BY import_1000genomes_onefile.chr,
 	import_1000genomes_onefile.chr_pos,
 	import_1000genomes_onefile.allele

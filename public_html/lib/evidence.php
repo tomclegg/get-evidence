@@ -9,7 +9,7 @@ require_once ("lib/hapmap.php");
 function evidence_create_tables ()
 {
   theDb()->query ("
-CREATE TABLE IF NOT EXISTS variants (
+  CREATE TABLE IF NOT EXISTS variants (
   variant_id SERIAL,
   variant_gene VARCHAR(16),
   variant_aa_pos INT UNSIGNED,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS variants (
   UNIQUE (variant_gene, variant_aa_pos, variant_aa_from, variant_aa_to)
 )");
   theDb()->query ("
-CREATE TABLE IF NOT EXISTS edits (
+  CREATE TABLE IF NOT EXISTS edits (
   edit_id SERIAL,
   variant_id BIGINT NOT NULL REFERENCES variants.variant_id,
   previous_edit_id BIGINT,
@@ -87,6 +87,10 @@ CREATE TABLE IF NOT EXISTS edits (
   gene_aa VARCHAR(32),
   INDEX chr_pos_allele (chr, chr_pos, allele),
   INDEX (rsid))");
+  theDb()->query ("ALTER TABLE variant_locations
+  ADD variant_id BIGINT UNSIGNED,
+  ADD INDEX(variant_id),
+  ADD UNIQUE(chr,chr_pos,allele,gene_aa)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS taf (
   chr CHAR(6) NOT NULL,
