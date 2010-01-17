@@ -79,6 +79,15 @@ CREATE TABLE IF NOT EXISTS edits (
   ADD INDEX chr_pos_allele (chr,chr_pos,allele)
   ");
 
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_locations (
+  chr CHAR(6) NOT NULL,
+  chr_pos INT UNSIGNED NOT NULL,
+  allele CHAR(1) NOT NULL,
+  rsid BIGINT UNSIGNED,
+  gene_aa VARCHAR(32),
+  INDEX chr_pos_allele (chr, chr_pos, allele),
+  INDEX (rsid))");
+
   theDb()->query ("CREATE TABLE IF NOT EXISTS taf (
   chr CHAR(6) NOT NULL,
   chr_pos INT UNSIGNED NOT NULL,

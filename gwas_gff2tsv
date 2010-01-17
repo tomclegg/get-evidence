@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+while (<>)
+{
+    @F=split("\t");
+    ($a) = $F[8] =~ /alleles (.)/;
+    ($rsid) = $F[8] =~ / rs(\d+)\b/;
+    $F[8] =~ /amino_acid ([^;]+)/;
+    for $x (split("/", $1)) {
+	print "$F[0]\t$F[3]\t$a\t$rsid\t$x\n";
+    }
+}

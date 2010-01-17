@@ -32,3 +32,49 @@ Run "make" to import genomes from Trait-o-matic.
 Set up a cron job to run "make" periodically.
 
  echo "12 3 * * * $USER cd $HOME && make" | tee /etc/cron.d/get-evidence
+
+Look up gene/aa changes for GWAS SNPs:
+
+ 1. perl -ne 'print "$1\n" while /\brs(\d+)\b/g' < gwas.csv \
+    | sort -u > /tmp/gwas.rs
+
+ 2. on trait-o-matic host, using dbsnp database:
+   CREATE TEMPORARY TABLE acgt (allele CHAR(1) PRIMARY KEY);
+   INSERT INTO acgt VALUES ('A'),('C'),('G'),('T');
+   CREATE TEMPORARY TABLE gwas_rs (gwas_snp_id INT UNSIGNED PRIMARY KEY);
+   LOAD DATA LOCAL INFILE '/tmp/gwas.rs' INTO TABLE gwas_rs;
+   ALTER TABLE gwas_rs ADD chr CHAR(6), ADD chr_pos INT UNSIGNED;
+   UPDATE gwas_rs
+    LEFT JOIN SNPChrPosOnRef dbsnp
+    ON snp_id=gwas_snp_id
+    SET gwas_rs.chr=dbsnp.chr,
+        gwas_rs.chr_pos=dbsnp.pos+1;
+   SELECT * FROM gwas_rs INTO '/tmp/gwas.chr';
+   SELECT CONCAT('chr',chr),'gwas','SNP',chr_pos,chr_pos,'.','+','.',
+    CONCAT('alleles ',allele,';dbsnp rs',gwas_snp_id)
+    FROM gwas_rs
+    LEFT JOIN acgt ON 1=1
+    WHERE chr IS NOT NULL AND chr NOT LIKE 'Multi%'
+    INTO OUTFILE '/tmp/gwas.gff.txt';
+
+ 3. upload /tmp/gwas.gff to Trait-o-matic
+
+ 4. download nsSNPs from Trait-o-matic results page and save to /tmp/gwas.ns.gff
+
+ 5. ./gwas_gff2tsv /tmp/gwas.ns.gff > /tmp/gwas.ns.tsv
+
+ 6. ./import_variant_locations.php /tmp/gwas.ns.tsv
+
+Import OMIM data using omim.tsv from Trait-o-matic import process:
+
+ ./import_omim.php omim.tsv
+
+Import gwas data using spreadsheet downloaded from web site (first
+convert from proprietary format to comma-separated, optionally
+doublequoted, fields):
+
+ ./import_gwas.php gwas.csv
+
+Import 1000genomes data:
+
+ ./import_1000genomes.php /tmp/*.hap.2009_04.gz

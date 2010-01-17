@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* create variants for gwas entries with no local genome evidence
 * include hapmap frequencies in overall frequency calculations
 * include max GWAS odds ratio in database dump
 * show search results in a paged report

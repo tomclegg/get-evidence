@@ -119,6 +119,55 @@ print theDb()->affectedRows();
 print "\n";
 
 
+print "Looking up rsid,allele -> gene_aa via variant_locations...";
+theDb()->query ("ALTER TABLE gwas ADD gene_aa VARCHAR(32)");
+theDb()->query ("ALTER TABLE gwas ADD INDEX(gene_aa)");
+$q = theDb()->query ("
+UPDATE gwas g
+LEFT JOIN variant_locations l
+ ON l.rsid = substr(g.snps,3,99)
+SET g.gene_aa=l.gene_aa
+WHERE g.variant_id IS NULL
+");
+if (theDb()->isError($q)) print $q->getMessage;
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Adding variants...";
+$q = theDb()->query ("
+SELECT gene_aa
+FROM gwas
+WHERE variant_id IS NULL
+AND gene_aa IS NOT NULL");
+$n=0;
+$did = array();
+while ($row =& $q->fetchRow())
+    {
+	if (($variant_id = $did[$row["gene_aa"]])) {
+	    theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
+			    array ($variant_id, $row["gene_aa"]));
+	    continue;
+	}
+
+	// create the variant, and an "initial edit/add" row in edits table
+	$variant_id = evidence_get_variant_id ($row["gene_aa"],
+					       false, false, false,
+					       true);
+	$edit_id = evidence_get_latest_edit ($variant_id,
+					     0, 0,
+					     true);
+	$did[$row["gene_aa"]] = $variant_id;
+	theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
+			array ($variant_id, $row["gene_aa"]));
+
+	++$n;
+	if ($n % 100 == 0)
+	    print "$n...";
+    }
+print "$n\n";
+
+
 print "Updating variant_external...";
 theDb()->query ("LOCK TABLES variant_external WRITE");
 theDb()->query ("DELETE FROM variant_external WHERE tag='GWAS'");
