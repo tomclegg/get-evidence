@@ -138,6 +138,12 @@ function evidence_create_tables ()
   orient TINYINT UNSIGNED NOT NULL,
   INDEX chr_pos_orient (chr,chr_pos,orient)
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS genetests_gene_disease (
+  gene VARCHAR(32) NOT NULL,
+  disease VARCHAR(64) NOT NULL,
+  UNIQUE `gene_disease` (gene,disease)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
