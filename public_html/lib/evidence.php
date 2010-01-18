@@ -131,7 +131,7 @@ function evidence_create_tables ()
   f FLOAT,
   INDEX(f))");
 
-  theDb()->query ("CREATE TABLE dbsnp (
+  theDb()->query ("CREATE TABLE IF NOT EXISTS dbsnp (
   id INT UNSIGNED NOT NULL PRIMARY KEY,
   chr CHAR(7) NOT NULL,
   chr_pos INT UNSIGNED NOT NULL,
@@ -144,6 +144,11 @@ function evidence_create_tables ()
   disease VARCHAR(64) NOT NULL,
   UNIQUE `gene_disease` (gene,disease)
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS gene_canonical_name (
+  aka VARCHAR(32) NOT NULL,
+  official VARCHAR(32) NOT NULL,
+  UNIQUE aka_official (aka,official))");
 }
 
 function evidence_get_genome_id ($global_human_id)

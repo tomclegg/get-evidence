@@ -57,11 +57,18 @@ print "\n";
 // TODO: create the gene_canonical_name table so this works
 
 print "Looking up canonical gene symbols...";
-theDb()->query ("UPDATE gt
- LEFT JOIN gene_canonical_name c
- ON gt.gene=c.aka
- SET gt.gene=c.official
- WHERE c.official IS NOT NULL");
+$q = theDb()->query ("UPDATE IGNORE gt, gene_canonical_name
+ SET gt.gene=gene_canonical_name.official
+ WHERE gt.gene=gene_canonical_name.aka");
+if (theDb()->isError($q)) die($q->getMessage());
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Deleting duplicates...";
+$q = theDb()->query ("DELETE gt.* FROM gt, gene_canonical_name
+ WHERE gt.gene=gene_canonical_name.aka");
+if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
 
