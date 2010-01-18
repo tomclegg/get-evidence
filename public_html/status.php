@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* display genetests results on variant page ("example":HBB-E6V)
 * import genetests gene->disease data
 * import hapmap frequencies for GWAS variants
 * create variants for gwas entries with no local genome evidence

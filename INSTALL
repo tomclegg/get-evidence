@@ -106,5 +106,6 @@ Merge variant frequencies from hapmap (via Trait-o-matic) and 1000-genomes:
 
 Import genetests database
 
- wget -O./tmp/genetests-data.txt ftp://ftp.ncbi.nih.gov/pub/GeneTests/data_to_build_custom_reports.txt
+ wget -O./tmp/genetests-data.txt \
+      ftp://ftp.ncbi.nih.gov/pub/GeneTests/data_to_build_custom_reports.txt
  ./import_genetests_data.php ./tmp/genetests-data.txt

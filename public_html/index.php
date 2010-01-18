@@ -243,14 +243,29 @@ if ($sections["Genomes"] != "")
     . $sections["Genomes"]
     . "</DIV>";
 
+
 $external_refs = theDb()->getAll ("SELECT * FROM variant_external WHERE variant_id=? ORDER BY tag", array ($variant_id));
 if (!$external_refs) $external_refs = array();
+
+$gt = theDb()->getAll ("SELECT * FROM genetests_gene_disease WHERE gene=?",
+		       array ($row0["variant_gene"]));
+if (sizeof($gt)) {
+    $ref["tag"] = "GeneTests";
+    $ref["content"] = "GeneTests records for the {$row0[variant_gene]} gene";
+    $ref["url"] = "http://www.ncbi.nlm.nih.gov/sites/GeneTests/lab/gene/".urlencode($row0["variant_gene"]);
+    foreach ($gt as $x) {
+	$ref["content"] .= "\n".$x["disease"];
+    }
+    array_unshift ($external_refs, $ref);
+}
+
 foreach ($rsid_seen as $rsid => $dummy) {
   array_unshift ($external_refs,
 		 array ("tag" => "dbSNP",
 			"content" => "rs$rsid",
 			"url" => "http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?searchType=adhoc_search&type=rs&rs=rs$rsid"));
 }
+
 if (count($external_refs)) {
     $html .= "<H2>Other external references<BR />&nbsp;</H2><DIV id=\"external\">\n";
     $lasttag = FALSE;
