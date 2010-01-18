@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* import hapmap frequencies for GWAS variants
 * create variants for gwas entries with no local genome evidence
 * include hapmap frequencies in overall frequency calculations
 * include max GWAS odds ratio in database dump
