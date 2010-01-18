@@ -54,25 +54,6 @@ print theDb()->affectedRows();
 print "\n";
 
 
-// TODO: create the gene_canonical_name table so this works
-
-print "Looking up canonical gene symbols...";
-$q = theDb()->query ("UPDATE IGNORE gt, gene_canonical_name
- SET gt.gene=gene_canonical_name.official
- WHERE gt.gene=gene_canonical_name.aka");
-if (theDb()->isError($q)) die($q->getMessage());
-print theDb()->affectedRows();
-print "\n";
-
-
-print "Deleting duplicates...";
-$q = theDb()->query ("DELETE gt.* FROM gt, gene_canonical_name
- WHERE gt.gene=gene_canonical_name.aka");
-if (theDb()->isError($q)) die($q->getMessage());
-print theDb()->affectedRows();
-print "\n";
-
-
 print "Copying to live table...";
 theDb()->query ("LOCK TABLES genetests_gene_disease WRITE");
 theDb()->query ("DELETE FROM genetests_gene_disease");

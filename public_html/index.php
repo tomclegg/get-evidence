@@ -247,8 +247,11 @@ if ($sections["Genomes"] != "")
 $external_refs = theDb()->getAll ("SELECT * FROM variant_external WHERE variant_id=? ORDER BY tag", array ($variant_id));
 if (!$external_refs) $external_refs = array();
 
-$gt = theDb()->getAll ("SELECT * FROM genetests_gene_disease WHERE gene=?",
-		       array ($row0["variant_gene"]));
+$gt = theDb()->getAll ("SELECT DISTINCT gd.disease
+ FROM genetests_gene_disease gd
+ WHERE gene=?
+ OR gene IN (SELECT aka FROM gene_canonical_name WHERE official=?)",
+		       array ($row0["variant_gene"], $row0["variant_gene"]));
 if (sizeof($gt)) {
     $ref["tag"] = "GeneTests";
     $ref["content"] = "GeneTests records for the {$row0[variant_gene]} gene";
