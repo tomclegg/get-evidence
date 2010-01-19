@@ -14,7 +14,7 @@ Download and extract php-openid-2.1.3 and textile-2.0.0 and apply patch(es):
 Set MySQL server character set:
 
  sudo perl -pi~ -e '
-   s:\n:\n default character set = utf8\n: if m:\[(client|mysqld)\]:;
+   s:\n:\ndefault-character-set = utf8\n: if m:\[(client|mysqld)\]:;
    ' /etc/mysql/my.cnf
  sudo /etc/init.d/mysql restart
 

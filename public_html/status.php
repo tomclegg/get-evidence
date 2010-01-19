@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* fix character encodings
 * import genenames database
 * display genetests results on variant page ("example":HBB-E6V)
 * import genetests gene->disease data
