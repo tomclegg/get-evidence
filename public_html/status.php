@@ -7,10 +7,9 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* editable OR figures (cases/controls with/without) for each {variant,disease,publication}
 * include #haplomes in db dump
-* remove repetitive hapmap figures from genomes section
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
-* update genetests gene list
 * import snpedia data
 * omim - don't clobber unknown with p.path when importing existing variants
 * (trait-o-matic) auto-update get-evidence results when db changes
@@ -36,6 +35,7 @@ In reverse chronological order:
 * import genetests gene->disease data
 * import hapmap frequencies for GWAS variants
 * create variants for gwas entries with no local genome evidence
+* remove repetitive hapmap figures from genomes section
 * include hapmap frequencies in overall frequency calculations
 * include max GWAS odds ratio in database dump
 * show search results in a paged report
