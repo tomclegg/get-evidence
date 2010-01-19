@@ -11,9 +11,16 @@ Download and extract php-openid-2.1.3 and textile-2.0.0 and apply patch(es):
 
  make install
 
+Set MySQL server character set:
+
+ sudo perl -pi~ -e '
+   s:\n:\n default character set = utf8\n: if m:\[(client|mysqld)\]:;
+   ' /etc/mysql/my.cnf
+ sudo /etc/init.d/mysql restart
+
 Create MySQL db and user:
 
- create database evidence;
+ create database evidence character set = utf8;
  create user evidence@localhost identified by 'shakespeare';
  grant all privileges on evidence.* to evidence@localhost;
 
