@@ -54,10 +54,31 @@ print theDb()->affectedRows();
 print "\n";
 
 
+print "Adding diseases...";
+theDb()->query ("INSERT IGNORE INTO diseases (disease_name) SELECT disease FROM gt");
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Looking up disease IDs...";
+theDb()->query ("ALTER TABLE gt ADD disease_id BIGINT NOT NULL");
+theDb()->query ("UPDATE gt
+ LEFT JOIN diseases d
+ ON gt.disease = d.disease_name
+ SET gt.disease_id = d.disease_id");
+print theDb()->affectedRows();
+print "\n";
+theDb()->query ("UNLOCK TABLES");
+
+
 print "Copying to live table...";
-theDb()->query ("LOCK TABLES genetests_gene_disease WRITE");
-theDb()->query ("DELETE FROM genetests_gene_disease");
-$q = theDb()->query ("INSERT INTO genetests_gene_disease (gene, disease) SELECT gene, disease FROM gt");
+theDb()->query ("LOCK TABLES gene_disease WRITE");
+theDb()->query ("DELETE FROM gene_disease WHERE dbtag = ?",
+		array ("GeneTests"));
+$q = theDb()->query ("INSERT INTO gene_disease
+ (gene, disease_id, dbtag)
+ SELECT gene, disease_id, ? FROM gt",
+		     array ("GeneTests"));
 if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
 print "\n";

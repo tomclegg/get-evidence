@@ -33,8 +33,9 @@ function evidence_create_tables ()
   summary_short TEXT,
   summary_long TEXT,
   talk_text TEXT,
-  article_pmid INT UNSIGNED,
+  article_pmid INT UNSIGNED NOT NULL,
   genome_id BIGINT UNSIGNED NOT NULL,
+  disease_id BIGINT UNSIGNED NOT NULL,
   
   INDEX (variant_id,edit_timestamp),
   INDEX (edit_oid, edit_timestamp),
@@ -42,11 +43,14 @@ function evidence_create_tables ()
   INDEX (variant_id, article_pmid, genome_id, edit_timestamp),
   INDEX (is_draft, edit_timestamp)
 )");
+  theDb()->query ("ALTER TABLE edits ADD disease_id BIGINT UNSIGNED NOT NULL AFTER genome_id");
 
-  theDb()->query ("CREATE TABLE IF NOT EXISTS snap_latest LIKE edits");
-  theDb()->query ("ALTER TABLE snap_latest ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
-  theDb()->query ("CREATE TABLE IF NOT EXISTS snap_release LIKE edits");
-  theDb()->query ("ALTER TABLE snap_release ADD UNIQUE snap_key (variant_id, article_pmid, genome_id)");
+  foreach (array ("snap_latest", "snap_release") as $t) {
+      theDb()->query ("CREATE TABLE IF NOT EXISTS `$t` LIKE edits");
+      theDb()->query ("ALTER TABLE `$t` ADD disease_id BIGINT UNSIGNED NOT NULL");
+      theDb()->query ("ALTER TABLE `$t` ADD UNIQUE `snapkey` (variant_id, article_pmid, genome_id, disease_id)");
+      theDb()->query ("ALTER TABLE `$t` DROP INDEX `snap_key`");
+  }
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS genomes (
   genome_id SERIAL,
@@ -61,6 +65,11 @@ function evidence_create_tables ()
   sex ENUM('M','F'),
   INDEX(genome_id,dataset_id),
   UNIQUE(dataset_id))");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS diseases (
+  disease_id SERIAL,
+  disease_name VARCHAR(255) NOT NULL,
+  UNIQUE disease_name_unique (disease_name))");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS variant_occurs (
   variant_id BIGINT UNSIGNED NOT NULL,
@@ -139,16 +148,28 @@ function evidence_create_tables ()
   INDEX chr_pos_orient (chr,chr_pos,orient)
   )");
 
-  theDb()->query ("CREATE TABLE IF NOT EXISTS genetests_gene_disease (
+  theDb()->query ("CREATE TABLE IF NOT EXISTS gene_disease (
   gene VARCHAR(32) NOT NULL,
-  disease VARCHAR(64) NOT NULL,
-  UNIQUE `gene_disease` (gene,disease)
+  disease_id BIGINT UNSIGNED NOT NULL,
+  dbtag VARCHAR(12) NOT NULL,
+  UNIQUE `gene_disease_dbtag` (gene,disease_id,dbtag),
+  INDEX `disease_index` (disease_id,gene,dbtag),
+  INDEX `dbtag_index` (dbtag)
   )");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS gene_canonical_name (
   aka VARCHAR(32) NOT NULL,
   official VARCHAR(32) NOT NULL,
   UNIQUE aka_official (aka,official))");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_disease (
+  variant_id BIGINT UNSIGNED NOT NULL,
+  disease_id BIGINT UNSIGNED NOT NULL,
+  dbtag CHAR(6) NOT NULL,
+  UNIQUE `variant_disease_dbtag` (variant_id,disease_id,dbtag),
+  INDEX `disease_index` (disease_id,variant_id,dbtag),
+  INDEX `dbtag_index` (dbtag)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)

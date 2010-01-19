@@ -247,8 +247,9 @@ if ($sections["Genomes"] != "")
 $external_refs = theDb()->getAll ("SELECT * FROM variant_external WHERE variant_id=? ORDER BY tag", array ($variant_id));
 if (!$external_refs) $external_refs = array();
 
-$gt = theDb()->getAll ("SELECT DISTINCT gd.disease
+$gt = theDb()->getAll ("SELECT DISTINCT disease_name
  FROM genetests_gene_disease gd
+ LEFT JOIN diseases d ON gd.disease_id = d.disease_id
  WHERE gene=?
  OR gene IN (SELECT aka FROM gene_canonical_name WHERE official=?)",
 		       array ($row0["variant_gene"], $row0["variant_gene"]));
@@ -257,7 +258,7 @@ if (sizeof($gt)) {
     $ref["content"] = "GeneTests records for the {$row0[variant_gene]} gene";
     $ref["url"] = "http://www.ncbi.nlm.nih.gov/sites/GeneTests/lab/gene/".urlencode($row0["variant_gene"]);
     foreach ($gt as $x) {
-	$ref["content"] .= "\n".$x["disease"];
+	$ref["content"] .= "\n".$x["disease_name"];
     }
     array_unshift ($external_refs, $ref);
 }

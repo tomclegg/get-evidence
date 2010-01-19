@@ -114,7 +114,7 @@ LEFT JOIN variant_occurs o
  ON o.rsid = substr(g.snps,3,99)
 SET g.variant_id=o.variant_id
 ");
-if (theDb()->isError($q)) print $q->getMessage;
+if (theDb()->isError($q)) print $q->getMessage();
 print theDb()->affectedRows();
 print "\n";
 
@@ -130,7 +130,7 @@ LEFT JOIN variant_locations l
 SET g.gene_aa=l.gene_aa
 WHERE g.variant_id IS NULL
 ");
-if (theDb()->isError($q)) print $q->getMessage;
+if (theDb()->isError($q)) print $q->getMessage();
 print theDb()->affectedRows();
 print "\n";
 
@@ -169,6 +169,36 @@ while ($row =& $q->fetchRow())
 	    print "$n...";
     }
 print "$n\n";
+
+
+print "Adding diseases...";
+theDb()->query ("INSERT IGNORE INTO diseases (disease_name) SELECT disease_trait FROM gwas");
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Looking up disease IDs...";
+theDb()->query ("ALTER TABLE gwas ADD disease_id BIGINT NOT NULL");
+theDb()->query ("UPDATE gwas
+ LEFT JOIN diseases d
+ ON gwas.disease_trait = d.disease_name
+ SET gwas.disease_id = d.disease_id");
+print theDb()->affectedRows();
+print "\n";
+theDb()->query ("UNLOCK TABLES");
+
+
+print "Updating variant_disease...";
+theDb()->query ("LOCK TABLES variant_disease WRITE");
+theDb()->query ("DELETE FROM variant_disease WHERE dbtag='GWAS'");
+theDb()->query ("INSERT IGNORE INTO variant_disease
+ (variant_id, disease_id, dbtag)
+ SELECT variant_id, disease_id, 'GWAS'
+ FROM gwas
+ WHERE variant_id > 0 AND disease_id > 0");
+print theDb()->affectedRows();
+print "\n";
+theDb()->query ("UNLOCK TABLES");
 
 
 print "Updating variant_external...";
