@@ -307,9 +307,19 @@ function evidence_submit ($edit_id)
   // by editing/saving an old revision) and force the user to
   // explicitly lose the intervening changes.
 
-  theDb()->query ("UPDATE edits SET is_draft=0, edit_timestamp=NOW(), article_pmid=if(article_pmid is null,0,article_pmid), genome_id=if(genome_id is null,0,genome_id) WHERE edit_id=? AND edit_oid=?",
+  theDb()->query ("UPDATE edits
+ SET is_draft=0,
+ edit_timestamp=NOW(),
+ article_pmid=if(article_pmid is null,0,article_pmid),
+ genome_id=if(genome_id is null,0,genome_id),
+ disease_id=if(disease_id is null,0,disease_id)
+ WHERE edit_id=? AND edit_oid=?",
 		  array($edit_id, getCurrentUser("oid")));
-  theDb()->query ("REPLACE INTO snap_latest SELECT * FROM edits WHERE edit_id=? AND edit_oid=?",
+  theDb()->query ("REPLACE INTO snap_latest
+ SELECT *
+ FROM edits
+ WHERE edit_id=?
+ AND edit_oid=?",
 		  array($edit_id, getCurrentUser("oid")));
   theDb()->query ("DELETE FROM snap_latest WHERE is_delete=1");
 }
@@ -352,7 +362,15 @@ function evidence_get_report ($snap, $variant_id)
     $flag_edited_id = $snap;
     $table = "edits";
     $variant_id = 0 + $variant_id;
-    $and_max_edit_id = "AND $table.edit_id IN (SELECT MAX(edits.edit_id) FROM edits WHERE variant_id=$variant_id AND edit_id<=$snap AND is_draft=0 GROUP BY article_pmid, genome_id) AND ($table.edit_id=$snap OR $table.is_delete=0)";
+    $and_max_edit_id = "AND $table.edit_id IN (
+ SELECT MAX(edits.edit_id)
+ FROM edits
+ WHERE variant_id=$variant_id
+ AND edit_id<=$snap
+ AND is_draft=0
+ GROUP BY article_pmid, genome_id, disease_id)
+ AND ($table.edit_id=$snap OR $table.is_delete=0
+ )";
   }
 
   // Get all items relating to the given variant
@@ -360,6 +378,8 @@ function evidence_get_report ($snap, $variant_id)
   $v =& theDb()->getAll ("SELECT variants.*, $table.*, genomes.*, datasets.*, variant_occurs.*,
 			variants.variant_id AS variant_id,
 			$table.genome_id AS genome_id,
+			$table.disease_id AS disease_id,
+			diseases.disease_name AS disease_name,
 			variant_occurs.chr AS chr,
 			variant_occurs.chr_pos AS chr_pos,
 			variant_occurs.allele AS allele,
@@ -375,6 +395,8 @@ function evidence_get_report ($snap, $variant_id)
 			FROM variants
 			LEFT JOIN $table
 				ON variants.variant_id = $table.variant_id
+			LEFT JOIN diseases
+				ON $table.disease_id = diseases.disease_id
 			LEFT JOIN genomes
 				ON $table.genome_id > 0
 				AND $table.genome_id = genomes.genome_id
@@ -389,34 +411,76 @@ function evidence_get_report ($snap, $variant_id)
 				$and_max_edit_id
 			GROUP BY
 				$table.genome_id,
-				$table.article_pmid
+				$table.article_pmid,
+				$table.disease_id
 			ORDER BY
 				$table.genome_id,
 				$table.article_pmid,
+				$table.disease_id,
 				$table.edit_id DESC",
 			 array ($flag_edited_id, $variant_id));
   if (theDb()->isError($v)) die ($v->getMessage());
   if (!theDb()->isError($v) && $v && $v[0])
-    foreach (array ("article_pmid", "genome_id") as $x)
-      if (!$v[0][$x]) $v[0][$x] = 0;
+    foreach (array ("article_pmid", "genome_id", "disease_id") as $x)
+      if (!$v[0][$x])
+	$v[0][$x] = 0;
+
+  // Make sure for every pmid>0 row all of the article=A, disease=D
+  // rows are there too
+
+  $have_a_d = array();
+  foreach ($v as $row) {
+    if ($row["article_pmid"]) {
+      $have_a_d[$row["article_pmid"]][$row["disease_id"]] = 1;
+    }
+  }
+
+  $v_d = theDb()->getAll ("SELECT diseases.* FROM diseases
+ WHERE disease_id IN (SELECT disease_id FROM variant_disease WHERE variant_id=? UNION SELECT disease_id FROM gene_disease WHERE gene = ?)", array ($variant_id, $v[0]["variant_gene"]));
+  foreach ($v_d as $row) {
+    foreach ($have_a_d as $a => $have_d) {
+      $d = $row["disease_id"];
+      if (!isset ($have_d[$d])) {
+	for ($i=0; $i<sizeof($v); $i++) {
+	  if ($v[$i]["article_pmid"] != $a)
+	    continue;
+	  if ($i<sizeof($v)-1 && $v[$i+1]["article_pmid"] == $a)
+	    continue;
+	  array_splice ($v, $i+1, 0, array($v[$i]));
+	  $v[$i+1]["disease_id"] = $row["disease_id"];
+	  $v[$i+1]["disease_name"] = $row["disease_name"];
+	  $v[$i+1]["summary_short"] = "";
+	  $v[$i+1]["summary_long"] = "";
+	  $v[$i+1]["talk_text"] = "";
+	  $v[$i+1]["edit_id"] = "";
+	  $v[$i+1]["previous_edit_id"] = "";
+	  break;
+	}
+      }
+    }
+  }
+
   return $v;
 }
 
-function evidence_get_latest_edit ($variant_id, $article_pmid, $genome_id,
+function evidence_get_latest_edit ($variant_id,
+				   $article_pmid, $genome_id, $disease_id,
 				   $create_flag=false)
 {
   if (!$variant_id) return null;
   $edit_id = theDb()->getOne
     ("SELECT MAX(edit_id) FROM edits
-	WHERE variant_id=? AND article_pmid=? AND genome_id=?
+	WHERE variant_id=? AND article_pmid=? AND genome_id=? AND disease_id=?
 	AND (is_draft=0 OR edit_oid=?)",
-     array ($variant_id, $article_pmid, $genome_id, getCurrentUser("oid")));
+     array ($variant_id, $article_pmid, $genome_id, $disease_id,
+	    getCurrentUser("oid")));
   if (!$edit_id && $create_flag) {
     theDb()->query
       ("INSERT INTO edits
 	SET edit_timestamp=NOW(), edit_oid=?, is_draft=1,
-	variant_id=?, article_pmid=?, genome_id=?",
-       array (getCurrentUser("oid"), $variant_id, $article_pmid, $genome_id));
+	variant_id=?, article_pmid=?, genome_id=?, disease_id=?",
+       array (getCurrentUser("oid"),
+	      $variant_id, $article_pmid, $genome_id, $disease_id));
     $edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
     evidence_submit ($edit_id);
   }
@@ -425,7 +489,7 @@ function evidence_get_latest_edit ($variant_id, $article_pmid, $genome_id,
 
 function evidence_render_row (&$row)
 {
-  $id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__p_$row[edit_id]__";
+  $id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__d_$row[disease_id]__p_$row[edit_id]__";
   $title = "";
   $html = "";
 
@@ -437,16 +501,30 @@ function evidence_render_row (&$row)
     $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #dfd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>$edited in this revision:</P>";
   }
 
-  if ($row["article_pmid"] != '0' && strlen($row["article_pmid"]) > 0) {
+  foreach (array ("article_pmid", "genome_id", "disease_id") as $keyfield) {
+    if (strlen ($row[$keyfield]) == 0)
+      $row[$keyfield] = 0;
+  }
+
+  if ($row["article_pmid"] != 0 &&
+      $row["disease_id"] != 0) {
+    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+		       $row["summary_short"],
+		       $row["disease_name"] . "<BR />",
+		       array ("tip" => "Indicate the contribution of this article to OR statistics for ".htmlspecialchars($row["disease_name"])."."));
+  }
+
+  else if ($row["article_pmid"] != 0) {
     $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
     $summary = article_get_summary ($row["article_pmid"]);
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],
 		       $summary . "<BR />",
 		       array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
+
   }
 
-  else if ($row["genome_id"] != '0' && strlen($row["genome_id"]) > 0) {
+  else if ($row["genome_id"] != 0) {
 
     $html .= "<A name=\"g".$row["genome_id"]."\"></A>\n";
 
@@ -485,6 +563,11 @@ function evidence_render_row (&$row)
 		       $row[summary_short],
 		       $name);
   }
+
+  else if ($row["disease_id"] != 0) {
+    // Disease summary not attached to any particular publication
+  }
+
   else {
     $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 		       $row[summary_short],

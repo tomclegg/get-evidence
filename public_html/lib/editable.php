@@ -12,8 +12,11 @@ function editable($id, $content, $title="", $options=false)
 {
   global $gDisableEditing;
   global $gTheTextile;
+
   $html = $gTheTextile->textileRestricted ($content);
   if (trim($html) == "") $html = "<P>&nbsp;</P>";
+
+  $html = "<!-- $id -->".$html;
 
   if (strlen($title) <  60 && !preg_match ('{<(b|strong)\b}i', $title))
     $title = "<strong>$title</strong>";
