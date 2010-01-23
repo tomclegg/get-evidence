@@ -18,7 +18,7 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
   $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, (d.variant_impact <> a.variant_impact OR d.variant_dominance <> a.variant_dominance OR d.summary_short <> a.summary_short OR d.summary_long <> a.summary_long OR d.talk_text <> a.talk_text OR d.article_pmid <> a.article_pmid) draft_differs
 			FROM edits a
 			LEFT JOIN edits d ON d.previous_edit_id=a.edit_id AND d.edit_oid=? AND d.is_draft
-			LEFT JOIN snap_latest n ON n.variant_id=a.variant_id AND n.article_pmid=a.article_pmid AND n.genome_id=a.genome_id
+			LEFT JOIN snap_latest n ON n.variant_id=a.variant_id AND n.article_pmid=a.article_pmid AND n.genome_id=a.genome_id AND n.disease_id=a.disease_id
 			WHERE a.edit_id=?",
 			array(getCurrentUser("oid"), $edit_id));
   while ($row =& $q->fetchRow()) {

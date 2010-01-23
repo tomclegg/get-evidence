@@ -19,21 +19,26 @@ foreach ($_POST as $param => $newvalue)
   if (preg_match ('/^(.*)__o_(\w+?)(__.*)/', $param, $regs)) {
     unset ($_POST[$param]);
     $figs_param = $regs[1].$regs[3];
-    if (ereg ('^orig_', $param) &&
+    $is_just_default = ereg ('^orig_', $param);
+    $param = ereg_replace ('^orig_', 'edited_', $param);
+    $figs_param = ereg_replace ('^orig_', 'edited_', $figs_param);
+    if (!$is_just_default ||
 	(!isset ($oddsratio_arrays[$figs_param]) ||
 	 !isset ($oddsratio_arrays[$figs_param][$regs[2]]))) {
-      $param = ereg_replace ('^orig_', 'edited_', $param);
-      $figs_param = ereg_replace ('^orig_', 'edited_', $figs_param);
+      $oddsratio_arrays[$figs_param][$regs[2]] = $newvalue;
+      $oddsratio_params[$figs_param][$regs[2]] = $param;
     }
-    $figs =& $oddsratio_arrays[$figs_param];
-    $figs[$regs[2]] = $newvalue;
-    $oddsratio_params[$figs_param][$regs[2]] = $param;
+    if (!$is_just_default &&
+	(!isset ($_POST[ereg_replace ('^edited_','orig_',$param)]) ||
+	 $newvalue != $_POST[ereg_replace ('^edited_','orig_',$param)]))
+      $oddsratio_actually_changed[$figs_param] = 1;
   }
 }
 
 foreach ($oddsratio_arrays as $param => $figs)
 {
-  $_POST[$param] = json_encode ($figs);
+  if ($oddsratio_actually_changed[$param])
+    $_POST[$param] = json_encode ($figs);
 }
 
 $response = array();
@@ -139,14 +144,17 @@ foreach ($_POST as $param => $newvalue)
 			WHERE edit_id=? AND edit_oid=? AND is_draft=1",
 		       array($newvalue, $edit_id, getCurrentUser("oid")));
   if (!theDb()->isError($q)) {
-    $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;
-    $response["preview_".ereg_replace("^edited_","",$param)] = $gTheTextile->textileRestricted ($newvalue);
-    if (isset ($oddsratio_params[$figs_param]) && ereg ('^{', $newvalue)) {
+    if (isset ($oddsratio_params[$param]) &&
+	ereg ('^{', $newvalue)) {
       $saved_values = json_decode ($newvalue, true);
-      foreach ($oddsratio_params[$figs_param] as $json_var => $orig_param) {
-	$response["saved__{$clients_previous_edit_id}__{$orig_param}"] = $saved_values[$json_var];
+      foreach ($oddsratio_params[$param] as $json_var => $orig_param) {
+	$response["saved__{$clients_previous_edit_id}__{$field_id}__{$json_var}"] = $saved_values[$json_var];
 	$response[ereg_replace('^edited_', 'preview_', $orig_param)] = $saved_values[$json_var];
       }
+    }
+    else {
+      $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;
+      $response["preview_".ereg_replace("^edited_","",$param)] = $gTheTextile->textileRestricted ($newvalue);
     }
   }
   else
