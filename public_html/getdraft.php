@@ -3,8 +3,7 @@
 include "lib/setup.php";
 
 foreach (array ("variant_impact", "variant_dominance",
-		"summary_short", "summary_long", "talk_text",
-		"article_pmid") as $k) {
+		"summary_short", "summary_long", "talk_text") as $k) {
   $fields_allowed[$k] = 1;
 }
 
@@ -32,6 +31,16 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
       }
       // Existing draft
       foreach (array_keys ($fields_allowed) as $field) {
+	if ($row["disease_id"] > 0 &&
+	    ereg ('^{', $row[$field]) &&
+	    ($dict = json_decode ($row["$field"], true))) {
+	  // decode json return and return key/value pairs in separate fields
+	  foreach ($dict as $k => $v) {
+	    $response["saved__{$edit_id}__{$field}__{$k}"] = $v;
+	    $response["preview__{$edit_id}__{$field}__{$k}"] = htmlspecialchars ($v);
+	  }
+	  continue;
+	}
 	$response["saved__${edit_id}__${field}"]
 	  = isset($row[$field]) ? $row[$field] : $row["d.$field"];
 	$response["preview__${edit_id}__${field}"]

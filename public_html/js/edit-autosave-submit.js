@@ -234,11 +234,14 @@ function editable_get_draft ()
 			var draft_id = (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
 			    + '__'
 			    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1];
+			var splitfield = /__o_([a-z0-9A-Z_]+?)__/.exec(e.id);
+			if (splitfield)
+			    draft_id += '__' + splitfield[1];
 			if ((saved = eval ('editable_save_result.saved__' + draft_id))) {
 			    if (saved != $('orig_'+e.id).value) {
+				editable_click(e);
 				if ($('edited_'+e.id))
 				    $('edited_'+e.id).value = saved;
-				editable_click(e);
 			    }
 			}
 			p = eval('editable_save_result.preview__' + draft_id);
