@@ -18,7 +18,7 @@ body {
 input,textarea {
 	font: normal 12px "Lucida Sans Unicode",sans-serif;
 }
-p,cite,code,ul,td,th {
+p,cite,code,ul,td,th,span {
 	/* font-size: 1.2em; */
 	font-size: 12px;
 	padding-bottom: 1.2em;
@@ -209,6 +209,18 @@ h1,h2,h3 {
 }
 .toolbar_tab_current {
 	background-color: #fff;
+}
+
+.disease_table {
+	border-collapse: collapse;
+}
+.disease_table th,.disease_table td {
+	text-align: left;
+	padding: 2px;
+	background-color: #ddd;
+}
+.disease_table .altcolor th,.disease_table .altcolor td {
+	background-color: #eee;
 }
 
 /* search results */

@@ -157,21 +157,25 @@ $gOut["content"] = "
     .$history_box;
 
 
-$gOut["content"] .= evidence_render_row ($row0);
+$renderer = new evidence_row_renderer;
+$renderer->render_row ($row0);
+$gOut["content"] .= $renderer->html();
 
 $rsid_seen = array();
 $allele_frequency = array();
 
 $firstrow = true;
-$sections = array ("Publications" => "",
-		   "Genomes" => "");
+$sections = array ("Publications" => new evidence_row_renderer,
+		   "Genomes" => new evidence_row_renderer);
 foreach ($report as $row)
 {
+  $section = FALSE;
   if ($row["article_pmid"] > 0)
     $section = "Publications";
   else if ($row["genome_id"] > 0)
     $section = "Genomes";
-  $sections[$section] .= evidence_render_row ($row);
+  if ($section)
+    $sections[$section]->render_row ($row);
   if ($row["rsid"])
     $rsid_seen[$row["rsid"]] = 1;
   if ($row["chr"])
@@ -234,13 +238,13 @@ if (getCurrentUser("oid"))
 ';
 
 $html .= "<H2>Publications<BR />&nbsp;</H2>\n<DIV id=\"publications\">"
-  . $sections["Publications"]
+  . $sections["Publications"]->html()
   . "</DIV>"
   . $newPublicationForm;
 
 if ($sections["Genomes"] != "")
   $html .= "<H2>Genomes<BR />&nbsp;</H2>\n<DIV id=\"genomes\">"
-    . $sections["Genomes"]
+    . $sections["Genomes"]->html()
     . "</DIV>";
 
 

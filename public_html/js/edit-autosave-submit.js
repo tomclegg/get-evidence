@@ -57,6 +57,7 @@ function editable_delete (e)
 
 function editable_click (e)
 {
+    editable_highlight (e, false);
     if (!$('edited_' + e.id)) {
 	e.insert(editable_input(e));
 	if ($('tip_' + e.id)) {
@@ -75,9 +76,11 @@ function editable_click (e)
     $('edited_' + e.id).style.display='';
     $('edited_' + e.id).parentNode.style.display='';
     $('edited_' + e.id).focus();
-    $('pbutton_' + e.id).style.display='';
-    $('pbutton_' + e.id).className='toolbar_tab';
-    $('ebutton_' + e.id).className='toolbar_tab toolbar_tab_current';
+    if ($('pbutton_' + e.id)) {
+	$('pbutton_' + e.id).style.display='';
+	$('pbutton_' + e.id).className='toolbar_tab';
+	$('ebutton_' + e.id).className='toolbar_tab toolbar_tab_current';
+    }
     if ($('edited_' + e.id).nodeName != 'SELECT')
 	$('edited_' + e.id).style.width='100%';
     return false;
@@ -85,7 +88,9 @@ function editable_click (e)
 
 function editable_highlight (e, flag)
 {
-    e = $('preview_' + e.id);
+    if ($('preview_' + e.id).style.display == 'none')
+	flag = false;
+
     if(editable_currently_highlighted) {
 	editable_currently_highlighted.style.backgroundColor = '';
 	editable_currently_highlighted.descendants().each(function(e) {
@@ -163,7 +168,10 @@ function editable_input (e)
 	ret = '<textarea ' + ids + ' type="text" rows="' + xy[1] + '" cols="' + xy[0] + '">' + saved_value.htmlentities() + '</textarea>';
     }
 
-    return '<p>' + ret + '</p>';
+    if (xy[1] > 1)
+	ret = '<p>' + ret + '</p>';
+
+    return ret;
 }
 
 function editable_save (submit_flag, want_preview)
@@ -192,7 +200,7 @@ function editable_save (submit_flag, want_preview)
 		    window.location.reload();
 		// TODO: show errors (if any) in message box
 
-		$$('span.editable').each(function(e){
+		$$('.editable').each(function(e){
 			p = eval('transport.responseJSON.preview_'+e.id);
 			if (p)
 			    $('preview_'+e.id).update(p);
@@ -211,7 +219,7 @@ function editable_get_draft ()
 	return;
 
     var edit_ids = new Hash();
-    $$('span.editable').each(function(e){
+    $$('.editable').each(function(e){
 	    if ((r = /_p_([a-z0-9A-Z_]+?)__/.exec(e.id)))
 		edit_ids.set(r[1], 1);
 	});
@@ -222,7 +230,7 @@ function editable_get_draft ()
 		if (transport.responseJSON)
 		    editable_save_result = transport.responseJSON;
 		editable_check_unsaved_all ();
-		$$('span.editable').each(function(e){
+		$$('.editable').each(function(e){
 			var draft_id = (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
 			    + '__'
 			    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1];
@@ -296,7 +304,7 @@ function editable_check_unsaved (e, norecurse)
 function editable_check_unsaved_all ()
 {
     editable_have_unsaved = false;
-    $$('span.editable').each(function(x){
+    $$('.editable').each(function(x){
 	    editable_check_unsaved ($('edited_' + x.id), true);
 	});
     editable_update_unsaved_message ();
@@ -346,20 +354,19 @@ function editable_update_last_saved ()
 
 function editable_init_single (e)
 {
-    /*
-      p = $('preview_'+e.id);
-      Event.observe(p, 'click', function () { editable_click (e); });
-      Event.observe(p, 'mouseover', function () { editable_highlight (e, true); });
-      Event.observe(p, 'mouseout', function () { editable_highlight
-      (e, false); });
-    */
-    editable_decorate (e);
+    if (e.hasClassName ('clicktoedit')) {
+	Event.observe(e, 'click', function () { editable_click (e); });
+	Event.observe(e, 'mouseover', function () { editable_highlight (e, true); });
+	Event.observe(e, 'mouseout', function () { editable_highlight (e, false); });
+    }
+    else
+	editable_decorate (e);
 }
 
 function editable_init ()
 {
     if (!$('mainform')) return;
-    $$('span.editable').each(function(e){ editable_init_single (e); });
+    $$('.editable').each(function(e){ editable_init_single (e); });
     new PeriodicalExecuter (editable_update_last_saved, 5);
     new Form.Observer ($('mainform'), 3, editable_check_unsaved_all);
     editable_get_draft();

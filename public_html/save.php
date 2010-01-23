@@ -5,9 +5,35 @@ include "lib/setup.php";
 global $gTheTextile;
 
 foreach (array ("variant_impact", "variant_dominance",
-		"summary_short", "summary_long", "talk_text",
-		"article_pmid") as $k) {
+		"summary_short", "summary_long", "talk_text") as $k) {
   $fields_allowed[$k] = 1;
+}
+
+// Assemble the oddsratio figures as json strings if they appear as
+// separate figures
+
+$oddsratio_arrays = array();
+$oddsratio_params = array();
+foreach ($_POST as $param => $newvalue)
+{
+  if (preg_match ('/^(.*)__o_(\w+?)(__.*)/', $param, $regs)) {
+    unset ($_POST[$param]);
+    $figs_param = $regs[1].$regs[3];
+    if (ereg ('^orig_', $param) &&
+	(!isset ($oddsratio_arrays[$figs_param]) ||
+	 !isset ($oddsratio_arrays[$figs_param][$regs[2]]))) {
+      $param = ereg_replace ('^orig_', 'edited_', $param);
+      $figs_param = ereg_replace ('^orig_', 'edited_', $figs_param);
+    }
+    $figs =& $oddsratio_arrays[$figs_param];
+    $figs[$regs[2]] = $newvalue;
+    $oddsratio_params[$figs_param][$regs[2]] = $param;
+  }
+}
+
+foreach ($oddsratio_arrays as $param => $figs)
+{
+  $_POST[$param] = json_encode ($figs);
 }
 
 $response = array();
@@ -30,6 +56,9 @@ foreach ($_POST as $param => $newvalue)
   if (!ereg ("_a_([0-9]+)_", $param, $regs)) $article_pmid = 0;
   else $article_pmid = $regs[1];
 
+  if (!ereg ("_d_([0-9]+)_", $param, $regs)) $disease_id = 0;
+  else $disease_id = $regs[1];
+
   if (!preg_match ("/_p_([a-zA-Z0-9_]*?)__/", $param, $regs)) continue;
   $previous_edit_id = $regs[1];
   $clients_previous_edit_id = $previous_edit_id;
@@ -44,9 +73,9 @@ foreach ($_POST as $param => $newvalue)
     if ($no_previous_edit_id) {
       theDb()->query ("INSERT INTO edits
 			SET edit_timestamp=NOW(), edit_oid=?, is_draft=1,
-			variant_id=?, article_pmid=?, genome_id=?",
+			variant_id=?, article_pmid=?, genome_id=?, disease_id=?",
 		      array (getCurrentUser("oid"),
-			     $variant_id, $article_pmid, $genome_id));
+			     $variant_id, $article_pmid, $genome_id, $disease_id));
       $previous_edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
       $newrow = array ("previous_edit_id" => $previous_edit_id);
       evidence_submit ($previous_edit_id);
@@ -90,12 +119,13 @@ foreach ($_POST as $param => $newvalue)
   if (!$edit_id)
     $edit_id = theDb()->getOne ("SELECT MIN(edit_id) FROM edits
 				WHERE (previous_edit_id=?
-				       OR (variant_id=? AND article_pmid=? AND genome_id=?))
+				       OR (variant_id=? AND article_pmid=? AND genome_id=? AND disease_id=?))
 				AND edit_oid=? AND is_draft=1",
 				array ($previous_edit_id,
 				       $variant_id,
 				       $article_pmid,
 				       $genome_id,
+				       $disease_id,
 				       getCurrentUser("oid")));
   if ($new_edit_id && $new_edit_id != $edit_id) {
     // I just created a new row but this user already has edits in another row
@@ -111,6 +141,13 @@ foreach ($_POST as $param => $newvalue)
   if (!theDb()->isError($q)) {
     $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;
     $response["preview_".ereg_replace("^edited_","",$param)] = $gTheTextile->textileRestricted ($newvalue);
+    if (isset ($oddsratio_params[$figs_param]) && ereg ('^{', $newvalue)) {
+      $saved_values = json_decode ($newvalue, true);
+      foreach ($oddsratio_params[$figs_param] as $json_var => $orig_param) {
+	$response["saved__{$clients_previous_edit_id}__{$orig_param}"] = $saved_values[$json_var];
+	$response[ereg_replace('^edited_', 'preview_', $orig_param)] = $saved_values[$json_var];
+      }
+    }
   }
   else
     $response["errors"][] = $q->getMessage();

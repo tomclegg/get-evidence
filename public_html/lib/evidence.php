@@ -416,6 +416,7 @@ function evidence_get_report ($snap, $variant_id)
 			ORDER BY
 				$table.genome_id,
 				$table.article_pmid,
+				diseases.disease_name,
 				$table.disease_id,
 				$table.edit_id DESC",
 			 array ($flag_edited_id, $variant_id));
@@ -487,118 +488,173 @@ function evidence_get_latest_edit ($variant_id,
   return $edit_id + 0;
 }
 
-function evidence_render_row (&$row)
-{
-  $id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__d_$row[disease_id]__p_$row[edit_id]__";
-  $title = "";
-  $html = "";
+class evidence_row_renderer {
+    protected $lastrow = FALSE;
+    protected $rownumber = FALSE;
+    protected $html = "";
+    protected $starttable = "";
 
-  if ($row["is_delete"])
-    $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>Deleted in this revision:</P>";
-  else if ($row["flag_edited_id"]) {
-    if ($row["previous_edit_id"]) $edited = "Edited";
-    else $edited = "Added";
-    $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #dfd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>$edited in this revision:</P>";
-  }
-
-  foreach (array ("article_pmid", "genome_id", "disease_id") as $keyfield) {
-    if (strlen ($row[$keyfield]) == 0)
-      $row[$keyfield] = 0;
-  }
-
-  if ($row["article_pmid"] != 0 &&
-      $row["disease_id"] != 0) {
-    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
-		       $row["summary_short"],
-		       $row["disease_name"] . "<BR />",
-		       array ("tip" => "Indicate the contribution of this article to OR statistics for ".htmlspecialchars($row["disease_name"])."."));
-  }
-
-  else if ($row["article_pmid"] != 0) {
-    $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
-    $summary = article_get_summary ($row["article_pmid"]);
-    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
-		       $row[summary_short],
-		       $summary . "<BR />",
-		       array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
-
-  }
-
-  else if ($row["genome_id"] != 0) {
-
-    $html .= "<A name=\"g".$row["genome_id"]."\"></A>\n";
-
-    // Pick the most human-readable name for this genome/person
-    if (!($name = $row["name"]))
-      if (!($name = $row["global_human_id"]))
-	$name = "[" . $row["genome_id"] . "]";
-    $name = htmlspecialchars ($name);
-
-    // Link to the full genome(s)
-    if ($row["dataset_count"] > 0)
-      $name = "<A href=\"$row[dataset_url]\">$name</A>";
-    if ($row["dataset_count"] > 1) {
-      $more = $row["dataset_count"] - 1;
-      $name .= " (";
-      if ($row["dataset_url_2"]) {
-	$name .= "<A href=\"$row[dataset_url_2]\">alternate</A>, ";
-	--$more;
-      }
-      if ($more > 1)
-	$name .= "plus $more other data sets";
-      else if ($more == 1)
-	$name .= "plus 1 other data set";
-      else
-	$name = ereg_replace (", $", "", $name);
-      $name .= ")";
+    protected function row_transition (&$row)
+    {
+	if ($this->lastrow &&
+	    $this->lastrow["disease_id"] &&
+	    $this->rownumber > 0 &&
+	    (!$row ||
+	     $this->lastrow["article_pmid"] != $row["article_pmid"] ||
+	     $this->lastrow["genome_id"] != $row["genome_id"]))
+	  $this->html .= "</TABLE><P>&nbsp;</P>\n";
+	if ($row &&
+	    $row["disease_id"] &&
+	    (!$this->lastrow ||
+	     !$this->lastrow["disease_id"] ||
+	     $row["article_pmid"] != $this->lastrow["article_pmid"] ||
+	     $row["genome_id"] != $this->lastrow["genome_id"])) {
+	  $this->starttable = "<TABLE class=\"disease_table\">\n";
+	  $this->starttable .= "<TR><TD></TD>";
+	  foreach (array ("case+", "case&ndash;", "control+", "control&ndash;", "odds&nbsp;ratio") as $x)
+	    $this->starttable .= "<TH width=\"60\">$x</TH>";
+	  $this->starttable .= "</TR>\n";
+	  $this->rownumber = 0;
+	}
+	$this->lastrow = $row;
     }
 
-    // Indicate the SNP that causes the variant
-    if ($row["chr"]) {
-      $name .= htmlspecialchars ("\n".substr($row["zygosity"],0,3)." ".$row["allele"]." @ ".$row["chr"].":".$row["chr_pos"]);
-      $name = nl2br ($name);
+    function &html ()
+    {
+	$this->row_transition($x=FALSE);
+	return $this->html;
     }
 
-    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
-		       $row[summary_short],
-		       $name);
-  }
+    function render_row (&$row)
+    {
+	$html = "";
 
-  else if ($row["disease_id"] != 0) {
-    // Disease summary not attached to any particular publication
-  }
+	$this->row_transition ($row);
+	$id_prefix = "v_$row[variant_id]__a_$row[article_pmid]__g_$row[genome_id]__d_$row[disease_id]__p_$row[edit_id]__";
+	$title = "";
 
-  else {
-    $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
-		       $row[summary_short],
-		       "Summary",
-		       array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
-    $html .= editable ("${id_prefix}f_variant_impact__",
-		       $row[variant_impact],
-		       "Impact",
-		       array ("select_options"
-			      => array ("pathogenic" => "pathogenic",
-					"putative pathogenic" => "putative pathogenic",
-					"unknown" => "unknown",
-					"putative benign" => "putative benign",
-					"benign" => "benign"),
-			      "tip" => "Categorize the expected impact of this variant."));
-    $html .= editable ("${id_prefix}f_variant_dominance__",
-		       $row[variant_dominance],
-		       "Inheritance pattern",
-		       array ("select_options" => array ("unknown" => "unknown",
-							 "dominant" => "dominant",
-							 "recessive" => "recessive")));
-    $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
-		       $row[summary_long],
-		       "Clinical significance",
-		       array ("tip" => "Describe the clinical significance of this variant."));
-  }
+	foreach (array ("article_pmid", "genome_id", "disease_id") as $keyfield) {
+	  if (strlen ($row[$keyfield]) == 0)
+	    $row[$keyfield] = 0;
+	}
 
-  if ($row["is_delete"] || $row["flag_edited_id"])
-    $html .= "</DIV>";
+	if ($row["article_pmid"] != 0 &&
+	    $row["disease_id"] != 0) {
+	  $tr = editable ("${id_prefix}f_summary_short__8x1__oddsratio",
+			  $row["summary_short"],
+			  $row["disease_name"] . "<BR />",
+			  array ("rownumber" => $this->rownumber,
+				 "tip" => "Indicate the contribution of this article to OR statistics for ".htmlspecialchars($row["disease_name"])."."));
+	  if ($tr != "") {
+	    if ($this->rownumber == 0)
+	      $html .= $this->starttable;
+	    $html .= $tr;
+	    ++$this->rownumber;
+	  }
+	}
 
-  return $html;
+	else if ($row["article_pmid"] != 0) {
+	  $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
+	  $summary = article_get_summary ($row["article_pmid"]);
+	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+			     $row[summary_short],
+			     $summary . "<BR />",
+			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
+
+	}
+
+	else if ($row["genome_id"] != 0) {
+
+	  $html .= "<A name=\"g".$row["genome_id"]."\"></A>\n";
+
+	  // Pick the most human-readable name for this genome/person
+	  if (!($name = $row["name"]))
+	    if (!($name = $row["global_human_id"]))
+	      $name = "[" . $row["genome_id"] . "]";
+	  $name = htmlspecialchars ($name);
+
+	  // Link to the full genome(s)
+	  if ($row["dataset_count"] > 0)
+	    $name = "<A href=\"$row[dataset_url]\">$name</A>";
+	  if ($row["dataset_count"] > 1) {
+	    $more = $row["dataset_count"] - 1;
+	    $name .= " (";
+	    if ($row["dataset_url_2"]) {
+	      $name .= "<A href=\"$row[dataset_url_2]\">alternate</A>, ";
+	      --$more;
+	    }
+	    if ($more > 1)
+	      $name .= "plus $more other data sets";
+	    else if ($more == 1)
+	      $name .= "plus 1 other data set";
+	    else
+	      $name = ereg_replace (", $", "", $name);
+	    $name .= ")";
+	  }
+
+	  // Indicate the SNP that causes the variant
+	  if ($row["chr"]) {
+	    $name .= htmlspecialchars ("\n".substr($row["zygosity"],0,3)." ".$row["allele"]." @ ".$row["chr"].":".$row["chr_pos"]);
+	    $name = nl2br ($name);
+	  }
+
+	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+			     $row[summary_short],
+			     $name);
+	}
+
+	else if ($row["disease_id"] != 0) {
+	  // Disease summary not attached to any particular publication
+	}
+
+	else {
+	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+			     $row[summary_short],
+			     "Summary",
+			     array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
+	  $html .= editable ("${id_prefix}f_variant_impact__",
+			     $row[variant_impact],
+			     "Impact",
+			     array ("select_options"
+				    => array ("pathogenic" => "pathogenic",
+					      "putative pathogenic" => "putative pathogenic",
+					      "unknown" => "unknown",
+					      "putative benign" => "putative benign",
+					      "benign" => "benign"),
+				    "tip" => "Categorize the expected impact of this variant."));
+	  $html .= editable ("${id_prefix}f_variant_dominance__",
+			     $row[variant_dominance],
+			     "Inheritance pattern",
+			     array ("select_options" => array ("unknown" => "unknown",
+							       "dominant" => "dominant",
+							       "recessive" => "recessive")));
+	  $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
+			     $row[summary_long],
+			     "Clinical significance",
+			     array ("tip" => "Describe the clinical significance of this variant."));
+	}
+
+	if ($html == "")
+	  return;
+
+	if (ereg ('^<(TABLE|TR)', $html)) {
+	  // TODO: handle is_delete and flag_edited_id for table rows
+	  // somehow; for now just don't indicate them at all
+	  if ($row["is_delete"]) return;
+	  if ($row["flag_edited_id"]) { $this->html .= $html; return; }
+	}
+
+	if ($row["is_delete"])
+	  $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>Deleted in this revision:</P>$html</DIV>";
+	else if ($row["flag_edited_id"]) {
+	  if ($row["previous_edit_id"])
+	    $edited = "Edited";
+	  else
+	    $edited = "Added";
+	  $html = "<DIV style=\"outline: 1px dashed #300; background-color: #dfd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>$edited in this revision:</P>\n$html</DIV>";
+	}
+	$this->html .= $html;
+    }
 }
 
 function evidence_render_history ($variant_id)
