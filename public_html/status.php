@@ -7,7 +7,12 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* editable OR figures (cases/controls with/without) for each {variant,disease,publication}
+* OR fixes
+** show overall OR for each disease at top of page
+** add OR/frequency download with one row per variant-disease association
+** round off odds ratio to 1/1000 or 3 sig dig
+** keep odds ratio updated when editing individual figures
+* IE test/fix
 * include #haplomes in db dump
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
 * import snpedia data
@@ -29,6 +34,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* editable OR figures (cases/controls with/without) for each {variant,disease,publication}
 * fix character encodings
 * import genenames database
 * display genetests results on variant page ("example":HBB-E6V)
