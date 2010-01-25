@@ -223,6 +223,9 @@ h1,h2,h3 {
 .disease_table .altcolor th,.disease_table .altcolor td {
 	background-color: #eee;
 }
+.disease_table td * {
+	padding: 0;
+}
 
 /* search results */
 .searchurl {
