@@ -7,11 +7,8 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* OR fixes
-** show overall OR for each disease at top of page
-** add OR/frequency download with one row per variant-disease association
-** round off odds ratio to 1/1000 or 3 sig dig
-** keep odds ratio updated when editing individual figures
+* add OR/frequency download with one row per variant-disease association
+* keep odds ratio updated when editing individual figures
 * IE test/fix
 * include #haplomes in db dump
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
@@ -34,6 +31,8 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* show overall OR for each disease at top of page
+* round off odds ratio to 1/1000, or 1 if >1000
 * editable OR figures (cases/controls with/without) for each {variant,disease,publication}
 * fix character encodings
 * import genenames database
