@@ -161,6 +161,10 @@ $renderer = new evidence_row_renderer;
 $renderer->render_row ($row0);
 $gOut["content"] .= $renderer->html();
 
+
+$gOut["content"] .= evidence_render_oddsratio_summary_table ($report);
+
+
 $rsid_seen = array();
 $allele_frequency = array();
 

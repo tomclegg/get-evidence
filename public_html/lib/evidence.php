@@ -509,10 +509,17 @@ class evidence_row_renderer {
 	     !$this->lastrow["disease_id"] ||
 	     $row["article_pmid"] != $this->lastrow["article_pmid"] ||
 	     $row["genome_id"] != $this->lastrow["genome_id"])) {
-	  $this->starttable = "<TABLE class=\"disease_table\">\n";
-	  $this->starttable .= "<TR><TD></TD>";
+	  $class2 = "";
+	  $title = "Cases/controls";
+	  if ($row["article_pmid"] == "*" &&
+	      $row["genome_id"] == "*") {
+	    $class2 = " disease_totals";
+	    $title = "<STRONG>Total cases/controls</STRONG>";
+	  }
+	  $this->starttable = "<TABLE class=\"disease_table$class2\">\n";
+	  $this->starttable .= "<TR><TH class=\"label\">$title</TH>";
 	  foreach (array ("case+", "case&ndash;", "control+", "control&ndash;", "odds&nbsp;ratio") as $x)
-	    $this->starttable .= "<TH width=\"60\">$x</TH>";
+	    $this->starttable .= "<TH width=\"60\">&nbsp;$x</TH>";
 	  $this->starttable .= "</TR>\n";
 	  $this->rownumber = 0;
 	}
@@ -538,8 +545,8 @@ class evidence_row_renderer {
 	    $row[$keyfield] = 0;
 	}
 
-	if ($row["article_pmid"] != 0 &&
-	    $row["disease_id"] != 0) {
+	if ($row["article_pmid"] != "0" &&
+	    $row["disease_id"] != "0") {
 	  $tr = editable ("${id_prefix}f_summary_short__8x1__oddsratio",
 			  $row["summary_short"],
 			  $row["disease_name"] . "<BR />",
@@ -553,7 +560,7 @@ class evidence_row_renderer {
 	  }
 	}
 
-	else if ($row["article_pmid"] != 0) {
+	else if ($row["article_pmid"] != "0") {
 	  $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
 	  $summary = article_get_summary ($row["article_pmid"]);
 	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
@@ -563,7 +570,7 @@ class evidence_row_renderer {
 
 	}
 
-	else if ($row["genome_id"] != 0) {
+	else if ($row["genome_id"] != "0") {
 
 	  $html .= "<A name=\"g".$row["genome_id"]."\"></A>\n";
 
@@ -603,7 +610,7 @@ class evidence_row_renderer {
 			     $name);
 	}
 
-	else if ($row["disease_id"] != 0) {
+	else if ($row["disease_id"] != "0") {
 	  // Disease summary not attached to any particular publication
 	}
 
@@ -720,6 +727,46 @@ ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
   }
   $html .= "</UL>\n";
   return $html;
+}
+
+
+function evidence_render_oddsratio_summary_table ($report)
+{
+  $disease = array ();
+  foreach ($report as $row) {
+    if (!($row["article_pmid"] &&
+	  ($id = $row["disease_id"]) > 0 &&
+	  ereg ('^{', $row["summary_short"])))
+      continue;
+    $figs = json_decode ($row["summary_short"], true);
+    if (!strlen ($figs["case_pos"]) ||
+	!strlen ($figs["case_neg"]) ||
+	!strlen ($figs["control_pos"]) ||
+	!strlen ($figs["control_neg"]))
+      continue;
+    $disease[$id]["figs"]["case_pos"] += $figs["case_pos"];
+    $disease[$id]["figs"]["case_neg"] += $figs["case_neg"];
+    $disease[$id]["figs"]["control_pos"] += $figs["control_pos"];
+    $disease[$id]["figs"]["control_neg"] += $figs["control_neg"];
+    $disease[$id]["disease_id"] = $row["disease_id"];
+    $disease[$id]["disease_name"] = $row["disease_name"];
+    $disease[$id]["article_pmid"] = "*";
+    $disease[$id]["genome_id"] = "*";
+  }
+
+  if (!sizeof ($disease))
+    return "";
+
+  global $gDisableEditing;
+  $gDE_was = $gDisableEditing;
+  $gDisableEditing = true;
+  $renderer = new evidence_row_renderer;
+  foreach ($disease as $id => &$row) {
+    $row["summary_short"] = json_encode ($row["figs"]);
+    $renderer->render_row ($row);
+  }
+  $gDisableEditing = $gDE_was;
+  return $renderer->html();
 }
 
 ?>

@@ -216,16 +216,36 @@ h1,h2,h3 {
 	margin-left: 25px;
 }
 .disease_table th,.disease_table td {
-	text-align: left;
+	text-align: right;
 	padding: 4px;
-	background-color: #ddd;
+	font-weight: normal;
 }
-.disease_table .altcolor th,.disease_table .altcolor td {
-	background-color: #eee;
+.disease_table th {
+	border-bottom: 1px solid black;
+}
+.disease_table td {
+	background-color: #ddf;
+}
+.disease_table .altcolor td {
+	background-color: #eef;
 }
 .disease_table td * {
 	padding: 0;
 }
+.disease_table .label td,.disease_table .label th {
+	text-align: left;
+}
+.disease_totals {
+	margin-left: 0;
+}
+/* redundant:
+.disease_totals td {
+	background-color: #ddf;
+}
+.disease_totals .altcolor td {
+	background-color: #eef;
+}
+*/
 
 /* search results */
 .searchurl {
@@ -262,4 +282,7 @@ h1,h2,h3 {
 }
 .csshide {
 	display: none;
+}
+.invisible {
+	visibility: hidden;
 }

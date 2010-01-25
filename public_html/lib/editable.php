@@ -62,17 +62,17 @@ function editable_oddsratio ($id, $content, $title, $options)
     $figs = json_decode ($content, true);
   $trclass = ($options["rownumber"] % 4 < 2) ? " class=\"altcolor\"" : "";
   $html .= "<TR$trclass>";
-  $html .= "<TH>$title</TH>";
+  $html .= "<TD class=\"label\">$title</TD>";
   $empty = 1;
   foreach (array ("case_pos", "case_neg", "control_pos", "control_neg") as $x) {
     $cellid = "{$id}__o_{$x}__";
-    if (!isset ($figs[$x]) || $figs[$x] == "") {
+    if (!isset ($figs[$x]) || !strlen ($figs[$x])) {
       if (!$editable)
 	$figs[$x] = "-";
     }
     else {
       $empty = 0;
-      $figs[$x] += 0;
+      $figs[$x] = $figs[$x] + 0;
     }
 
     $cell = $figs[$x];
@@ -83,7 +83,9 @@ function editable_oddsratio ($id, $content, $title, $options)
       $html .= "<TD>{$cell}</TD>\n";
     }
   }
-  $html .= "<TD>".oddsratio_compute($figs)."</TD>\n";
+  $OR = oddsratio_compute($figs, true);
+  if ($OR != "-") $OR = "<STRONG>$OR</STRONG>";
+  $html .= "<TD>$OR</TD>\n";
   $html .= "</TR>\n";
   if ($empty && !$editable) return "";
   return $html;
