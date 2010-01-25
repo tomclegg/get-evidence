@@ -217,7 +217,7 @@ h1,h2,h3 {
 }
 .disease_table th,.disease_table td {
 	text-align: left;
-	padding: 2px;
+	padding: 4px;
 	background-color: #ddd;
 }
 .disease_table .altcolor th,.disease_table .altcolor td {
