@@ -5,11 +5,16 @@
 
 function oddsratio_compute ($figs)
 {
-    if ($figs["case_neg"] > 0)
-	return (($figs["case_pos"] / $figs["case_neg"]) /
-		(($figs["control_pos"]+1) / ($figs["control_neg"]+1)));
-    else
-	return "-";
+    if ($figs["case_neg"] < 1) return "-";
+    $control_neg = $figs["control_neg"];
+    $control_pos = $figs["control_pos"];
+    if ($control_pos < 1) {
+	$control_pos = 1;
+	$control_neg++;
+    }
+    if ($control_neg == 0) return "-";
+    return (($figs["case_pos"] / $figs["case_neg"]) /
+	    ($control_pos / $control_neg));
 }
 
 ?>
