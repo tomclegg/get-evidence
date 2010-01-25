@@ -213,6 +213,7 @@ h1,h2,h3 {
 
 .disease_table {
 	border-collapse: collapse;
+	margin-left: 25px;
 }
 .disease_table th,.disease_table td {
 	text-align: left;
