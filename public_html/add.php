@@ -44,9 +44,11 @@ if (getCurrentUser()) {
 	($variant_id, $article_pmid, $genome_id, $disease_id, true);
     $response["latest_edit_v${variant_id}a${article_pmid}g${genome_id}"] = $latest_edit_id;
     $response["latest_edit_id"] = $latest_edit_id;
-    $response["html"] = evidence_render_row
-      (theDb()->getRow ("SELECT * FROM edits WHERE edit_id=?",
-			array($latest_edit_id)));
+    $renderer = new evidence_row_renderer;
+    $renderer->render_row
+	(theDb()->getRow ("SELECT * FROM edits WHERE edit_id=?",
+			  array($latest_edit_id)));
+    $response["html"] = $renderer->html ();
     ereg ("id=\"([^\"]+)", $response["html"], $regs);
     $response["e_id"] = $regs[1];
   }
