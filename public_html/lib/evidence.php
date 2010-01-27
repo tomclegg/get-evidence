@@ -624,7 +624,7 @@ class evidence_row_renderer {
 	else {
 	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 			     $row[summary_short],
-			     "Summary",
+			     "Short summary",
 			     array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
 	  $html .= editable ("${id_prefix}f_variant_impact__",
 			     $row[variant_impact],
@@ -644,7 +644,7 @@ class evidence_row_renderer {
 							       "recessive" => "recessive")));
 	  $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
 			     $row[summary_long],
-			     "Clinical significance",
+			     "Summary of published research, and additional commentary",
 			     array ("tip" => "Describe the clinical significance of this variant."));
 	}
 
