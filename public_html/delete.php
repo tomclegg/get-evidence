@@ -4,8 +4,10 @@ include "lib/setup.php";
 
 $response = array();
 
-$item_id = evidence_get_latest_edit ($_POST[v], $_POST[a], $_POST[g], $_POST[d]);
-if ($item_id) {
+if (!getCurrentUser()) {
+  $response["errors"][] = "Not logged in";
+}
+else if (($item_id = evidence_get_latest_edit ($_POST[v], $_POST[a], $_POST[g], $_POST[d]))) {
   $q = theDb()->query ("INSERT INTO edits SET
 			edit_oid=?, edit_timestamp=NOW(),
 			is_draft=1, is_delete=1,
@@ -20,6 +22,12 @@ if ($item_id) {
   else if (($delete_id = theDb()->getOne ("SELECT LAST_INSERT_ID()"))) {
     evidence_submit ($delete_id);
     $response["deleted"] = true;
+    if ($_POST[v] && ($_POST[a] || $_POST[g]) && !$_POST[d]) {
+      // Delete per-disease entries for an article/genome entry
+      // TODO: evidence_submit() should take care of this
+      // TODO: snap_release will need special handling for this case too
+      theDb()->query ("DELETE FROM snap_latest WHERE variant_id=? AND article_pmid=? AND genome_id=?", array ($_POST[v], $_POST[a], $_POST[g]));
+    }
   }
 }
 else {

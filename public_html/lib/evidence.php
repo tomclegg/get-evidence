@@ -475,6 +475,12 @@ function evidence_get_latest_edit ($variant_id,
 	AND (is_draft=0 OR edit_oid=?)",
      array ($variant_id, $article_pmid, $genome_id, $disease_id,
 	    getCurrentUser("oid")));
+
+  if ($edit_id &&
+      theDb()->getOne ("SELECT is_delete FROM edits WHERE edit_id=?",
+		       array ($edit_id)))
+    $edit_id = FALSE;
+
   if (!$edit_id && $create_flag) {
     theDb()->query
       ("INSERT INTO edits
@@ -516,7 +522,8 @@ class evidence_row_renderer {
 	    $class2 = " disease_totals";
 	    $title = "<STRONG>Total cases/controls</STRONG>";
 	  }
-	  $this->starttable = "<TABLE class=\"disease_table$class2\">\n";
+	  $class3 = " delete_with_v{$row[variant_id]}_a{$row[article_pmid]}_g{$row[genome_id]}";
+	  $this->starttable = "<TABLE $id class=\"disease_table$class2$class3\">\n";
 	  $this->starttable .= "<TR><TH class=\"label\">$title</TH>";
 	  foreach (array ("case+", "case&ndash;", "control+", "control&ndash;", "odds&nbsp;ratio") as $x)
 	    $this->starttable .= "<TH width=\"60\">&nbsp;$x</TH>";

@@ -43,12 +43,17 @@ function editable_delete (e)
     v = (/_v_([0-9]+?)__/.exec('_'+e.id))[1];
     a = (/_a_([0-9]+?)__/.exec('_'+e.id))[1];
     g = (/_g_([0-9]+?)__/.exec('_'+e.id))[1];
+    d = (/_d_([0-9]+?)__/.exec('_'+e.id))[1];
     var x = {
 	method: "post",
-	parameters: { v: v, a: a, g: g, e_id: e.id },
+	parameters: { v: v, a: a, g: g, d: d, e_id: e.id },
 	onSuccess: function(transport) {
-	    if (transport.responseJSON.deleted)
+	    if (transport.responseJSON.deleted) {
+		$$('.delete_with_v'+v+'_a'+a+'_g'+g).each(function(dw){
+			dw.remove();
+		    });
 		e.remove();
+	    }
 	}
     };
     new Ajax.Request ('/delete.php', x);
