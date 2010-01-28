@@ -427,11 +427,11 @@ function evidence_get_report ($snap, $variant_id)
 	$v[0][$x] = 0;
 
   // Make sure for every pmid>0 row all of the article=A, disease=D
-  // rows are there too
+  // rows are there too (and ditto for article=0, genome=0)
 
   $have_a_d = array();
   foreach ($v as $row) {
-    if ($row["article_pmid"]) {
+    if (!$row["genome_id"]) {
       $have_a_d[$row["article_pmid"]][$row["disease_id"]] = 1;
     }
   }
@@ -517,14 +517,18 @@ class evidence_row_renderer {
 	     $row["genome_id"] != $this->lastrow["genome_id"])) {
 	  $class2 = "";
 	  $title = "Cases/controls";
-	  if ($row["article_pmid"] == "*" &&
-	      $row["genome_id"] == "*") {
+	  if ($row["article_pmid"] === "*" &&
+	      $row["genome_id"] === "*") {
 	    $class2 = " disease_totals";
 	    $title = "<STRONG>Total cases/controls</STRONG>";
 	  }
+	  else if ($row["article_pmid"] == "0" &&
+		   $row["genome_id"] == "0") {
+	    $title = "Unpublished cases/controls";
+	  }
 	  $class3 = " delete_with_v{$row[variant_id]}_a{$row[article_pmid]}_g{$row[genome_id]}";
 	  $this->starttable = "<TABLE $id class=\"disease_table$class2$class3\">\n";
-	  $this->starttable .= "<TR><TH class=\"label\">$title</TH>";
+	  $this->starttable .= "<TR><TH class=\"rowlabel\">$title</TH>";
 	  foreach (array ("case+", "case&ndash;", "control+", "control&ndash;", "odds&nbsp;ratio") as $x)
 	    $this->starttable .= "<TH width=\"60\">&nbsp;$x</TH>";
 	  $this->starttable .= "</TR>\n";
@@ -552,8 +556,7 @@ class evidence_row_renderer {
 	    $row[$keyfield] = 0;
 	}
 
-	if ($row["article_pmid"] != "0" &&
-	    $row["disease_id"] != "0") {
+	if ($row["disease_id"] != "0") {
 	  $tr = editable ("${id_prefix}f_summary_short__8x1__oddsratio",
 			  $row["summary_short"],
 			  $row["disease_name"] . "<BR />",
@@ -741,14 +744,13 @@ function evidence_render_oddsratio_summary_table ($report)
 {
   $disease = array ();
   foreach ($report as $row) {
-    if (!($row["article_pmid"] &&
-	  ($id = $row["disease_id"]) > 0 &&
+    if (!(($id = $row["disease_id"]) > 0 &&
 	  ereg ('^{', $row["summary_short"])))
       continue;
     $figs = json_decode ($row["summary_short"], true);
-    if (!strlen ($figs["case_pos"]) ||
-	!strlen ($figs["case_neg"]) ||
-	!strlen ($figs["control_pos"]) ||
+    if (!strlen ($figs["case_pos"]) &&
+	!strlen ($figs["case_neg"]) &&
+	!strlen ($figs["control_pos"]) &&
 	!strlen ($figs["control_neg"]))
       continue;
     $disease[$id]["figs"]["case_pos"] += $figs["case_pos"];

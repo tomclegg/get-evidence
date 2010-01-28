@@ -158,7 +158,11 @@ $gOut["content"] = "
 
 
 $renderer = new evidence_row_renderer;
-$renderer->render_row ($row0);
+foreach ($report as $row) {
+    if ($row["article_pmid"] > 0 || $row["genome_id"] > 0)
+	break;
+    $renderer->render_row ($row);
+}
 $gOut["content"] .= $renderer->html();
 
 

@@ -62,7 +62,7 @@ function editable_oddsratio ($id, $content, $title, $options)
     $figs = json_decode ($content, true);
   $trclass = ($options["rownumber"] % 4 < 2) ? " class=\"altcolor\"" : "";
   $html .= "<TR$trclass>";
-  $html .= "<TD class=\"label\">$title</TD>";
+  $html .= "<TD class=\"rowlabel\">$title</TD>";
   $empty = 1;
   foreach (array ("case_pos", "case_neg", "control_pos", "control_neg") as $x) {
     $cellid = "{$id}__o_{$x}__";

@@ -232,20 +232,12 @@ h1,h2,h3 {
 .disease_table td * {
 	padding: 0;
 }
-.disease_table .label td,.disease_table .label th {
+.disease_table .rowlabel {
 	text-align: left;
 }
 .disease_totals {
 	margin-left: 0;
 }
-/* redundant:
-.disease_totals td {
-	background-color: #ddf;
-}
-.disease_totals .altcolor td {
-	background-color: #eef;
-}
-*/
 
 /* search results */
 .searchurl {

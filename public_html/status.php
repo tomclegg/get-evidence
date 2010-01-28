@@ -31,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "unpublished cases/controls" table
 * show overall OR for each disease at top of page
 * round off odds ratio to 1/1000, or 1 if >1000
 * editable OR figures (cases/controls with/without) for each {variant,disease,publication}
