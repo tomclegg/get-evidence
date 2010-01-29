@@ -260,7 +260,7 @@ $external_refs = theDb()->getAll ("SELECT * FROM variant_external WHERE variant_
 if (!$external_refs) $external_refs = array();
 
 $gt = theDb()->getAll ("SELECT DISTINCT disease_name
- FROM genetests_gene_disease gd
+ FROM gene_disease gd
  LEFT JOIN diseases d ON gd.disease_id = d.disease_id
  WHERE gene=?
  OR gene IN (SELECT aka FROM gene_canonical_name WHERE official=?)",
