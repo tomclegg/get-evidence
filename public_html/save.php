@@ -4,7 +4,7 @@ include "lib/setup.php";
 
 global $gTheTextile;
 
-foreach (array ("variant_impact", "variant_dominance",
+foreach (array ("variant_impact", "variant_dominance", "variant_quality",
 		"summary_short", "summary_long", "talk_text") as $k) {
   $fields_allowed[$k] = 1;
 }
@@ -37,8 +37,15 @@ foreach ($_POST as $param => $newvalue)
 
 foreach ($oddsratio_arrays as $param => $figs)
 {
-  if ($oddsratio_actually_changed[$param])
-    $_POST[$param] = json_encode ($figs);
+  if ($oddsratio_actually_changed[$param]) {
+    if (ereg ('__f_variant_quality__', $param)) {
+      $_POST[$param] = "";
+      for ($i=0; array_key_exists ("$i", $figs); $i++)
+	$_POST[$param] .= (strlen($figs[$i])==1) ? $figs[$i] : "-";
+    }
+    else
+      $_POST[$param] = json_encode ($figs);
+  }
 }
 
 $response = array();
@@ -150,6 +157,14 @@ foreach ($_POST as $param => $newvalue)
       foreach ($oddsratio_params[$param] as $json_var => $orig_param) {
 	$response["saved__{$clients_previous_edit_id}__{$field_id}__{$json_var}"] = $saved_values[$json_var];
 	$response[ereg_replace('^edited_', 'preview_', $orig_param)] = $saved_values[$json_var];
+      }
+    }
+    else if (isset ($oddsratio_params[$param])) {
+      foreach ($oddsratio_params[$param] as $index => $orig_param) {
+	$response["saved__{$clients_previous_edit_id}__{$field_id}__{$index}"]
+	    = substr ($newvalue, $index, 1);
+	$response[ereg_replace('^edited_', 'preview_', $orig_param)]
+	    = substr ($newvalue, $index, 1);
       }
     }
     else {

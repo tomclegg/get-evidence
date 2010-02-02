@@ -8,6 +8,26 @@ var editable_save_request = false;
 var editable_save_result = {};
 var editable_monthnames = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
 
+function editable_5star_click (eid, newrating)
+{
+    if (!$('edited_' + eid))
+	$(eid).insert('<INPUT type="hidden" name="edited_'+eid+'" id="edited_'+eid+'" value="">');
+    var newvalue = (newrating >= 0 ? newrating : '-');
+    $('edited_' + eid).value = newvalue;
+    $('preview_'+eid).innerHTML = newvalue;
+    for (i=1; i<=5; i++) {
+	var starimg = $('star'+i+'_'+eid);
+	starimg.src
+	    = '/img/star-'
+	    + (i <= newrating ? 'blue' : 'white')
+	    + '16.png';
+	if (newrating >= 0)
+	    starimg.removeClassName ('halfthere');
+	else
+	    starimg.addClassName ('halfthere');
+    }
+}
+
 function editable_make (id, content)
 {
     return '<SPAN id="'+id+'" class="editable"><SPAN id="preview_'+id+'">'+content+'</SPAN><INPUT type="hidden" id="orig_'+id+'" value="'+content.htmlentities()+'"/>&nbsp;</SPAN>';
@@ -244,7 +264,10 @@ function editable_get_draft ()
 			    draft_id += '__' + splitfield[1];
 			if ((saved = eval ('editable_save_result.saved__' + draft_id))) {
 			    if (saved != $('orig_'+e.id).value) {
-				editable_click(e);
+				if (e.hasClassName ("5star"))
+				    editable_5star_click (e.id, saved);
+				else
+				    editable_click(e);
 				if ($('edited_'+e.id))
 				    $('edited_'+e.id).value = saved;
 			    }
@@ -264,6 +287,14 @@ function editable_check_unsaved (e, norecurse)
 
     e_orig_value = $(e.id.sub("edited","orig")).value;
 
+    save_result_id = 'saved__'
+	+ (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
+	+ '__'
+	+ (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1];
+    var extra = /__o_([a-z0-9A-Z_]+?)__/.exec(e.id);
+    if (extra && extra[1])
+	save_result_id = save_result_id + '__' + extra[1];
+
     // compare to last version confirmed saved by server -- if no
     // edits have been saved, compare to the original (latest/release)
     // version
@@ -271,10 +302,8 @@ function editable_check_unsaved (e, norecurse)
     if (e_saved)
 	e_saved_value = e_saved.value;
     else if (editable_save_result &&
-	     (e_saved_value = eval ('editable_save_result.saved__'
-				    + (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
-				    + '__'
-				    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1])))
+	     (e_saved_value = eval ('editable_save_result.' + save_result_id)))
+
 	;
     else
 	e_saved_value = e_orig_value;
@@ -367,7 +396,7 @@ function editable_init_single (e)
 	Event.observe(e, 'mouseover', function () { editable_highlight (e, true); });
 	Event.observe(e, 'mouseout', function () { editable_highlight (e, false); });
     }
-    else if (!e.hasClassName ('notoolbar'))
+    else if (!e.hasClassName ('5star'))
 	editable_decorate (e);
 }
 

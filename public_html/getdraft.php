@@ -2,7 +2,7 @@
 
 include "lib/setup.php";
 
-foreach (array ("variant_impact", "variant_dominance",
+foreach (array ("variant_impact", "variant_dominance", "variant_quality",
 		"summary_short", "summary_long", "talk_text") as $k) {
   $fields_allowed[$k] = 1;
 }
@@ -15,7 +15,7 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
   // given edit and newer ("n") submissions from other users (danger
   // of conflict)
 
-  $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, (d.variant_impact <> a.variant_impact OR d.variant_dominance <> a.variant_dominance OR d.summary_short <> a.summary_short OR d.summary_long <> a.summary_long OR d.talk_text <> a.talk_text OR d.article_pmid <> a.article_pmid) draft_differs
+  $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, (d.variant_impact <> a.variant_impact OR d.variant_dominance <> a.variant_dominance OR d.variant_quality <> a.variant_quality OR d.summary_short <> a.summary_short OR d.summary_long <> a.summary_long OR d.talk_text <> a.talk_text OR d.article_pmid <> a.article_pmid) draft_differs
 			FROM edits a
 			LEFT JOIN edits d ON d.previous_edit_id=a.edit_id AND d.edit_oid=? AND d.is_draft
 			LEFT JOIN snap_latest n ON n.variant_id=a.variant_id AND n.article_pmid=a.article_pmid AND n.genome_id=a.genome_id AND n.disease_id=a.disease_id
@@ -38,6 +38,15 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
 	  foreach ($dict as $k => $v) {
 	    $response["saved__{$edit_id}__{$field}__{$k}"] = $v;
 	    $response["preview__{$edit_id}__{$field}__{$k}"] = htmlspecialchars ($v);
+	  }
+	  continue;
+	}
+	if ($field == "variant_quality") {
+	  for ($i=0; $i<strlen($row[$field]); $i++) {
+	    $response["saved__${edit_id}__{$field}__{$i}"]
+		= substr ($row[$field], $i, 1);
+	    $response["preview__${edit_id}__{$field}__{$i}"]
+		= substr ($row[$field], $i, 1);
 	  }
 	  continue;
 	}

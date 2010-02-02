@@ -114,37 +114,45 @@ function editable_quality ($id, $content, $title, $options)
 
     $html = "<TABLE class=\"quality_table\">\n";
     $html .= "<TR><TH class=\"rowlabel\">Variant quality</TH><TH></TH><TH width=\"16\"></TH><TH></TH></TR>\n";
-    $x = 0;
+    $axis_index = 0;
     global $gQualityAxes;
     foreach ($gQualityAxes as $axis => $desc) {
-	if (strlen($content) > $x) $score = substr($content,$x,1);
-	else $score = "-";
-	if (!ereg ('^[0-5]$', $score))
+	if (strlen($content) <= $axis_index)
 	    $score = "-";
+	else {
+	    $score = substr($content, $axis_index, 1);
+	    if (!ereg ('^[0-5]$', $score))
+		$score = "-";
+	}
 
 	$html .= "<TR>\n";
 	$html .= "<TD class=\"rowlabel\"><SPAN onmouseover=\"Tip('$desc',BALLOON,true,FIX,[this,0,0],FOLLOWMOUSE,false,ABOVE,true);\" onmouseout=\"UnTip();\">$axis</SPAN></TD>\n";
 
-	$axis_var = ereg_replace (" ", "_", $axis);
-	$cellid = "{$id}__o_{$axis_var}__";
+	$cellid = "{$id}__o_{$axis_index}__";
 
 	$cancel_cell = "";
 	$stars = "";
 	for ($i=($editable ? -1 : 1); $i<=5; $i++) {
 	    $attrs = "width=\"16\" height=\"16\" alt=\"\"";
 	    if ($editable)
-		$attrs .= " onclick=\"\$('preview_{$cellid}').innerHTML = ($i>=0 ? $i : '-'); for(i=1;i<=5;i++){\$('star'+i+'_{$cellid}').src = '/img/star-' + (i<=$i ? 'blue' : 'white') + '16.png';}\"";
+		$attrs .= " onclick=\"editable_5star_click('{$cellid}',$i);\"";
 	    if ($i > 0)
 		$attrs .= " id=\"star{$i}_{$cellid}\"";
+
 	    if ($i == -1)
 		$stars .= "<SPAN $attrs class=\"halfthere x\">&times;</SPAN>";
-	    else if ($i == 0)
-		$stars .= "<IMG src=\"/img/star-white16.png\" $attrs class=\"halfthere\">";
-	    else if ($i <= $score)
-		$stars .= "<IMG src=\"/img/star-blue16.png\" $attrs>";
-	    else
-		$stars .= "<IMG src=\"/img/star-white16.png\" $attrs>";
+	    else {
+		if ($i == 0 || $score == "-")
+		    $attrs .= " class=\"halfthere\"";
+
+		if ($i > 0 && $i <= $score)
+		    $stars .= "<IMG src=\"/img/star-blue16.png\" $attrs>";
+		else
+		    $stars .= "<IMG src=\"/img/star-white16.png\" $attrs>";
+	    }
+
 	    if ($i == -1) {
+		// Show the "X" (null) button last, although I made it first
 		$cancel_cell = $stars;
 		$stars = "";
 	    }
@@ -152,7 +160,7 @@ function editable_quality ($id, $content, $title, $options)
 	$html .= "<TD>$stars</TD>\n";
 
 	if ($editable) {
-	    $html .= "<TD id=\"$cellid\" class=\"editable notoolbar\"><SPAN id=\"preview_$cellid\">{$score}</SPAN><INPUT type=\"hidden\" id=\"orig_$cellid\" name=\"orig_$cellid\" value=\"".htmlentities($score)."\"/></TD><TD>{$cancel_cell}</TD>\n";
+	    $html .= "<TD id=\"$cellid\" class=\"editable 5star\"><SPAN id=\"preview_$cellid\">{$score}</SPAN><INPUT type=\"hidden\" id=\"orig_$cellid\" name=\"orig_$cellid\" value=\"".htmlentities($score)."\"/></TD><TD>{$cancel_cell}</TD>\n";
 	}
 	else if ($score)
 	    $html .= "<TD>$score</TD>\n";
@@ -160,6 +168,7 @@ function editable_quality ($id, $content, $title, $options)
 	    $html .= "<TD></TD>\n";
 
 	$html .= "</TR>\n";
+	++$axis_index;
     }
 
     $html .= "</TABLE><P>&nbsp;</P>\n";
