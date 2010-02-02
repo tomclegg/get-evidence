@@ -28,8 +28,8 @@ function evidence_create_tables ()
   edit_timestamp DATETIME,
   signoff_oid VARCHAR(255),
   signoff_timestamp DATETIME,
-  variant_impact ENUM('pathogenic','putative pathogenic','unknown','putative benign','benign') NOT NULL DEFAULT 'unknown',
-  variant_dominance ENUM('unknown','dominant','recessive') NOT NULL DEFAULT 'unknown',
+  variant_impact ENUM('pathogenic','putative pathogenic','unknown','putative benign','benign','putative protective','protective','other') NOT NULL DEFAULT 'unknown',
+  variant_dominance ENUM('unknown','dominant','recessive','other','undefined') NOT NULL DEFAULT 'unknown',
   summary_short TEXT,
   summary_long TEXT,
   talk_text TEXT,
@@ -629,22 +629,18 @@ class evidence_row_renderer {
 			     $row[summary_short],
 			     "Short summary",
 			     array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
+	  global $gImpactOptions;
 	  $html .= editable ("${id_prefix}f_variant_impact__",
 			     $row[variant_impact],
 			     "Impact",
 			     array ("select_options"
-				    => array ("pathogenic" => "pathogenic",
-					      "putative pathogenic" => "putative pathogenic",
-					      "unknown" => "unknown",
-					      "putative benign" => "putative benign",
-					      "benign" => "benign"),
+				    => $gImpactOptions,
 				    "tip" => "Categorize the expected impact of this variant."));
+	  global $gInheritanceOptions;
 	  $html .= editable ("${id_prefix}f_variant_dominance__",
 			     $row[variant_dominance],
 			     "Inheritance pattern",
-			     array ("select_options" => array ("unknown" => "unknown",
-							       "dominant" => "dominant",
-							       "recessive" => "recessive")));
+			     array ("select_options" => $gInheritanceOptions));
 	  $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
 			     $row[summary_long],
 			     "Summary of published research, and additional commentary",
@@ -778,4 +774,20 @@ function evidence_render_oddsratio_summary_table ($report)
   return $renderer->html();
 }
 
+$gInheritanceOptions = array
+    ("dominant" => "dominant",
+     "recessive" => "recessive",
+     "other" => "other (e.g., modifier, co-dominant, incomplete penetrance)",
+     "undefined" => "undefined in the literature",
+     "unknown" => "unknown (literature unavailable or not yet reviewed)");
+
+$gImpactOptions = array
+    ("pathogenic" => "pathogenic",
+     "putative pathogenic" => "putative pathogenic",
+     "benign" => "benign",
+     "putative benign" => "putative benign",
+     "protective" => "protective",
+     "putative protective" => "putative protective",
+     "other" => "other",
+     "unknown" => "unknown");
 ?>
