@@ -239,6 +239,45 @@ h1,h2,h3 {
 	margin-left: 0;
 }
 
+
+.quality_table {
+	border-collapse: collapse;
+}
+.quality_table th,.quality_table td {
+	text-align: center;
+	padding: 1px 4px;
+	font-weight: normal;
+}
+.quality_table th {
+	border-bottom: 3px solid #ddd;
+	font-weight: bold;
+}
+.quality_table td * {
+	padding: 0;
+	vertical-align: middle;
+}
+.quality_table .rowlabel {
+	text-align: left;
+	padding: 1px 4px 1px 0;
+}
+.quality_table .halfthere {
+	opacity: 0.4;
+	filter: alpha(opacity=40);
+}
+.quality_table .x {
+	font-size: 16px;
+	opacity: 0.2;
+	filter: alpha(opacity=20);
+}
+.quality_table td img, .quality_table td .x {
+	cursor: pointer;
+	cursor: hand;
+	padding: 0 2px;
+}
+.quality_table td {
+	vertical-align: middle;
+}
+
 /* search results */
 .searchurl {
 	color: green;

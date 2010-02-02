@@ -367,7 +367,7 @@ function editable_init_single (e)
 	Event.observe(e, 'mouseover', function () { editable_highlight (e, true); });
 	Event.observe(e, 'mouseout', function () { editable_highlight (e, false); });
     }
-    else
+    else if (!e.hasClassName ('notoolbar'))
 	editable_decorate (e);
 }
 
