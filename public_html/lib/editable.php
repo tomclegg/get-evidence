@@ -17,10 +17,18 @@ function editable($id, $content, $title="", $options=false)
   if (ereg ('__oddsratio$', $id))
     return editable_oddsratio ($id, $content, $title, $options);
   else {
+    /*
+    if ($options &&
+	is_array ($options["select_options"]) &&
+	array_key_exists ($content, $options["select_options"]))
+      $html = "<P>".$options["select_options"][$content]."</P>";
+    else
+    */
     $html = $gTheTextile->textileRestricted ($content);
+
     if (trim($html) == "") $html = "<P>&nbsp;</P>";
 
-    if (strlen($title) <  60 && !preg_match ('{<(b|strong)\b}i', $title))
+    if (strlen($title) < 60 && !preg_match ('{<(b|strong)\b}i', $title))
       $title = "<strong>$title</strong>";
   }
 
@@ -37,7 +45,7 @@ function editable($id, $content, $title="", $options=false)
   if ($options && is_array($options["select_options"])) {
     $selector = "<P style=\"display:none;\"><SELECT id=\"edited_$id\" name=\"edited_$id\" onchange=\"editable_check_unsaved(this); editable_save();\">\n";
     foreach ($options["select_options"] as $k => $v) {
-      $selected = ($content == $v) ? " selected" : "";
+      $selected = ($content == $k) ? " selected" : "";
       $selector .= "<OPTION value=\"".htmlentities($k)."\"$selected>".htmlspecialchars($v)."</OPTION>\n";
     }
     $selector .= "</SELECT></P>";
