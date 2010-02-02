@@ -7,6 +7,9 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* add "other" option to impact/inheritance fields
+* change "unknown" impact/inheritance values to "other" if human-edited
+* add 5?-axis "strength of evidence" table (computational, molecular/cellular, population/OR, family/LOD, outcomes)
 * add OR/frequency download with one row per variant-disease association
 * keep odds ratio updated when editing individual figures
 * IE test/fix
