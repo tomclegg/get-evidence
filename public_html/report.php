@@ -80,7 +80,7 @@ h1. Available reports
 EOF
       ;
   if (getCurrentUser())
-      $textile .= "\n* All variants which \"you have edited\":report?type=yours\n";
+      $textile .= "\n* All variants that \"you have edited\":report?type=yours\n";
   $gOut["content"] = $gTheTextile->textileThis ($textile);
   go();
   exit;
