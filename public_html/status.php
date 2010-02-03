@@ -7,7 +7,7 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add OR/frequency download with one row per variant-disease association
+* include each variant's max odds ratio in download
 * keep odds ratio updated when editing individual figures
 * IE test/fix
 * include #haplomes in db dump
@@ -31,6 +31,9 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* "show next page" and "show all" buttons on "recent edits"
+* compress sequences of similar edits on "recent edits"
+* note disease names on "recent edits" where applicable
 * add 5-axis "strength of evidence" table (computational, molecular/cellular, population/OR, family/LOD, outcomes)
 * change "unknown" impact values to "other" if human-edited
 * add "other" option to impact/inheritance fields, add "protective" options to impact field
