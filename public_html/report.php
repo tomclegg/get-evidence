@@ -20,6 +20,7 @@ if ($_GET["domorhom"])
   $sql_occur_filter = "(s.variant_dominance <> 'recessive' OR o.zygosity = 'homozygous')";
 
 
+$sql_right_join = "";
 $sql_orderby = "";
 $sql_params = array();
 
@@ -57,9 +58,15 @@ else if ($want_report_type == "web-search") {
       $sql_having .= " AND NOT (MAX(o.rsid) > 0)";
   }
 }
+else if ($want_report_type == "yours") {
+  $report_title = "Variants edited by you";
+  $sql_right_join = "RIGHT JOIN edits e2 ON e2.variant_id=s.variant_id AND e2.edit_oid=?";
+  $sql_params = array (getCurrentUser("oid"));
+  $sql_orderby = "ORDER BY variant_gene, variant_aa_pos, variant_aa_from";
+}
 else {
   $gOut["title"] = "GET-Evidence: Reports";
-  $gOut["content"] = $gTheTextile->textileThis (<<<EOF
+  $textile = <<<EOF
 h1. Available reports
 
 * "Population Actions":report?type=population-actions -- pathogenic and putative pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
@@ -71,7 +78,10 @@ h1. Available reports
 ** "Without OMIM entries, f<0.05":report?type=web-search&noomim=1&rare=1
 ** "Without dbSNP entries":report?type=web-search&nodbsnp=1
 EOF
-);
+      ;
+  if (getCurrentUser())
+      $textile .= "\n* All variants which \"you have edited\":report?type=yours\n";
+  $gOut["content"] = $gTheTextile->textileThis ($textile);
   go();
   exit;
 }
@@ -84,6 +94,7 @@ function print_content ()
   global $sql_having;
   global $sql_occur_filter;
   global $sql_orderby;
+  global $sql_right_join;
   global $sql_params;
   global $snap;
   global $gTheTextile;
@@ -96,6 +107,7 @@ SELECT s.*, v.*, g.*,
  y.hitcount AS hitcount,
  vf.f AS variant_frequency
 FROM snap_$snap s
+$sql_right_join
 LEFT JOIN variants v ON s.variant_id=v.variant_id
 LEFT JOIN variant_frequency vf ON vf.variant_id=v.variant_id
 LEFT JOIN variant_occurs o ON v.variant_id=o.variant_id AND $sql_occur_filter

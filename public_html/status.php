@@ -31,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "all variants which you have edited" report
 * "show next page" and "show all" buttons on "recent edits"
 * compress sequences of similar edits on "recent edits"
 * note disease names on "recent edits" where applicable
