@@ -116,7 +116,7 @@ LEFT JOIN genomes g ON d.genome_id=g.genome_id
 LEFT JOIN yahoo_boss_cache y ON s.variant_id=y.variant_id
 LEFT JOIN variant_external omim ON omim.variant_id=s.variant_id AND omim.tag='OMIM'
 -- LEFT JOIN snap_$snap gs ON gs.variant_id=s.variant_id AND gs.article_pmid=0 AND gs.genome_id=g.genome_id
-WHERE s.article_pmid=0 AND s.genome_id=0 AND $sql_where
+WHERE s.article_pmid=0 AND s.genome_id=0 AND s.disease_id=0 AND $sql_where
 GROUP BY v.variant_id,g.genome_id
 HAVING $sql_having
 $sql_orderby
