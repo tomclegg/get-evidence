@@ -242,6 +242,7 @@ h1,h2,h3 {
 
 .quality_table {
 	border-collapse: collapse;
+	width: 100%;
 }
 .quality_table th,.quality_table td {
 	text-align: center;

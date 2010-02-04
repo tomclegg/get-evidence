@@ -113,7 +113,7 @@ function editable_quality ($id, $content, $title, $options)
     $editable = !$gDisableEditing && getCurrentUser();
 
     $html = "<TABLE class=\"quality_table\">\n";
-    $html .= "<TR><TH class=\"rowlabel\">Variant quality</TH><TH></TH><TH width=\"16\"></TH><TH></TH></TR>\n";
+    $html .= "<TR><TH class=\"rowlabel\">Variant quality</TH><TH></TH><TH width=\"16\"></TH><TH></TH><TH width=\"*\"></TH></TR>\n";
     $axis_index = 0;
     global $gQualityAxes;
     foreach ($gQualityAxes as $axis => $desc) {
@@ -164,6 +164,11 @@ function editable_quality ($id, $content, $title, $options)
 	}
 	else if ($score)
 	    $html .= "<TD>$score</TD>\n";
+	else
+	    $html .= "<TD></TD>\n";
+
+	if ($axis_index == 0)
+	    $html .= "<TD><SPAN class=\"halfthere\">(This column soon to collect/display justification for ratings)</SPAN></TD>";
 	else
 	    $html .= "<TD></TD>\n";
 
