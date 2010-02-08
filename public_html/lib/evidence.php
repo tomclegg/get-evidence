@@ -795,10 +795,7 @@ $gImpactOptions = array
      "likely benign" => "likely benign",
      "protective" => "protective",
      "likely protective" => "likely protective",
-     "responsive" => "responsive",
-     "likely responsive" => "likely responsive",
-     "not responsive" => "not responsive",
-     "likely not responsive" => "likely not responsive",
-     "other" => "other",
-     "unknown" => "unknown");
+     "pharmacogenetic" => "pharmacogenetic",
+     "likely pharmacogenetic" => "likely pharmacogenetic",
+     "unknown" => "unknown (none or not yet reviewed)");
 ?>
