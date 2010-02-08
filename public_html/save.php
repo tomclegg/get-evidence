@@ -81,6 +81,7 @@ foreach ($_POST as $param => $newvalue)
   $field_id = $regs[1];
   if (!array_key_exists ($field_id, $fields_allowed)) continue;
 
+  $new_edit_id = false;
   if (!($edit_id = $response["edit_id__$previous_edit_id"]) &&
       !($client_sent_edit_id = $_POST["edit_id__$previous_edit_id"])) {
     if ($no_previous_edit_id) {
