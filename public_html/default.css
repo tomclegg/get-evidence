@@ -278,6 +278,18 @@ h1,h2,h3 {
 .quality_table td {
 	vertical-align: middle;
 }
+.quality_table td.left {
+	text-align: left;
+}
+.quality_table td.text {
+	padding-bottom: 6px;
+}
+.quality_table td.text * {
+	vertical-align: bottom;
+}
+.nowrap {
+	white-space: nowrap;
+}
 
 /* search results */
 .searchurl {

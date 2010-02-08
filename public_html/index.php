@@ -113,7 +113,7 @@ if ($max_edit_id) {
 	$history_box .= "an <STRONG>old version</STRONG> of this page that was saved on <STRONG>$version_date</STRONG>";
     else
 	$history_box .= "the latest version of this page, saved on <STRONG>$version_date</STRONG>";
-    $history_box .= " by <A href=\"edits?oid=".urlencode($contributor["oid"])."\">".htmlspecialchars($contributor["fullname"])."</A>.<UL>";
+    $history_box .= " by <A href=\"edits?oid=".urlencode($contributor["oid"])."\">".htmlspecialchars($contributor["fullname"])."</A>.</P><UL>";
 
     if ($previous_version)
 	$history_box .= "<LI>View the <A href=\"$gene-$aa;$previous_version\">previous version</A>";
@@ -130,7 +130,7 @@ if ($max_edit_id) {
 	$history_box .= " and enable editing features";
     $history_box .= "</LI>\n";
 
-    $history_box .= "</UL></P></DIV>";
+    $history_box .= "</UL></DIV>";
     $gDisableEditing = TRUE;
 }
 

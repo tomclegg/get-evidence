@@ -4,7 +4,8 @@ include "lib/setup.php";
 
 global $gTheTextile;
 
-foreach (array ("variant_impact", "variant_dominance", "variant_quality",
+foreach (array ("variant_impact", "variant_dominance",
+		"variant_quality", "variant_quality_text",
 		"summary_short", "summary_long", "talk_text") as $k) {
   $fields_allowed[$k] = 1;
 }
@@ -166,6 +167,15 @@ foreach ($_POST as $param => $newvalue)
 	$response[ereg_replace('^edited_', 'preview_', $orig_param)]
 	    = substr ($newvalue, $index, 1);
       }
+    }
+    else if ($field_id == "variant_quality_text") {
+      $saved = json_decode ($newvalue, true);
+      $preview = array();
+      foreach ($saved as $s) {
+	$preview[] = editable_quality_preview ($s);
+      }
+      $response["saved__${clients_previous_edit_id}__${field_id}"] = $saved;
+      $response["preview_".ereg_replace("^edited_","",$param)] = $preview;
     }
     else {
       $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;

@@ -26,6 +26,10 @@ function editable_5star_click (eid, newrating)
 	else
 	    starimg.addClassName ('halfthere');
     }
+    if($('rationale_' + eid) && !$(eid+'__text')) {
+	$('rationale_' + eid).update (evidence_rationale_form (eid));
+	$(eid+'__text').style.width = '100%';
+    }
 }
 
 function editable_make (id, content)
@@ -137,9 +141,9 @@ function editable_highlight (e, flag)
 function editable_preview (e)
 {
     UnTip();
-    preview = $('preview_' + e.id.sub('^edited_',''));
-    edited = $('edited_' + e.id.sub('^edited_',''));
-    e = $(e.id.sub('^edited_',''));
+    preview = $('preview_' + e.id.replace(/^edited_/,''));
+    edited = $('edited_' + e.id.replace(/^edited_/,''));
+    e = $(e.id.replace(/^edited_/,''));
 
     editable_check_unsaved_all ();
     if (editable_have_unsaved) {
@@ -165,7 +169,7 @@ function editable_unfocus (e)
 
 String.prototype.htmlentities = function ()
 {
-    return this.sub('&','&amp;').sub('"','&quot;').sub('<','&lt;').sub('>','&gt;');
+    return this.replace('&','&amp;').replace('"','&quot;').replace('<','&lt;').replace('>','&gt;');
 }
 
 function editable_input (e)
@@ -213,6 +217,13 @@ function editable_save (submit_flag, want_preview)
     if (want_preview)
 	params.want_preview_id = want_preview.id;
     params.save_time = (new Date()).getTime();
+
+    // copy keys from variant quality rationale
+    r = evidence_rationale_compose();
+    Object.keys(r).each(function(rkey){
+	    params['edited_'+rkey] = Object.toJSON (r[rkey]);
+	});
+
     editable_save_request = $('mainform').request({
 	    onSuccess: function(transport) {
 		if (!transport.responseJSON)
@@ -256,13 +267,14 @@ function editable_get_draft ()
 		    editable_save_result = transport.responseJSON;
 		editable_check_unsaved_all ();
 		$$('.editable').each(function(e){
-			var draft_id = (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
+			var eid = (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
 			    + '__'
 			    + (/__f_([a-z0-9A-Z_]+?)__/.exec(e.id))[1];
 			var splitfield = /__o_([a-z0-9A-Z_]+?)__/.exec(e.id);
+			draft_id = eid;
 			if (splitfield)
 			    draft_id += '__' + splitfield[1];
-			if ((saved = eval ('editable_save_result.saved__' + draft_id))) {
+			if ((saved = editable_save_result['saved__' + draft_id])) {
 			    if (saved != $('orig_'+e.id).value) {
 				if (e.hasClassName ("5star"))
 				    editable_5star_click (e.id, saved);
@@ -270,6 +282,15 @@ function editable_get_draft ()
 				    editable_click(e);
 				if ($('edited_'+e.id))
 				    $('edited_'+e.id).value = saved;
+			    }
+			}
+			if (e.hasClassName ("5star") && splitfield) {
+			    // Check for saved rationale
+			    if ((saved_text = editable_save_result['saved__'+eid+'_text'])) {
+				if (!object_data_equal (saved_text[splitfield[1]],
+							evidence_rationale_orig (e.id))) {
+				    editable_5star_click (e.id, saved);
+				}
 			    }
 			}
 			p = eval('editable_save_result.preview__' + draft_id);
@@ -285,7 +306,7 @@ function editable_check_unsaved (e, norecurse)
     if (!e) return;
     if (norecurse && editable_have_unsaved && editable_have_unsubmitted) return;
 
-    e_orig_value = $(e.id.sub("edited","orig")).value;
+    e_orig_value = $(e.id.replace("edited","orig")).value;
 
     save_result_id = 'saved__'
 	+ (/__p_([a-z0-9A-Z_]+?)__/.exec(e.id))[1]
@@ -298,7 +319,7 @@ function editable_check_unsaved (e, norecurse)
     // compare to last version confirmed saved by server -- if no
     // edits have been saved, compare to the original (latest/release)
     // version
-    e_saved = $(e.id.sub("edited","saved"));
+    e_saved = $(e.id.replace("edited","saved"));
     if (e_saved)
 	e_saved_value = e_saved.value;
     else if (editable_save_result &&
@@ -344,6 +365,32 @@ function editable_check_unsaved_all ()
     $$('.editable').each(function(x){
 	    editable_check_unsaved ($('edited_' + x.id), true);
 	});
+
+    if (!editable_have_unsaved) {
+	r = evidence_rationale_compose();
+
+	Object.keys(r).each(function(rkey){
+		savekey = 'saved__'
+		    + (/__p_([a-z0-9A-Z_]+?)__/.exec(rkey))[1]
+		    + '__'
+		    + (/__f_([a-z0-9A-Z_]+?)__/.exec(rkey))[1];
+		if (editable_save_result &&
+		    editable_save_result[savekey])
+		    saved = editable_save_result[savekey];
+		else if ($('orig_'+rkey))
+		    saved = $('orig_'+rkey).value.evalJSON();
+		else
+		    saved = [{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]}];
+
+		if (!object_data_equal (r[rkey], saved)) {
+		    editable_have_unsaved = true;
+		    editable_have_unsubmitted = true;
+		}
+		else if (!object_data_equal (saved, $('orig_'+rkey).value.evalJSON()))
+		    editable_have_unsubmitted = true;
+	    });
+    }
+
     editable_update_unsaved_message ();
 }
 

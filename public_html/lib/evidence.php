@@ -31,6 +31,7 @@ function evidence_create_tables ()
   variant_impact ENUM('pathogenic','putative pathogenic','unknown','putative benign','benign','putative protective','protective','other') NOT NULL DEFAULT 'unknown',
   variant_dominance ENUM('unknown','dominant','recessive','other','undefined') NOT NULL DEFAULT 'unknown',
   variant_quality CHAR(5),
+  variant_quality_text TEXT,
   summary_short TEXT,
   summary_long TEXT,
   talk_text TEXT,
@@ -632,7 +633,7 @@ class evidence_row_renderer {
 			     array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
 
 	  $html .= editable ("${id_prefix}f_variant_quality",
-			     $row["variant_quality"],
+			     $row,
 			     "Variant quality");
 
 	  global $gImpactOptions;

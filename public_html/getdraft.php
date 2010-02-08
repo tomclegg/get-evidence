@@ -2,7 +2,8 @@
 
 include "lib/setup.php";
 
-foreach (array ("variant_impact", "variant_dominance", "variant_quality",
+foreach (array ("variant_impact", "variant_dominance",
+		"variant_quality", "variant_quality_text",
 		"summary_short", "summary_long", "talk_text") as $k) {
   $fields_allowed[$k] = 1;
 }
@@ -15,7 +16,7 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
   // given edit and newer ("n") submissions from other users (danger
   // of conflict)
 
-  $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, (d.variant_impact <> a.variant_impact OR d.variant_dominance <> a.variant_dominance OR d.variant_quality <> a.variant_quality OR d.summary_short <> a.summary_short OR d.summary_long <> a.summary_long OR d.talk_text <> a.talk_text OR d.article_pmid <> a.article_pmid) draft_differs
+  $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, (d.variant_impact <> a.variant_impact OR d.variant_dominance <> a.variant_dominance OR d.variant_quality <> a.variant_quality OR d.variant_quality_text <> a.variant_quality_text OR d.summary_short <> a.summary_short OR d.summary_long <> a.summary_long OR d.talk_text <> a.talk_text OR d.article_pmid <> a.article_pmid) draft_differs
 			FROM edits a
 			LEFT JOIN edits d ON d.previous_edit_id=a.edit_id AND d.edit_oid=? AND d.is_draft
 			LEFT JOIN snap_latest n ON n.variant_id=a.variant_id AND n.article_pmid=a.article_pmid AND n.genome_id=a.genome_id AND n.disease_id=a.disease_id
@@ -48,6 +49,16 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
 	    $response["preview__${edit_id}__{$field}__{$i}"]
 		= substr ($row[$field], $i, 1);
 	  }
+	  continue;
+	}
+	if ($field == "variant_quality_text") {
+	  $saved = json_decode ($row[$field], true);
+	  $preview = array();
+	  foreach ($saved as $s) {
+	    $preview[] = editable_quality_preview ($s);
+	  }
+	  $response["saved__{$edit_id}__{$field}"] = $saved;
+	  $response["preview__{$edit_id}__{$field}"] = $preview;
 	  continue;
 	}
 	$response["saved__${edit_id}__${field}"]
