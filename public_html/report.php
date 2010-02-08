@@ -33,12 +33,12 @@ if ($want_report_type == "search") {
 }
 else if ($want_report_type == "population-actions") {
   $report_title = "Population Actions";
-  $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic')";
+  $sql_where = "s.variant_impact IN ('likely pathogenic','pathogenic')";
   $sql_having .= " AND d_dataset_id IS NOT NULL";
 }
 else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
-  $sql_where = "s.variant_impact IN ('putative pathogenic','pathogenic') AND (s.summary_short IS NULL OR s.summary_short='')";
+  $sql_where = "s.variant_impact IN ('likely pathogenic','pathogenic') AND (s.summary_short IS NULL OR s.summary_short='')";
 }
 else if ($want_report_type == "web-search") {
   $report_title = "Web Results";
@@ -69,8 +69,8 @@ else {
   $textile = <<<EOF
 h1. Available reports
 
-* "Population Actions":report?type=population-actions -- pathogenic and putative pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
-* "Summaries Needed":report?type=need-summary -- pathogenic and putative pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
+* "Population Actions":report?type=population-actions -- pathogenic and likely pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
+* "Summaries Needed":report?type=need-summary -- pathogenic and likely pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
 * Variants with genome evidence and web search results, sorted by #hits:
 ** "All":report?type=web-search
 ** "f<0.05":report?type=web-search&rare=1
@@ -167,7 +167,7 @@ $sql_orderby
     if ($rowspan < 1) $rowspan = 1;
     $rowspan = "rowspan=\"$rowspan\"";
 
-    $impact = ereg_replace ("^putative ", "p.", $row["variant_impact"]);
+    $impact = ereg_replace ("^likely ", "l.", $row["variant_impact"]);
     if (strlen($row["variant_frequency"]))
 	$impact .= sprintf (", f=%.3f", $row["variant_frequency"]);
 
