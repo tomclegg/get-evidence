@@ -31,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* update variant quality headings/tooltips, and impact options
 * add rationale for variant quality ratings
 * add "all variants which you have edited" report
 * "show next page" and "show all" buttons on "recent edits"
