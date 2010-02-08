@@ -28,7 +28,7 @@ function evidence_create_tables ()
   edit_timestamp DATETIME,
   signoff_oid VARCHAR(255),
   signoff_timestamp DATETIME,
-  variant_impact ENUM('pathogenic','likely pathogenic','unknown','likely benign','benign','likely protective','protective','other','not responsive','likely not responsive','responsive','likely responsive') NOT NULL DEFAULT 'unknown',
+  variant_impact ENUM('pathogenic','likely pathogenic','unknown','likely benign','benign','likely protective','protective','other','pharmacogenetic','likely pharmacogenetic') NOT NULL DEFAULT 'unknown',
   variant_dominance ENUM('unknown','dominant','recessive','other','undefined') NOT NULL DEFAULT 'unknown',
   variant_quality CHAR(5),
   variant_quality_text TEXT,
