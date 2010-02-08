@@ -28,7 +28,7 @@ function evidence_create_tables ()
   edit_timestamp DATETIME,
   signoff_oid VARCHAR(255),
   signoff_timestamp DATETIME,
-  variant_impact ENUM('pathogenic','putative pathogenic','unknown','putative benign','benign','putative protective','protective','other') NOT NULL DEFAULT 'unknown',
+  variant_impact ENUM('pathogenic','putative pathogenic','unknown','putative benign','benign','putative protective','protective','other','not responsive','likely not responsive','responsive','likely responsive') NOT NULL DEFAULT 'unknown',
   variant_dominance ENUM('unknown','dominant','recessive','other','undefined') NOT NULL DEFAULT 'unknown',
   variant_quality CHAR(5),
   variant_quality_text TEXT,
@@ -630,7 +630,7 @@ class evidence_row_renderer {
 	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
 			     $row[summary_short],
 			     "Short summary",
-			     array ("tip" => "This is a brief summary of the variant's clinical relevance.<br/><br/>It should be 1-2 lines long -- short enough to include in a tabular report."));
+			     array ("tip" => "Provide a one line summary of clinical action to be undertaken given this variant (possibly modified by known phenotypes)."));
 
 	  $html .= editable ("${id_prefix}f_variant_quality",
 			     $row,
@@ -651,7 +651,7 @@ class evidence_row_renderer {
 	  $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
 			     $row[summary_long],
 			     "Summary of published research, and additional commentary",
-			     array ("tip" => "Describe the clinical significance of this variant."));
+			     array ("tip" => "Provide a comprehensive review of the variant including youngest age of onset, oldest age of onset and oldest asymptomatic individual."));
 	}
 
 	if ($html == "")
@@ -795,6 +795,10 @@ $gImpactOptions = array
      "putative benign" => "putative benign",
      "protective" => "protective",
      "putative protective" => "putative protective",
+     "responsive" => "responsive",
+     "likely responsive" => "likely responsive",
+     "not responsive" => "not responsive",
+     "likely not responsive" => "likely not responsive",
      "other" => "other",
      "unknown" => "unknown");
 ?>
