@@ -117,7 +117,7 @@ $q = theDb()->query ("INSERT INTO edits
 	 ?, ?
 	FROM omim_a
 	LEFT JOIN snap_latest s ON omim_a.variant_id=s.variant_id AND s.article_pmid=0 AND s.genome_id=0
-	WHERE s.variant_impact='unknown'",
+	WHERE s.variant_impact='none'",
 		     array ('likely pathogenic',
 			    getCurrentUser("oid"), $timestamp));
 if (theDb()->isError($q)) { print $q->getMessage(); print "..."; }

@@ -11,7 +11,6 @@ In expected approximate chronological order:
 * keep odds ratio updated when editing individual figures
 * include #haplomes in db dump
 * find out why NSF-Lys702Asn shows wrong hapmap frequency
-* omim - don't clobber unknown with p.path when importing existing variants
 * (trait-o-matic) auto-update get-evidence results when db changes
 * *submit article*
 * find out why NA12878 has no chr:pos on CYP2C9-R144C
@@ -33,6 +32,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* omim - don't clobber unknown with p.path when importing existing variants
 * update variant quality headings/tooltips, and impact options
 * add rationale for variant quality ratings
 * add "all variants which you have edited" report
