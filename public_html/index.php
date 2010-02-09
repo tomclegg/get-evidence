@@ -1,6 +1,7 @@
 <?php
 
 include "lib/setup.php";
+require_once ("lib/blosum.php");
 $gOut["title"] = "GET-Evidence";
 
 
@@ -320,6 +321,13 @@ if (count($external_refs)) {
 	$html .= "</UL>\n";
     $html .= "</DIV>\n";
 }
+
+$html .= "<H2>Other <I>in silico</I> analyses<BR />&nbsp;</H2>\n<DIV id=\"in_silico\">";
+$html .= "<UL><LI>NBLOSUM100 score = <STRONG>"
+    .ereg_replace ("-", "&ndash;",
+		   0-blosum100 ($row0["variant_aa_from"], $row0["variant_aa_to"]))
+    ."</STRONG></LI></UL>\n";
+$html .= "</DIV>";
 
 $html .= "<H2>Edit history<BR />&nbsp;</H2>\n<DIV id=\"edit_history\">";
 $html .= evidence_render_history ($variant_id);

@@ -32,6 +32,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* show NBLOSUM100 score using biopython blosum100 matrix
 * omim - don't clobber unknown with p.path when importing existing variants
 * update variant quality headings/tooltips, and impact options
 * add rationale for variant quality ratings
