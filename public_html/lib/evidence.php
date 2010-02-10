@@ -172,6 +172,12 @@ function evidence_create_tables ()
   INDEX `disease_index` (disease_id,variant_id,dbtag),
   INDEX `dbtag_index` (dbtag)
   )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS flat_summary (
+  variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  updated TIMESTAMP,
+  flat_summary TEXT
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
@@ -324,6 +330,19 @@ function evidence_submit ($edit_id)
  AND edit_oid=?",
 		  array($edit_id, getCurrentUser("oid")));
   theDb()->query ("DELETE FROM snap_latest WHERE is_delete=1");
+
+  $v = theDb()->getOne ("SELECT variant_id FROM snap_latest WHERE edit_id=?",
+			array ($edit_id));
+  if ($v) {
+    theDb()->query ("REPLACE INTO flat_summary SET variant_id=?, flat_summary=?",
+		    array ($v, json_encode (evidence_get_assoc_flat_summary ("latest", $v))));
+  }
+  else {
+    $v = theDb()->getOne ("SELECT variant_id FROM edits WHERE edit_id=?",
+			  array ($edit_id));
+    theDb()->query ("DELETE FROM flat_summary WHERE variant_id=?",
+		    array ($v));
+  }
 }
 
 function evidence_signoff ($edit_id)
@@ -464,6 +483,170 @@ function evidence_get_report ($snap, $variant_id)
   }
 
   return $v;
+}
+
+$gWantKeysForAssoc = array
+    ("all" => "edit_id previous_edit_id editor_name edit_timestamp signoff_oid signoff_timestamp",
+     "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
+     "article" => "article_pmid summary_long",
+     "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
+     "variant" => "variant_id:id variant_gene:gene aa_change variant_impact:impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or");
+
+function evidence_get_assoc ($snap, $variant_id)
+{
+  $rows =& evidence_get_report ($snap, $variant_id);
+
+  global $gWantKeysForAssoc;
+  if (!is_array ($gWantKeysForAssoc["variant"])) {
+    foreach ($gWantKeysForAssoc as $k => &$v) {
+      if ($k == "all") continue;
+      $v = explode (" ", $gWantKeysForAssoc["all"] . " " . $v);
+    }
+  }
+
+  $variant = array ("genomes" => array(),
+		    "articles" => array(),
+		    "diseases" => array());
+  for ($i=0; $i<sizeof($rows); $i++) {
+    $row =& $rows[$i];
+
+    $editor = user::lookup ($row["edit_oid"]);
+    $row["editor_name"] = $editor->get("fullname");
+
+    if (strlen($row["summary_long"]) == 0)
+      $row["summary_long"] = $row["summary_short"];
+
+    if ($row["article_pmid"] > 0) {
+      $section =& $variant["articles"]["".$row["article_pmid"]];
+      $want_keys =& $gWantKeysForAssoc["article"];
+    }
+    else if ($row["genome_id"] > 0) {
+      $section =& $variant["genomes"]["".$row["genome_id"]];
+      $want_keys =& $gWantKeysForAssoc["genome"];
+    }
+    else {
+      $section =& $variant;
+      $want_keys =& $gWantKeysForAssoc["variant"];
+      $row["aa_change"]
+	  = $row["variant_aa_from"]
+	  . $row["variant_aa_pos"]
+	  . $row["variant_aa_to"];
+      // TODO: combine these into one array and add labels
+      $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 5, "-"));
+      $row["quality_comments"] = $row["variant_quality_text"] ? json_decode ($row["variant_quality_text"], true) : array();
+      $row["nblosum100"] = 0-blosum100($row["variant_aa_from"], $row["variant_aa_to"]);
+      $diseases = evidence_get_all_oddsratios ($rows);
+      unset ($max_or_id);
+      foreach ($diseases as $id => &$d) {
+	if (!isset ($max_or_id) ||
+	    $diseases[$max_or_id]["figs"]["or"] < $d["figs"]["or"])
+	  $max_or_id = $id;
+      }
+      if (isset ($max_or_id))
+	$row["disease_max_or"] = $diseases[$max_or_id];
+    }
+
+    if ($row["disease_id"] > 0) {
+      $section =& $section["diseases"]["".$row["disease_id"]];
+      if (ereg ('^\[', $row["summary_short"]))
+	$row = array_merge (json_decode ($row["summary_short"], true), $row);
+      $want_keys =& $gWantKeysForAssoc["disease"];
+    }
+
+    foreach ($want_keys as $k) {
+      list ($inkey, $outkey) = explode (":", $k);
+      if (!$outkey) $outkey = $inkey;
+      $section[$outkey] = $row[$inkey];
+    }
+
+    unset ($section);
+  }
+
+  foreach (array ("articles", "genomes") as $section) {
+    $variant[$section] = array_values ($variant[$section]);
+    foreach ($variant[$section] as &$x) {
+      if (is_array ($x["diseases"]))
+	$x["diseases"] = array_values ($x["diseases"]);
+    }
+  }
+
+  return $variant;
+}
+
+function evidence_get_assoc_flat_summary ($snap, $variant_id)
+{
+  $nonflat =& evidence_get_assoc ($snap, $variant_id);
+  $flat = array ();
+  foreach (array ("gene", "aa_change", "impact", "inheritance") as $k)
+      $flat[$k] = $nonflat[$k];
+  $flat["dbsnp_id"] = "";
+  foreach ($nonflat["genomes"] as &$g) {
+    if ($g["rsid"] > 0) {
+      $flat["dbsnp_id"] = "rs".$g["rsid"];
+      break;
+    }
+  }
+  $flat["overall_frequency_n"] = $nonflat["variant_f_num"];
+  $flat["overall_frequency_d"] = $nonflat["variant_f_denom"];
+  $flat["overall_frequency"] = $nonflat["variant_f"];
+  $flat["gwas_max_or"] = $nonflat["gwas_max_or"];
+  $flat["n_genomes"] = sizeof ($nonflat["genomes"]);
+  $flat["n_genomes_annotated"] = 0;
+  $flat["n_haplomes"] = 0;
+  foreach ($nonflat["genomes"] as &$g) {
+    if (strlen ($g["summary_long"]) > 0)
+      $flat["n_genomes_annotated"] ++;
+
+    if ($g["zygosity"] != "homozygous" ||
+	($g["sex"] == "M" && ($g["chr"] == "chrX" || $g["chr"] == "chrY")))
+      $flat["n_haplomes"] ++;
+    else
+      $flat["n_haplomes"] += 2;
+  }
+  $flat["n_articles"] = sizeof ($nonflat["articles"]);
+  $flat["n_articles_annotated"] = 0;
+  foreach ($nonflat["articles"] as &$g) {
+    if (strlen ($g["summary_long"]) > 0)
+      $flat["n_articles_annotated"] ++;
+  }
+  $i = -1;
+  foreach (array ("in_silico", "in_vitro", "case_control", "familial", "clinical") as $scoreaxis) {
+    ++$i;
+    if (sizeof ($nonflat["quality_scores"]) >= $i+1) {
+      $flat["qualityscore_".$scoreaxis] = $nonflat["quality_scores"][$i];
+    }
+    else
+      $flat["qualityscore_".$scoreaxis] = "-";
+    if (sizeof ($nonflat["quality_scores"]) >= $i+1 &&
+	strlen ($nonflat["quality_comments"][$i]["text"]) > 0) {
+      $flat["qualitycomment_".$scoreaxis] = "Y";
+    }
+    else
+      $flat["qualitycomment_".$scoreaxis] = "-";
+  }
+  $flat["gene_in_genetests"]
+      = theDb()->getOne ("SELECT 1 FROM gene_disease WHERE gene=? LIMIT 1",
+			 array ($flat["gene"])) ? 'Y' : '-';
+  $flat["in_omim"]
+      = theDb()->getOne ("SELECT 1 FROM variant_external WHERE variant_id=? AND tag='OMIM' LIMIT 1",
+			 array ($nonflat["id"])) ? 'Y' : '-';
+  $flat["in_gwas"]
+      = theDb()->getOne ("SELECT 1 FROM variant_external WHERE variant_id=? AND tag='GWAS' LIMIT 1",
+			 array ($nonflat["id"])) ? 'Y' : '-';
+  $flat["nblosum100>3"] = $nonflat["nblosum100"] > 3 ? 'Y' : '-';
+  if ($nonflat["disease_max_or"]) {
+    $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
+    foreach (array ("case_pos", "case_neg", "control_pos", "control_neg", "or")
+	     as $f)
+      $flat["max_or_".$f] = $nonflat["disease_max_or"]["figs"][$f];
+  }
+  else {
+    $flat["max_or_disease_name"] = "";
+    foreach (array ("case_pos", "case_neg", "control_pos", "control_neg", "or")
+	     as $f)
+      $flat["max_or_".$f] = "";
+  }
+  return $flat;
 }
 
 function evidence_get_latest_edit ($variant_id,
@@ -743,7 +926,7 @@ ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
 }
 
 
-function evidence_render_oddsratio_summary_table ($report)
+function evidence_get_all_oddsratios ($report)
 {
   $disease = array ();
   foreach ($report as $row) {
@@ -764,7 +947,14 @@ function evidence_render_oddsratio_summary_table ($report)
     $disease[$id]["disease_name"] = $row["disease_name"];
     $disease[$id]["article_pmid"] = "*";
     $disease[$id]["genome_id"] = "*";
+    $disease[$id]["figs"]["or"] = oddsratio_compute ($disease[$id]["figs"]);
   }
+  return $disease;
+}
+
+function evidence_render_oddsratio_summary_table ($report)
+{
+  $disease =& evidence_get_all_oddsratios ($report);
 
   if (!sizeof ($disease))
     return "";

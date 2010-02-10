@@ -8,6 +8,31 @@ if ($_GET["version"] == "release" || ereg ("/release", $_SERVER["PATH_INFO"]))
 else if ($_GET["version"] == "latest" || ereg ("/latest", $_SERVER["PATH_INFO"]))
   $snap = "latest";
 
+if ($snap &&
+    ($_GET["type"] == "flat" || ereg ("/flat", $_SERVER["PATH_INFO"]))) {
+    ini_set ("memory_limit", 33554432);
+    $q = theDb()->query ("SELECT s.variant_id, flat_summary FROM snap_$snap s LEFT JOIN flat_summary fs ON fs.variant_id=s.variant_id GROUP BY s.variant_id");
+    $n = 0;
+    header ("Content-type: text/tab-separated-values");
+    while ($row =& $q->fetchRow()) {
+	if ($flat = $row["flat_summary"]) {
+	    $flat = json_decode ($flat, true);
+	}
+	else {
+	    $flat = evidence_get_assoc_flat_summary ($snap, $row["variant_id"]);
+	    $x = theDb()->query ("REPLACE INTO flat_summary SET variant_id=?, updated=NOW(), flat_summary=?",
+				 array ($row["variant_id"], json_encode($flat)));
+	}
+	if ($n == 0) {
+	    print implode ("\t", array_keys ($flat));
+	    print "\n";
+	}
+	++$n;
+	print implode ("\t", array_values ($flat));
+	print "\n";
+    }
+}
+
 if ($snap) {
 
   $q = theDb()->query ("SELECT v.*, s.*,
@@ -23,8 +48,9 @@ if ($snap) {
 			LEFT JOIN variant_occurs vo ON v.variant_id=vo.variant_id
 			LEFT JOIN yahoo_boss_cache y ON v.variant_id=y.variant_id
 			WHERE s.variant_id IS NOT NULL
-			AND NOT (article_pmid>0)
-			AND NOT (genome_id>0)
+			AND s.article_pmid=0
+			AND s.genome_id=0
+			AND s.disease_id=0
 			GROUP BY v.variant_id");
   if (theDb()->isError($q)) {
     header ("HTTP/1.1 500 Internal server error");
@@ -71,7 +97,7 @@ h1. Download
 
 You can download the *latest* snapshot of the database in TSV format.
 
-* "latest-summary.tsv":/download/latest includes gene, AA change, dominance, impact, and short summary.
+* "latest-flat.tsv":/download/latest/flat/latest-flat.tsv includes gene, AA change, dominance, impact, and short summary.
 
 EOF
 ;

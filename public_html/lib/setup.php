@@ -17,6 +17,8 @@ require_once ("lib/mysql.php");
 require_once ("lib/evidence.php");
 require_once ("lib/editable.php");
 require_once ("lib/aa.php");
+require_once ("lib/user.php");
+require_once ("lib/blosum.php");
 
 global $gOut;
 $gOut = array("site_title" => "Evidence Base");

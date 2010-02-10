@@ -7,9 +7,7 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* include each variant's max odds ratio in download
 * keep odds ratio updated when editing individual figures
-* include #haplomes in db dump
 * find out why NSF-Lys702Asn shows wrong hapmap frequency
 * (trait-o-matic) auto-update get-evidence results when db changes
 * *submit article*
@@ -32,6 +30,18 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add fields to db dump/download:
+** star ratings (5 columns)
+** presence of comment for each star rating
+** number of individuals with commentary
+** number of publications
+** number of publications with commentary
+** gene in genetests?
+** in gwas?
+** in OMIM?
+** nblosum>3?
+** disease with max cumulative OR, and all 5 cumulative OR figures for that disease
+** #haplomes
 * show NBLOSUM100 score using biopython blosum100 matrix
 * omim - don't clobber unknown with p.path when importing existing variants
 * update variant quality headings/tooltips, and impact options
