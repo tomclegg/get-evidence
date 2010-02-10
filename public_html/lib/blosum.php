@@ -309,7 +309,7 @@ function blosum100 ($aa1, $aa2)
     $aa1 = aa_short_form ($aa1);
     $aa2 = aa_short_form ($aa2);
     if ($aa1 == "X" || $aa2 == "X")
-	return 10;
+	return -10;
 
     global $gBLOSUM100;
     if (!is_array ($gBLOSUM100)) {
@@ -332,7 +332,7 @@ function blosum62 ($aa1, $aa2)
     $aa1 = aa_short_form ($aa1);
     $aa2 = aa_short_form ($aa2);
     if ($aa1 == "X" || $aa2 == "X")
-	return 10;
+	return -10;
 
     global $gBLOSUM62;
     if (!is_array ($gBLOSUM62["A"])) {
