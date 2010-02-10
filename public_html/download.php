@@ -20,8 +20,8 @@ if ($snap &&
 	}
 	else {
 	    $flat = evidence_get_assoc_flat_summary ($snap, $row["variant_id"]);
-	    $x = theDb()->query ("REPLACE INTO flat_summary SET variant_id=?, updated=NOW(), flat_summary=?",
-				 array ($row["variant_id"], json_encode($flat)));
+	    theDb()->query ("REPLACE INTO flat_summary SET variant_id=?, flat_summary=?",
+			    array ($row["variant_id"], json_encode($flat)));
 	}
 	if ($n == 0) {
 	    print implode ("\t", array_keys ($flat));
@@ -31,6 +31,7 @@ if ($snap &&
 	print implode ("\t", array_values ($flat));
 	print "\n";
     }
+    exit;
 }
 
 if ($snap) {
