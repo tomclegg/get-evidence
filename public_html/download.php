@@ -98,7 +98,7 @@ h1. Download
 
 You can download the *latest* snapshot of the database in TSV format.
 
-* "latest-flat.tsv":/download/latest/flat/latest-flat.tsv includes gene, AA change, dominance, impact, and short summary.
+* "latest-flat.tsv":/download/latest/flat/latest-flat.tsv includes gene, AA change, dominance, impact, #genomes, #haplomes, #articles, case/control figures for disease with max OR, etc.
 
 EOF
 ;
