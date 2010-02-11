@@ -111,6 +111,14 @@ print theDb()->affectedRows();
 print "\n";
 
 
+print "Discarding trailing stuff in parens after rsid...";
+theDb()->query ("UPDATE gwas
+SET snps=SUBSTRING(snps,1,LOCATE('(',snps)-1)
+WHERE snps LIKE '%(%'");
+print theDb()->affectedRows();
+print "\n";
+
+
 if ($inputformat == "hugenet") {
     print "Splitting sample_size into initial_ and replication_sample_size fields...";
     theDb()->query ("ALTER TABLE gwas ADD initial_sample_size VARCHAR(255)");
@@ -262,7 +270,7 @@ while ($row =& $q->fetchRow())
 					       false, false, false,
 					       true);
 	$edit_id = evidence_get_latest_edit ($variant_id,
-					     0, 0,
+					     0, 0, 0,
 					     true);
 	$did[$row["gene_aa"]] = $variant_id;
 	theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
