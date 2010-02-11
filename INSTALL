@@ -101,6 +101,8 @@ Look up gene/aa changes for GWAS SNPs:
 
  8. ./import_hapmap_ns_json.php /tmp/gwas.ns.json
 
+Import the gwas comments for "other external references"
+
  ./import_gwas.php gwas.csv
 
 Import 1000genomes data:

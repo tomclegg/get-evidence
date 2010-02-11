@@ -26,9 +26,16 @@ print "\n";
 
 openid_login_as_robot ("GWAS Importing Robot");
 
-// Date Added to Catalog (since 11/25/08),PubMedID,First Author,Date,Journal,Link,Study,Disease/Trait,Initial Sample Size,Replication Sample Size,Region,Reported Gene(s),Strongest SNP-Risk Allele,SNPs,Risk Allele Frequency,p-Value,p-Value (text),OR or beta,95% CI (text),Platform [SNPs passing QC],CNV
+$fh = fopen ($_SERVER["argv"][1], "r");
+$columns = fgets ($fh);
+fclose ($fh);
+
 print "Creating temporary table...";
-$q = theDb()->query ("CREATE TEMPORARY TABLE gwas (
+
+if (eregi ('^date added[^,]*,pubmedid,first author,date,', $columns)) {
+    // Date Added to Catalog (since 11/25/08),PubMedID,First Author,Date,Journal,Link,Study,Disease/Trait,Initial Sample Size,Replication Sample Size,Region,Reported Gene(s),Strongest SNP-Risk Allele,SNPs,Risk Allele Frequency,p-Value,p-Value (text),OR or beta,95% CI (text),Platform [SNPs passing QC],CNV
+    $inputformat = "genome.gov";
+    $q = theDb()->query ("CREATE TEMPORARY TABLE gwas (
   `date_added` date,
   `pmid` int unsigned,
   `first_author` varchar(64),
@@ -52,6 +59,31 @@ $q = theDb()->query ("CREATE TEMPORARY TABLE gwas (
   `cnv` CHAR(1),
   INDEX(`snps`)
 )");
+}
+else if (eregi ('^rs[^,]*, *gene *, *gene/region *, *trait', $columns)) {
+    // rs Number(region location) , Gene , Gene/Region , Trait , First Author , Journal , Published Year , PubMed ID , Sample Size (Initial/Replicate) , Risk Allele [Prevalence in control] , OR/Beta [95% CI] , p-Value , platform ,OR
+    $inputformat = "hugenet";
+    $q = theDb()->query ("CREATE TEMPORARY TABLE gwas (
+  `snps` VARCHAR(32),
+  `genes` VARCHAR(32),
+  `region` VARCHAR(255),
+  `disease_trait` varchar(255),
+  `first_author` varchar(64),
+  `journal` varchar(64),
+  `pub_date` VARCHAR(32),
+  `pmid` int unsigned,
+  `sample_size` VARCHAR(255),
+  `risk_allele` VARCHAR(32),
+  `or_or_beta` VARCHAR(32),
+  `p_value` VARCHAR(32),
+  `platform_SNPs_passing_QC` VARCHAR(32),
+  `or_or_beta_is_or` CHAR(1),
+  INDEX(`snps`)
+)");
+}
+else {
+    die ("Unrecognized input format");
+}
 if (theDb()->isError($q)) print $q->getMessage;
 print "\n";
 
@@ -79,6 +111,70 @@ print theDb()->affectedRows();
 print "\n";
 
 
+if ($inputformat == "hugenet") {
+    print "Splitting sample_size into initial_ and replication_sample_size fields...";
+    theDb()->query ("ALTER TABLE gwas ADD initial_sample_size VARCHAR(255)");
+    theDb()->query ("ALTER TABLE gwas ADD replication_sample_size VARCHAR(255)");
+    theDb()->query ("
+UPDATE gwas
+SET initial_sample_size = SUBSTRING(sample_size,1,LOCATE('/',sample_size)-1),
+replication_sample_size = SUBSTRING(sample_size,LOCATE('/',sample_size)+1)
+");
+    print theDb()->affectedRows();
+    print "\n";
+
+
+    print "Splitting risk_allele into risk_allele_frequency field...";
+    theDb()->query ("ALTER TABLE gwas ADD risk_allele_frequency VARCHAR(16)");
+    theDb()->query ("
+UPDATE gwas
+SET risk_allele_frequency = SUBSTRING(risk_allele,LOCATE('[',risk_allele)+1)
+");
+    print theDb()->affectedRows();
+    print "...";
+    theDb()->query ("
+UPDATE gwas
+SET risk_allele_frequency = SUBSTRING(risk_allele_frequency,1,LOCATE(']',risk_allele_frequency)-1),
+ risk_allele = SUBSTRING(risk_allele,1,LOCATE('[',risk_allele)-1)
+");
+    print theDb()->affectedRows();
+    print "\n";
+
+
+    print "Adding p_value_text field...";
+    theDb()->query ("ALTER TABLE gwas ADD p_value_text VARCHAR(16) DEFAULT ''");
+    print theDb()->affectedRows();
+    print "\n";
+
+
+    print "Splitting CI interval out of or_or_beta field...";
+    theDb()->query ("ALTER TABLE gwas ADD ci_95_text VARCHAR(32)");
+    theDb()->query ("
+UPDATE gwas
+SET ci_95_text = SUBSTRING(or_or_beta,LOCATE('[[',or_or_beta)+1)
+");
+    print theDb()->affectedRows();
+    print "...";
+    theDb()->query ("
+UPDATE gwas
+SET ci_95_text = SUBSTRING(ci_95_text,1,LOCATE(']]',ci_95_text)),
+    or_or_beta = SUBSTRING(or_or_beta,1,LOCATE('[[',or_or_beta)-1)
+");
+    print theDb()->affectedRows();
+    print "\n";
+
+
+    print "Adding URL field...";
+    theDb()->query ("ALTER TABLE gwas ADD url VARCHAR(255)");
+    theDb()->query ("
+UPDATE gwas
+SET url=CONCAT('http://www.ncbi.nlm.nih.gov/pubmed/',pmid)
+");
+    print theDb()->affectedRows();
+    print "\n";
+}
+
+
 print "Splitting risk-allele into allele field...";
 theDb()->query ("ALTER TABLE gwas ADD allele CHAR(1)");
 theDb()->query ("
@@ -99,10 +195,20 @@ SET risk_allele_frequency = IF(risk_allele_frequency IN ('NR','Pending'),NULL,ri
 print theDb()->affectedRows();
 theDb()->query ("
 ALTER TABLE gwas
- CHANGE risk_allele_frequency risk_allele_frequency DECIMAL(3,2),
- CHANGE p_value p_value FLOAT
+ CHANGE risk_allele_frequency risk_allele_frequency DECIMAL(3,2)
 ");
 print "\n";
+
+
+if ($inputformat == "genome.gov") {
+    print "Removing <FF> chars from p_value_text...";
+    theDb()->query ("
+UPDATE gwas
+SET p_value_text = REPLACE(p_value_text,char(255),'')
+");
+    print theDb()->affectedRows();
+    print "\n";
+}
 
 
 print "Looking up rsid,allele -> variant_id via existing evidence...";
@@ -204,14 +310,29 @@ theDb()->query ("UNLOCK TABLES");
 print "Updating variant_external...";
 theDb()->query ("LOCK TABLES variant_external WRITE");
 theDb()->query ("DELETE FROM variant_external WHERE tag='GWAS'");
-theDb()->query ("INSERT INTO variant_external
+$q = theDb()->query ("INSERT INTO variant_external
  (variant_id, tag, content, url, updated)
  SELECT variant_id, 'GWAS', CONCAT(disease_trait,' (',risk_allele,')\n',first_author,' ',pub_date,' in ',journal,'\nOR or beta: ',or_or_beta,' ',ci_95_text,IF(risk_allele_frequency is null,'',CONCAT('\nRisk allele frequency: ',risk_allele_frequency)),IF(p_value is null,'',CONCAT('\np-value: ',p_value,' ',p_value_text)),'\nInitial sample: ',initial_sample_size,'\nReplication sample: ',replication_sample_size), url, NOW()
  FROM gwas
  WHERE variant_id > 0");
+if (theDb()->isError($q)) print "[".$q->getMessage()."]";
 print theDb()->affectedRows();
 print "\n";
 theDb()->query ("UNLOCK TABLES");
+
+
+if ($inputformat == "genome.gov") {
+    print "Adding or_or_beta_is_or column...";
+    theDb()->query ("ALTER TABLE gwas ADD or_or_beta_is_or CHAR(1)");
+    theDb()->query ("UPDATE gwas
+SET or_or_beta_is_or=IF(or_or_beta IS NOT NULL
+ AND or_or_beta <> 'NR'
+ AND (ci_95_text LIKE '%]'
+      OR ci_95_text LIKE '%] (%)')
+ AND ci_95_text NOT LIKE '%]%]','Y','N')");
+    print theDb()->affectedRows();
+    print "\n";
+}
 
 
 print "Adding/updating gwas_or column in variants table...";
@@ -219,18 +340,16 @@ theDb()->query ("ALTER TABLE variants ADD gwas_max_or DECIMAL(6,3)");
 theDb()->query ("CREATE TEMPORARY TABLE gwas_or_tmp
  AS SELECT variant_id, MAX(or_or_beta) or_or_beta
  FROM gwas
- WHERE variant_id IS NOT NULL
- AND or_or_beta IS NOT NULL
- AND or_or_beta <> 'NR'
- AND (ci_95_text LIKE '%]'
-      OR ci_95_text LIKE '%] (%)')
- AND ci_95_text NOT LIKE '%]%]'
+ WHERE variant_id IS NOT NULL AND or_or_beta_is_or='Y'
  GROUP BY variant_id");
-theDb()->query ("UPDATE gwas_or_tmp
+print theDb()->affectedRows();
+print "...";
+$q = theDb()->query ("UPDATE gwas_or_tmp
  LEFT JOIN variants
  ON variants.variant_id=gwas_or_tmp.variant_id
  SET variants.gwas_max_or=or_or_beta
  ");
+if (theDb()->isError($q)) print "[".$q->getMessage()."]";
 print theDb()->affectedRows();
 print "\n";
 

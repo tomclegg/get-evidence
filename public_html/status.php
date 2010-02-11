@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* import GWAS data from HuGENet
 * add fields to db dump/download:
 ** star ratings (5 columns)
 ** presence of comment for each star rating
