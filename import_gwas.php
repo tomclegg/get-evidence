@@ -222,7 +222,9 @@ theDb()->query ("CREATE TEMPORARY TABLE gwas_or_tmp
  WHERE variant_id IS NOT NULL
  AND or_or_beta IS NOT NULL
  AND or_or_beta <> 'NR'
- AND (ci_95_text NOT LIKE '%] %' OR ci_95_text LIKE '%] (%)')
+ AND (ci_95_text LIKE '%]'
+      OR ci_95_text LIKE '%] (%)')
+ AND ci_95_text NOT LIKE '%]%]'
  GROUP BY variant_id");
 theDb()->query ("UPDATE gwas_or_tmp
  LEFT JOIN variants
