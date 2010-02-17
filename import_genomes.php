@@ -144,10 +144,10 @@ print "\n";
 print "Looking for new {genome,variant} associations and adding them as edits...";
 $timestamp = theDb()->getOne ("SELECT NOW()");
 theDb()->query ("INSERT INTO edits
-	(variant_id, genome_id, article_pmid, is_draft, edit_oid, edit_timestamp)
-	SELECT DISTINCT i.variant_id, i.genome_id, 0, 0, ?, ?
+	(variant_id, genome_id, article_pmid, disease_id, is_draft, edit_oid, edit_timestamp)
+	SELECT DISTINCT i.variant_id, i.genome_id, 0, 0, 0, ?, ?
 	FROM import_genomes_tmp i
-	LEFT JOIN snap_latest s ON s.variant_id = i.variant_id AND s.article_pmid = '0' AND s.genome_id = i.genome_id
+	LEFT JOIN snap_latest s ON s.variant_id = i.variant_id AND s.article_pmid = '0' AND s.disease_id = '0' AND s.genome_id = i.genome_id
 	WHERE s.variant_id IS NULL",
 		array (getCurrentUser("oid"), $timestamp));
 print theDb()->affectedRows();
