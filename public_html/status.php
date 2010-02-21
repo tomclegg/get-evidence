@@ -7,7 +7,9 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* add "download nightly sql dump"
 * keep odds ratio updated when editing individual figures
+* bug: FBN2-Ser2580Leu shows case/control table under NA18956
 * find out why NSF-Lys702Asn shows wrong hapmap frequency
 * (trait-o-matic) auto-update get-evidence results when db changes
 * *submit article*
