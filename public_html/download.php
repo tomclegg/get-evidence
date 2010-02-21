@@ -6,11 +6,15 @@ $snap = false;
 if ($_GET["version"] == "release" ||
     ereg ("/release", $_SERVER["PATH_INFO"]) ||
 	 $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "release")
-  $snap = "release";
+    $snap = "release";
 else if ($_GET["version"] == "latest" ||
 	 ereg ("/latest", $_SERVER["PATH_INFO"]) ||
 	 $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "latest")
-  $snap = "latest";
+    $snap = "latest";
+
+if (ereg ("/max_or_or", $_SERVER["PATH_INFO"]) ||
+    $_SERVER["argc"] > 3 && $_SERVER["argv"][3] == "max_or_or")
+    $need_max_or_or = 1;
 
 if ($snap &&
     ($_GET["type"] == "flat" ||
@@ -35,9 +39,7 @@ if ($snap &&
 	}
 	++$n;
 
-	if ($_SERVER["argc"] > 3 &&
-	    $_SERVER["argv"][3] == "max_or_or" &&
-	    empty($flat["max_or_or"]))
+	if ($need_max_or_or && empty($flat["max_or_or"]))
 	    continue;
 	print implode ("\t", array_values ($flat));
 	print "\n";
