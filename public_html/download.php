@@ -3,13 +3,19 @@
 include "lib/setup.php";
 
 $snap = false;
-if ($_GET["version"] == "release" || ereg ("/release", $_SERVER["PATH_INFO"]))
+if ($_GET["version"] == "release" ||
+    ereg ("/release", $_SERVER["PATH_INFO"]) ||
+	 $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "release")
   $snap = "release";
-else if ($_GET["version"] == "latest" || ereg ("/latest", $_SERVER["PATH_INFO"]))
+else if ($_GET["version"] == "latest" ||
+	 ereg ("/latest", $_SERVER["PATH_INFO"]) ||
+	 $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "latest")
   $snap = "latest";
 
 if ($snap &&
-    ($_GET["type"] == "flat" || ereg ("/flat", $_SERVER["PATH_INFO"]))) {
+    ($_GET["type"] == "flat" ||
+     ereg ("/flat", $_SERVER["PATH_INFO"]) ||
+     $_SERVER["argc"] > 2 && $_SERVER["argv"][2] == "flat")) {
     ini_set ("memory_limit", 33554432);
     $q = theDb()->query ("SELECT s.variant_id, flat_summary FROM snap_$snap s LEFT JOIN flat_summary fs ON fs.variant_id=s.variant_id GROUP BY s.variant_id");
     $n = 0;
@@ -28,6 +34,11 @@ if ($snap &&
 	    print "\n";
 	}
 	++$n;
+
+	if ($_SERVER["argc"] > 3 &&
+	    $_SERVER["argv"][3] == "max_or_or" &&
+	    empty($flat["max_or_or"]))
+	    continue;
 	print implode ("\t", array_values ($flat));
 	print "\n";
     }

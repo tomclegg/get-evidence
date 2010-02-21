@@ -1,4 +1,4 @@
-all: update_genomes dump_database
+all: update_genomes dump_database vis_jar
 install: php-openid-2.1.3 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
 
 php-openid-2.1.3:
@@ -45,3 +45,10 @@ import_genomes: $(CACHEFILE)
 
 dump_database:
 	./dump_database.php public_html/get-evidence.sql.gz
+
+vis_jar:
+	mkdir -p vis/data
+	(cd public_html && php ./download.php latest flat max_or_or) > vis/data/variant_data
+	rm -f tmp/vis.jar
+	cd vis && zip -r $(shell pwd)/tmp/vis.jar .
+	mv tmp/vis.jar public_html/evidence_base_vis.jar

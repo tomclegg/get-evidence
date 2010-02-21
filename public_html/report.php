@@ -77,6 +77,7 @@ h1. Available reports
 ** "Without OMIM entries":report?type=web-search&noomim=1
 ** "Without OMIM entries, f<0.05":report?type=web-search&noomim=1&rare=1
 ** "Without dbSNP entries":report?type=web-search&nodbsnp=1
+* "Interactive graph":vis of allele frequency vs. odds ratio
 EOF
       ;
   if (getCurrentUser())
