@@ -28,7 +28,7 @@ public_html/js/tip_balloon.js:
 	perl -p -e 's:".*?":"/js/tip_balloon/": if m:^config\.\s*BalloonImgPath:' < wz_tooltip/tip_balloon.js > public_html/js/tip_balloon.js
 
 TRAITOMATICHOST?=snp.oxf.freelogy.org
-CACHEDIR=./tmp
+CACHEDIR=$(shell pwd)/tmp
 CACHEFILE=$(CACHEDIR)/allsnps-$(TRAITOMATICHOST).txt
 ALLSNPSURL?=http://$(TRAITOMATICHOST)/browse/allsnps/public
 PID:=$(shell echo $$PPID)
@@ -54,6 +54,7 @@ vis_data_http:
 	wget -Ovis/data/variant_data.tmp http://evidence.personalgenomes.org/download/latest/flat/max_or_or
 	mv vis/data/variant_data.tmp vis/data/variant_data
 vis_jar:
-	rm -f tmp/vis.jar
-	cd vis && zip -r $(shell pwd)/tmp/vis.jar .
-	mv tmp/vis.jar public_html/evidence_base_vis.jar
+	mkdir -p $(CACHEDIR)
+	rm -f $(CACHEDIR)/vis.jar
+	cd vis && zip -r $(CACHEDIR)/vis.jar .
+	mv $(CACHEDIR)/vis.jar public_html/evidence_base_vis.jar
