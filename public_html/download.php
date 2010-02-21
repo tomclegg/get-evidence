@@ -100,6 +100,8 @@ You can download the *latest* snapshot of the database in TSV format.
 
 * "latest-flat.tsv":/download/latest/flat/latest-flat.tsv includes gene, AA change, dominance, impact, #genomes, #haplomes, #articles, case/control figures for disease with max OR, etc.
 
+* "get-evidence.sql.gz":get-evidence.sql.gz is a nightly MySQL dump of the entire database _including_ edit history but _excluding_ users, sessions, dbSNP, and raw web search results.
+
 EOF
 ;
 go();

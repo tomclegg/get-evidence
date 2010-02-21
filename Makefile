@@ -1,4 +1,4 @@
-all: update_genomes
+all: update_genomes dump_database
 install: php-openid-2.1.3 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
 
 php-openid-2.1.3:
@@ -42,3 +42,6 @@ $(CACHEFILE):
 	mv $(CACHEFILE).tmp.$(PID) $(CACHEFILE)
 import_genomes: $(CACHEFILE)
 	./import_genomes.php $(CACHEFILE)
+
+dump_database:
+	./dump_database.php public_html/get-evidence.sql.gz

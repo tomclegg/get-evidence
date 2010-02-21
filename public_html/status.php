@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add "download nightly sql dump"
 * keep odds ratio updated when editing individual figures
 * bug: FBN2-Ser2580Leu shows case/control table under NA18956
 * find out why NSF-Lys702Asn shows wrong hapmap frequency
@@ -32,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "download nightly sql dump"
 * import GWAS data from HuGENet
 * add fields to db dump/download:
 ** star ratings (5 columns)
