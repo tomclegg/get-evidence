@@ -259,7 +259,8 @@ $n=0;
 $did = array();
 while ($row =& $q->fetchRow())
     {
-	if (($variant_id = $did[$row["gene_aa"]])) {
+	if (isset ($did[$row["gene_aa"]])) {
+	    $variant_id = $did[$row["gene_aa"]];
 	    theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
 			    array ($variant_id, $row["gene_aa"]));
 	    continue;
