@@ -1,4 +1,4 @@
-daily: update_genomes dump_database vis_data_local vis_jar
+daily: update_genomes dump_database vis_data_local
 install: php-openid-2.1.3 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
 
 php-openid-2.1.3:
@@ -47,14 +47,10 @@ dump_database:
 	./dump_database.php public_html/get-evidence.sql.gz
 
 vis_data_local:
-	mkdir -p vis/data
-	(cd public_html && php ./download.php latest flat max_or_or) > vis/data/variant_data
-vis_data_http:
-	mkdir -p vis/data
-	wget -Ovis/data/variant_data.tmp http://evidence.personalgenomes.org/download/latest/flat/max_or_or
-	mv vis/data/variant_data.tmp vis/data/variant_data
-vis_jar:
 	mkdir -p $(CACHEDIR)
-	rm -f $(CACHEDIR)/vis.jar
-	cd vis && zip -r $(CACHEDIR)/vis.jar .
-	mv $(CACHEDIR)/vis.jar public_html/evidence_base_vis.jar
+	(cd public_html && php ./download.php latest flat max_or_or) > $(CACHEDIR)/latest_vis_data.tmp
+	mv $(CACHEDIR)/latest_vis_data.tmp public_html/latest_vis_data.tsv
+vis_data_http:
+	mkdir -p $(CACHEDIR)
+	wget -O$(CACHEDIR)/latest_vis_data.tmp http://evidence.personalgenomes.org/latest_vis_data
+	mv $(CACHEDIR)/latest_vis_data.tmp public_html/latest_vis_data.tsv
