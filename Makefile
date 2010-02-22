@@ -52,5 +52,5 @@ vis_data_local:
 	mv $(CACHEDIR)/latest_vis_data.tmp public_html/latest_vis_data.tsv
 vis_data_http:
 	mkdir -p $(CACHEDIR)
-	wget -O$(CACHEDIR)/latest_vis_data.tmp http://evidence.personalgenomes.org/latest_vis_data
+	wget -O$(CACHEDIR)/latest_vis_data.tmp http://evidence.personalgenomes.org/latest_vis_data.tsv
 	mv $(CACHEDIR)/latest_vis_data.tmp public_html/latest_vis_data.tsv
