@@ -3,16 +3,16 @@
 include "lib/setup.php";
 $gOut["title"] = "Evidence Base: Visual";
 $gOut["content"] = <<<EOF
-			<div id="evidence_base_vis_container"> 
+			<div id="get_evidence_vis_container"> 
 			
 			<!--[if !IE]> --> 
-				<object classid="java:evidence_base_vis.class" 
+				<object classid="java:get_evidence_vis.class" 
             			type="application/x-java-applet"
-            			archive="evidence_base_vis.jar"
+            			archive="get_evidence_vis.jar"
             			width="800" height="500"
             			standby="Loading Processing software..." > 
             			
-					<param name="archive" value="evidence_base_vis.jar" /> 
+					<param name="archive" value="get_evidence_vis.jar" /> 
 				
 					<param name="mayscript" value="true" /> 
 					<param name="scriptable" value="true" /> 
@@ -29,8 +29,8 @@ $gOut["content"] = <<<EOF
 						width="800" height="500"
 						standby="Loading Processing software..."  > 
 						
-					<param name="code" value="evidence_base_vis" /> 
-					<param name="archive" value="evidence_base_vis.jar" /> 
+					<param name="code" value="get_evidence_vis" /> 
+					<param name="archive" value="get_evidence_vis.jar" /> 
 					
 					<param name="mayscript" value="true" /> 
 					<param name="scriptable" value="true" /> 
