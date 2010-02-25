@@ -28,7 +28,7 @@ function evidence_create_tables ()
   edit_timestamp DATETIME,
   signoff_oid VARCHAR(255),
   signoff_timestamp DATETIME,
-  variant_impact ENUM('pathogenic','likely pathogenic','unknown','likely benign','benign','likely protective','protective','other','pharmacogenetic','likely pharmacogenetic','none') NOT NULL DEFAULT 'none',
+  variant_impact ENUM('pathogenic','likely pathogenic','unknown','likely benign','benign','likely protective','protective','other','pharmacogenetic','likely pharmacogenetic','none','not reviewed') NOT NULL DEFAULT 'not reviewed',
   variant_dominance ENUM('unknown','dominant','recessive','other','undefined') NOT NULL DEFAULT 'unknown',
   variant_quality CHAR(5),
   variant_quality_text TEXT,
@@ -487,8 +487,8 @@ function evidence_get_report ($snap, $variant_id)
 
     // fix up obsolete impacts (until they get fixed in the db, at which
     // point this section can be removed)
-    if ($v[0]["variant_impact"] == "unknown")
-      $v[0]["variant_impact"] = "benign";
+    if ($v[0]["variant_impact"] == "unknown" || $v[0]["variant_impact"] == "none")
+      $v[0]["variant_impact"] = "not reviewed";
     else
       $v[0]["variant_impact"] = ereg_replace ("^likely ", "", $v[0]["variant_impact"]);
   }
@@ -836,12 +836,15 @@ class evidence_row_renderer {
 	  global $gImpactOptions;
 	  $opts =& $gImpactOptions;
 
+	  $qualifier = $row[variant_impact] == "not reviewed"
+	      ? "" : $howcertain[$certainty];
+
 	  $html .= editable ("${id_prefix}f_variant_impact__",
 			     $row[variant_impact],
 			     "Impact",
 			     array ("select_options"
 				    => $opts,
-				    "previewtextile" => $howcertain[$certainty].$row[variant_impact],
+				    "previewtextile" => $qualifier.$row[variant_impact],
 				    "tip" => "Categorize the expected impact of this variant."));
 
 	  if ($certainty < 2) {
@@ -1025,5 +1028,5 @@ $gImpactOptions = array
      "benign" => "benign",
      "protective" => "protective",
      "pharmacogenetic" => "pharmacogenetic",
-     "none" => "none or not yet reviewed");
+     "not reviewed" => "not reviewed");
 ?>
