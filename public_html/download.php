@@ -41,6 +41,14 @@ if ($snap &&
 
 	if ($need_max_or_or && empty($flat["max_or_or"]))
 	    continue;
+
+	// fix up obsolete impacts (until they get fixed in the db, at which
+	// point this section can be removed)
+	if (array_key_exists ("impact", $flat)) {
+	    if ($flat["impact"] == "unknown") $flat["impact"] = "benign";
+	    else $flat["impact"] = ereg_replace ("^likely ", "", $flat["impact"]);
+	}
+
 	print implode ("\t", array_values ($flat));
 	print "\n";
     }
