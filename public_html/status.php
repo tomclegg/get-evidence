@@ -31,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* fix variant frequency merge so SNP frequency shows up in all applicable variants, not just 1st
 * instead of "likely" impact options, show uncertain/likely/no qualifier based on quality ratings
 * add Madeleine's clickable graph applet
 * add "download nightly sql dump"
