@@ -644,7 +644,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $flat["in_gwas"]
       = theDb()->getOne ("SELECT 1 FROM variant_external WHERE variant_id=? AND tag='GWAS' LIMIT 1",
 			 array ($nonflat["id"])) ? 'Y' : '-';
-  $flat["nblosum100>3"] = $nonflat["nblosum100"] > 3 ? 'Y' : '-';
+  $flat["nblosum100>2"] = $nonflat["nblosum100"] > 2 ? 'Y' : '-';
   if ($nonflat["disease_max_or"]) {
     $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
     foreach (array ("case_pos", "case_neg", "control_pos", "control_neg", "or")
