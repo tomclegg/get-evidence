@@ -31,6 +31,8 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* instead of "likely" impact options, show uncertain/likely/no qualifier based on quality ratings
+* add Madeleine's clickable graph applet
 * add "download nightly sql dump"
 * import GWAS data from HuGENet
 * add fields to db dump/download:

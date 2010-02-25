@@ -482,6 +482,17 @@ function evidence_get_report ($snap, $variant_id)
     }
   }
 
+  if ($v && is_array ($v[0])) {
+    $v[0]["certainty"] = evidence_compute_certainty ($v[0]["variant_quality"]);
+
+    // fix up obsolete impacts (until they get fixed in the db, at which
+    // point this section can be removed)
+    if ($v[0]["variant_impact"] == "unknown")
+      $v[0]["variant_impact"] = "benign";
+    else
+      $v[0]["variant_impact"] = ereg_replace ("^likely ", "", $v[0]["variant_impact"]);
+  }
+
   return $v;
 }
 
@@ -490,7 +501,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change variant_impact:impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or");
+     "variant" => "variant_id:id variant_gene:gene aa_change variant_impact:impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or certainty");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -819,13 +830,23 @@ class evidence_row_renderer {
 			     $row,
 			     "Variant quality");
 
+	  $certainty = 0 + $row["certainty"];
+	  $howcertain = array ("uncertain ", "likely ", "");
 	  global $gImpactOptions;
+	  $opts =& $gImpactOptions;
+
 	  $html .= editable ("${id_prefix}f_variant_impact__",
-			     ereg_replace ('putative','likely',$row[variant_impact]),
+			     $row[variant_impact],
 			     "Impact",
 			     array ("select_options"
-				    => $gImpactOptions,
+				    => $opts,
+				    "previewtextile" => $howcertain[$certainty].$row[variant_impact],
 				    "tip" => "Categorize the expected impact of this variant."));
+
+	  if ($certainty < 2) {
+	    $html .= "<P><I>(The \"".trim($howcertain[$certainty])."\" qualifier is assigned automatically based on the above quality scores.)</I></P>";
+	  }
+
 	  global $gInheritanceOptions;
 	  $html .= editable ("${id_prefix}f_variant_dominance__",
 			     $row[variant_dominance],
@@ -971,6 +992,26 @@ function evidence_render_oddsratio_summary_table ($report)
   return $renderer->html();
 }
 
+
+function evidence_compute_certainty ($scores)
+{
+  $scores = str_split (str_pad ($scores, 5, "-"));
+  $score_total = 0;
+  $score_max_clinical = 0;
+  foreach ($scores as $cat => $score) {
+    if ($cat > 1 && $score_max_clinical < $score)
+      $score_max_clinical = $score;
+    $score_total += $score;
+  }
+  if ($score_total >= 10 && $score_max_clinical >= 4)
+    return 2;
+  else if ($score_total >= 6 && $score_max_clinical >= 3)
+    return 1;
+  else
+    return 0;
+}
+
+
 $gInheritanceOptions = array
     ("dominant" => "dominant",
      "recessive" => "recessive",
@@ -980,13 +1021,8 @@ $gInheritanceOptions = array
 
 $gImpactOptions = array
     ("pathogenic" => "pathogenic",
-     "likely pathogenic" => "likely pathogenic",
      "benign" => "benign",
-     "likely benign" => "likely benign",
      "protective" => "protective",
-     "likely protective" => "likely protective",
      "pharmacogenetic" => "pharmacogenetic",
-     "likely pharmacogenetic" => "likely pharmacogenetic",
-     "unknown" => "unknown clinical significance",
      "none" => "none or not yet reviewed");
 ?>

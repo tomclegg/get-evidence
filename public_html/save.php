@@ -36,17 +36,18 @@ foreach ($_POST as $param => $newvalue)
   }
 }
 
+$cooked = array();
 foreach ($oddsratio_arrays as $param => $figs)
 {
-  if ($oddsratio_actually_changed[$param]) {
-    if (ereg ('__f_variant_quality__', $param)) {
-      $_POST[$param] = "";
-      for ($i=0; array_key_exists ("$i", $figs); $i++)
-	$_POST[$param] .= (strlen($figs[$i])==1) ? $figs[$i] : "-";
-    }
-    else
-      $_POST[$param] = json_encode ($figs);
+  if (ereg ('__f_variant_quality__', $param)) {
+    $cooked[$param] = "";
+    for ($i=0; array_key_exists ("$i", $figs); $i++)
+      $cooked[$param] .= (strlen($figs[$i])==1) ? $figs[$i] : "-";
   }
+  else
+    $cooked[$param] = json_encode ($figs);
+  if ($oddsratio_actually_changed[$param])
+    $_POST[$param] = $cooked[$param];
 }
 
 $response = array();
@@ -179,8 +180,24 @@ foreach ($_POST as $param => $newvalue)
       $response["preview_".ereg_replace("^edited_","",$param)] = $preview;
     }
     else {
+      $preview = $newvalue;
+      if ($field_id == "variant_impact" &&
+	  $newvalue != "unknown" &&
+	  $newvalue != "none") {
+	$scores = "";
+	foreach ($oddsratio_arrays as $k => $v) {
+	  if (ereg ("__f_variant_quality__", $k)) {
+	    $scores = $cooked[$k];
+	    break;
+	  }
+	}
+	$certainty = evidence_compute_certainty ($scores);
+	$c = array ("uncertain ", "likely ", "");
+	$preview = $c[$certainty] . $newvalue;
+      }
+      $preview = $gTheTextile->textileRestricted ($preview);
       $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;
-      $response["preview_".ereg_replace("^edited_","",$param)] = $gTheTextile->textileRestricted ($newvalue);
+      $response["preview_".ereg_replace("^edited_","",$param)] = $preview;
     }
   }
   else

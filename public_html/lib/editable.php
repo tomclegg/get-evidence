@@ -26,7 +26,12 @@ function editable($id, $content, $title="", $options=false)
       $html = "<P>".$options["select_options"][$content]."</P>";
     else
     */
-    $html = $gTheTextile->textileRestricted ($content);
+    $previewtextile =& $content;
+    if (is_array ($options) &&
+	array_key_exists ("previewtextile", $options))
+      $previewtextile =& $options["previewtextile"];
+
+    $html = $gTheTextile->textileRestricted ($previewtextile);
 
     if (trim($html) == "") $html = "<P>&nbsp;</P>";
 
