@@ -1,5 +1,8 @@
 <?php
 
+  // Copyright 2010 Scalable Computing Experts, Inc.
+  // Author: Tom Clegg
+
 include "lib/setup.php";
 
 $snap = false;
