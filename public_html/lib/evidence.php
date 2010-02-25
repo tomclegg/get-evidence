@@ -657,6 +657,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 	     as $f)
       $flat["max_or_".$f] = "";
   }
+  $flat["certainty"] = $nonflat["certainty"];
   return $flat;
 }
 
