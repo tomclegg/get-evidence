@@ -196,7 +196,7 @@ function evidence_get_genome_id ($global_human_id)
     die ("evidence_get_genome_id: DB error: " . $q->getMessage() . " -- lookup failed");
   }
   else
-    return theDb()->query ("SELECT LAST_INSERT_ID()");
+    return theDb()->getOne ("SELECT LAST_INSERT_ID()");
 }
 
 function evidence_get_variant_id ($gene,
