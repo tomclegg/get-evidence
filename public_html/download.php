@@ -24,7 +24,7 @@ if ($snap &&
      ereg ("/flat", $_SERVER["PATH_INFO"]) ||
      $_SERVER["argc"] > 2 && $_SERVER["argv"][2] == "flat")) {
     ini_set ("memory_limit", 33554432);
-    $q = theDb()->query ("SELECT s.variant_id, flat_summary FROM snap_$snap s LEFT JOIN flat_summary fs ON fs.variant_id=s.variant_id GROUP BY s.variant_id");
+    $q = theDb()->query ("SELECT s.variant_id, s.summary_short, flat_summary FROM snap_$snap s LEFT JOIN flat_summary fs ON fs.variant_id=s.variant_id GROUP BY s.variant_id");
     $n = 0;
     header ("Content-type: text/tab-separated-values");
     while ($row =& $q->fetchRow()) {
@@ -38,7 +38,7 @@ if ($snap &&
 	}
 	if ($n == 0) {
 	    print implode ("\t", array_keys ($flat));
-	    print "\n";
+	    print "\tsummary_short\n";
 	}
 	++$n;
 
@@ -55,7 +55,7 @@ if ($snap &&
 	}
 
 	print implode ("\t", array_values ($flat));
-	print "\n";
+	print "\t".ereg_replace("\t", " ", $row["summary_short"])."\n";
     }
     exit;
 }
