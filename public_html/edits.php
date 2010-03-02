@@ -56,13 +56,18 @@ function print_content($x)
 	$lastrow["previous_edit_id"] > 0 == $row["previous_edit_id"] > 0)
       continue;
 
+    $variant_link = $row[variant_gene]." ".aa_short_form("$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]");
+    $version_link = "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to];$row[edit_id]\">view</A>";
+    if (!$lastrow || $lastrow[variant_id] != $row[variant_id])
+      $variant_link = "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$variant_link</A>";
+
     $lastrow = $row;
 
     print "<LI>";
 
     print strftime ("%b %e ", $row["t"]);
 
-    print "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to];$row[edit_id]\">$row[variant_gene] ".aa_short_form("$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]")."</A>";
+    print $variant_link;
 
     if ($row["is_delete"] && !$row["article_pmid"] && !$row["genome_id"] && !$row["disease_id"])
       print " deleted by ";
@@ -91,6 +96,8 @@ function print_content($x)
       print " ($genome_name added)";
     else if ($row["disease_id"])
       print " (".htmlspecialchars ($row["disease_name"]).")";
+
+    print " -- $version_link";
     print "</LI>\n";
 
     if (!$_GET["all"] && ++$output_count >= 30) {
