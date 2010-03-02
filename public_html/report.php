@@ -24,6 +24,7 @@ $sql_right_join = "";
 $sql_orderby = "";
 $sql_params = array();
 $min_certainty = 0;
+$max_certainty = 2;
 
 
 if ($want_report_type == "search") {
@@ -43,6 +44,17 @@ else if ($want_report_type == "population-path-pharma") {
   $sql_where = "s.variant_impact IN ('pathogenic','pharmacogenetic')";
   $sql_having .= " AND d_dataset_id IS NOT NULL";
   $min_certainty = 0;
+}
+else if (ereg ('^(all|uncertain|likely)?-?(pathogenic|pharmacogenetic|benign|protective)', $want_report_type, $regs)) {
+  if ($regs[1] != "all") {
+    $min_certainty = $regs[1] == "uncertain" ? 0
+	: ($regs[1] == "likely" ? 1 : 2);
+    $max_certainty = $min_certainty;
+  }
+  $impact = $regs[2];
+  $report_title = ucfirst (($regs[1] ? $regs[1]." " : "") . $impact). " variants with genome hits";
+  $sql_where = "s.variant_impact = '$impact'";
+  $sql_having .= " AND d_dataset_id IS NOT NULL";
 }
 else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
@@ -87,6 +99,19 @@ h1. Available reports
 ** "Without OMIM entries, f<0.05":report?type=web-search&noomim=1&rare=1
 ** "Without dbSNP entries":report?type=web-search&nodbsnp=1
 * "Interactive graph":vis of allele frequency vs. odds ratio
+
+Variants with genome hits, split by impact:
+table(report_table).
+|.|uncertain|likely|unqualified / well established|all|
+|pathogenic|"uncertain path.":report?type=uncertain-pathogenic|"likely path.":report?type=likely-pathogenic|"path.":report?type=pathogenic|"* path.":report?type=all-pathogenic|
+|pharmacogenetic|"uncertain pharm.":report?type=uncertain-pharmacogenetic|"likely pharm.":report?type=likely-pharmacogenetic|"pharm.":report?type=pharmacogenetic|"* pharm.":report?type=all-pharmacogenetic|
+
+Variants with genome hits, split by impact, omitting het SNPs for recessive variants:
+table(report_table).
+|.|uncertain|likely|unqualified / well established|all|
+|pathogenic|"uncertain path.":report?domorhom=1&type=uncertain-pathogenic|"likely path.":report?domorhom=1&type=likely-pathogenic|"path.":report?domorhom=1&type=pathogenic|"* path.":report?domorhom=1&type=all-pathogenic|
+|pharmacogenetic|"uncertain pharm.":report?domorhom=1&type=uncertain-pharmacogenetic|"likely pharm.":report?domorhom=1&type=likely-pharmacogenetic|"pharm.":report?domorhom=1&type=pharmacogenetic|"* pharm.":report?domorhom=1&type=all-pharmacogenetic|
+
 EOF
       ;
   if (getCurrentUser())
@@ -107,6 +132,7 @@ function print_content ()
   global $sql_right_join;
   global $sql_params;
   global $min_certainty;
+  global $max_certainty;
   global $snap;
   global $gTheTextile;
   $q = theDb()->query ($sql = "
@@ -158,8 +184,10 @@ $sql_orderby
     }
 
     $certainty = evidence_compute_certainty ($row["variant_quality"]);
-    if ($min_certainty > $certainty)
+    if ($min_certainty > $certainty || $max_certainty < $certainty) {
+      $genome_rows = array();
       continue;
+    }
 
     ++$output_row;
     if ($output_row % ROWSPERPAGE == 1) {
@@ -172,6 +200,7 @@ $sql_orderby
     if ($output_page > MAXPAGES) {
 	if (!$output_cut_off_after)
 	    $output_cut_off_after = $output_row - 1;
+	$genome_rows = array();
 	continue;
     }
 
