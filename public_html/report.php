@@ -33,7 +33,7 @@ if ($want_report_type == "search") {
 }
 else if ($want_report_type == "population-actions") {
   $report_title = "Population Actions";
-  $sql_where = "s.variant_impact IN ('likely pathogenic','pathogenic')";
+  $sql_where = "s.variant_impact IN ('pathogenic','pharmacogenetic')";
   $sql_having .= " AND d_dataset_id IS NOT NULL";
 }
 else if ($want_report_type == "need-summary") {
@@ -69,7 +69,7 @@ else {
   $textile = <<<EOF
 h1. Available reports
 
-* "Population Actions":report?type=population-actions -- pathogenic and likely pathogenic variants that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
+* "Population Actions":report?type=population-actions -- pathogenic and pharmacogenetic variants (incl. uncertain/likely) that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
 * "Summaries Needed":report?type=need-summary -- pathogenic and likely pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
 * Variants with genome evidence and web search results, sorted by #hits:
 ** "All":report?type=web-search
