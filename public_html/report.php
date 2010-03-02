@@ -23,6 +23,7 @@ if ($_GET["domorhom"])
 $sql_right_join = "";
 $sql_orderby = "";
 $sql_params = array();
+$min_certainty = 0;
 
 
 if ($want_report_type == "search") {
@@ -33,8 +34,15 @@ if ($want_report_type == "search") {
 }
 else if ($want_report_type == "population-actions") {
   $report_title = "Population Actions";
+  $sql_where = "s.variant_impact = 'pathogenic'";
+  $sql_having .= " AND d_dataset_id IS NOT NULL";
+  $min_certainty = 1;
+}
+else if ($want_report_type == "population-path-pharma") {
+  $report_title = "Pathogenic and pharmacogenetic variants with genome hits";
   $sql_where = "s.variant_impact IN ('pathogenic','pharmacogenetic')";
   $sql_having .= " AND d_dataset_id IS NOT NULL";
+  $min_certainty = 0;
 }
 else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
@@ -69,7 +77,8 @@ else {
   $textile = <<<EOF
 h1. Available reports
 
-* "Population Actions":report?type=population-actions -- pathogenic and pharmacogenetic variants (incl. uncertain/likely) that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
+* "Population Actions":report?type=population-actions -- pathogenic variants (incl. "likely" but not "uncertain") that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
+* "Population pathogenic and pharmacogenomic":report?type=population-path-pharma -- pathogenic and pharmacogenetic variants (incl. uncertain/likely) that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-path-pharma&domorhom=1)
 * "Summaries Needed":report?type=need-summary -- pathogenic and likely pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
 * Variants with genome evidence and web search results, sorted by #hits:
 ** "All":report?type=web-search
@@ -97,6 +106,7 @@ function print_content ()
   global $sql_orderby;
   global $sql_right_join;
   global $sql_params;
+  global $min_certainty;
   global $snap;
   global $gTheTextile;
   $q = theDb()->query ($sql = "
@@ -147,6 +157,10 @@ $sql_orderby
       continue;
     }
 
+    $certainty = evidence_compute_certainty ($row["variant_quality"]);
+    if ($min_certainty > $certainty)
+      continue;
+
     ++$output_row;
     if ($output_row % ROWSPERPAGE == 1) {
 	++$output_page;
@@ -169,6 +183,10 @@ $sql_orderby
     $rowspan = "rowspan=\"$rowspan\"";
 
     $impact = ereg_replace ("^likely ", "l.", $row["variant_impact"]);
+    if ($certainty == 1)
+      $impact = "likely $impact";
+    else if ($certainty == 0)
+      $impact = "uncertain $impact";
     if (strlen($row["variant_frequency"]))
 	$impact .= sprintf (", f=%.3f", $row["variant_frequency"]);
 
