@@ -46,7 +46,7 @@ else if ($want_report_type == "population-path-pharma") {
 }
 else if ($want_report_type == "need-summary") {
   $report_title = "Summaries Needed";
-  $sql_where = "s.variant_impact IN ('likely pathogenic','pathogenic') AND (s.summary_short IS NULL OR s.summary_short='')";
+  $sql_where = "s.variant_impact = 'pathogenic' AND (s.summary_short IS NULL OR s.summary_short='')";
 }
 else if ($want_report_type == "web-search") {
   $report_title = "Web Results";
@@ -79,7 +79,7 @@ h1. Available reports
 
 * "Population Actions":report?type=population-actions -- pathogenic variants (incl. "likely" but not "uncertain") that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-actions&domorhom=1)
 * "Population pathogenic and pharmacogenomic":report?type=population-path-pharma -- pathogenic and pharmacogenetic variants (incl. uncertain/likely) that appear in data sets (or, same report "omitting het SNPs for recessive variants":report?type=population-path-pharma&domorhom=1)
-* "Summaries Needed":report?type=need-summary -- pathogenic and likely pathogenic variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
+* "Summaries Needed":report?type=need-summary -- pathogenic (and uncertain/likely pathogenic) variants with no summary available (or, same report "omitting het SNPs for recessive variants":report?type=need-summary&domorhom=1)
 * Variants with genome evidence and web search results, sorted by #hits:
 ** "All":report?type=web-search
 ** "f<0.05":report?type=web-search&rare=1
