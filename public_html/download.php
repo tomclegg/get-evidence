@@ -37,7 +37,8 @@ if ($snap &&
 			    array ($row["variant_id"], json_encode($flat)));
 	}
 	if ($n == 0) {
-	    print implode ("\t", array_keys ($flat));
+	    $columns = array_keys ($flat);
+	    print implode ("\t", $columns);
 	    print "\tsummary_short\n";
 	}
 	++$n;
@@ -54,8 +55,9 @@ if ($snap &&
 		$flat["impact"] = ereg_replace ("^likely ", "", $flat["impact"]);
 	}
 
-	print implode ("\t", array_values ($flat));
-	print "\t".ereg_replace("\t", " ", $row["summary_short"])."\n";
+	foreach ($columns as $c)
+	    print $flat[$c]."\t";
+	print ereg_replace("\t", " ", $row["summary_short"])."\n";
     }
     exit;
 }
