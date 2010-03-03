@@ -500,7 +500,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change variant_impact:impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or certainty");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_impact:impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or certainty");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -541,6 +541,8 @@ function evidence_get_assoc ($snap, $variant_id)
 	  = $row["variant_aa_from"]
 	  . $row["variant_aa_pos"]
 	  . $row["variant_aa_to"];
+      $row["aa_change_short"] = aa_short_form ($row["aa_change"]);
+
       // TODO: combine these into one array and add labels
       $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 6, "-"));
       $row["quality_comments"] = $row["variant_quality_text"] ? json_decode ($row["variant_quality_text"], true) : array();
@@ -587,7 +589,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 {
   $nonflat =& evidence_get_assoc ($snap, $variant_id);
   $flat = array ();
-  foreach (array ("gene", "aa_change", "impact", "inheritance") as $k)
+  foreach (array ("gene", "aa_change", "aa_change_short", "impact", "inheritance") as $k)
       $flat[$k] = $nonflat[$k];
   $flat["dbsnp_id"] = "";
   foreach ($nonflat["genomes"] as &$g) {
