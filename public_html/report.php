@@ -183,7 +183,8 @@ $sql_orderby
       continue;
     }
 
-    $certainty = evidence_compute_certainty ($row["variant_quality"]);
+    $certainty = evidence_compute_certainty ($row["variant_quality"],
+					     $row["variant_impact"]);
     if ($min_certainty > $certainty || $max_certainty < $certainty) {
       $genome_rows = array();
       continue;

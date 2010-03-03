@@ -483,14 +483,13 @@ function evidence_get_report ($snap, $variant_id)
   }
 
   if ($v && is_array ($v[0])) {
-    $v[0]["certainty"] = evidence_compute_certainty ($v[0]["variant_quality"]);
+    $v[0]["certainty"] = evidence_compute_certainty ($v[0]["variant_quality"],
+						     $v[0]["variant_impact"]);
 
     // fix up obsolete impacts (until they get fixed in the db, at which
     // point this section can be removed)
     if ($v[0]["variant_impact"] == "unknown" || $v[0]["variant_impact"] == "none")
       $v[0]["variant_impact"] = "not reviewed";
-    else
-      $v[0]["variant_impact"] = ereg_replace ("^likely ", "", $v[0]["variant_impact"]);
   }
 
   return $v;
@@ -543,7 +542,7 @@ function evidence_get_assoc ($snap, $variant_id)
 	  . $row["variant_aa_pos"]
 	  . $row["variant_aa_to"];
       // TODO: combine these into one array and add labels
-      $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 5, "-"));
+      $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 6, "-"));
       $row["quality_comments"] = $row["variant_quality_text"] ? json_decode ($row["variant_quality_text"], true) : array();
       $row["nblosum100"] = 0-blosum100($row["variant_aa_from"], $row["variant_aa_to"]);
       $diseases = evidence_get_all_oddsratios ($rows);
@@ -997,22 +996,34 @@ function evidence_render_oddsratio_summary_table ($report)
 }
 
 
-function evidence_compute_certainty ($scores)
+function evidence_compute_certainty ($scores, $impact)
 {
-  $scores = str_split (str_pad ($scores, 5, "-"));
+  if ($impact == "not reviewed")
+    return 0;
+
+  $scores = str_split (str_pad ($scores, 6, "-"));
   $score_total = 0;
   $score_max_clinical = 0;
+  $score_max_human = 0;
   foreach ($scores as $cat => $score) {
-    if ($cat > 1 && $score_max_clinical < $score)
+    if (($cat == 2 || $cat == 3) && $score_max_human < $score)
+      $score_max_human = $score;
+    else if (($cat == 4 || $cat == 5) && $score_max_clinical < $score)
       $score_max_clinical = $score;
     $score_total += $score;
   }
-  if ($score_total >= 10 && $score_max_clinical >= 4)
-    return 2;
-  else if ($score_total >= 6 && $score_max_clinical >= 3)
-    return 1;
-  else
+  if ($impact == "benign") {
+    if ($score_total >= 10 && $score_max_human >= 4)
+      return 2;
+    if ($score_total >= 6 && $score_max_human >= 3)
+      return 1;
     return 0;
+  }
+  if ($score_total >= 14 && $score_max_human >= 4 && $score_max_clinical >= 4)
+    return 2;
+  if ($score_total >= 10 && $score_max_human >= 3 && $score_max_clinical >= 3)
+    return 1;
+  return 0;
 }
 
 

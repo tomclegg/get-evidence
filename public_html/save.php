@@ -191,7 +191,7 @@ foreach ($_POST as $param => $newvalue)
 	    break;
 	  }
 	}
-	$certainty = evidence_compute_certainty ($scores);
+	$certainty = evidence_compute_certainty ($scores, $newvalue);
 	$c = array ("uncertain ", "likely ", "");
 	$preview = $c[$certainty] . $newvalue;
       }

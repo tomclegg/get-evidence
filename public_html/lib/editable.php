@@ -141,7 +141,16 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>4 stars for LOD &gt; 2</LI>
 <LI>5 stars for LOD &gt; 3</LI>
 </UL>",
-		       "Clinical outcomes" => "The quality of studies investigating the effectiveness of action based on the described impact of this mutation given a specific phenotype/family history.
+		       "Disease Severity" => "downgraded according to disease penetrance (eg. Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" is only increased the chances by ~.15% and so is called mild).
+<UL class=\"tipped\">
+<LI>0 stars for benign</LI>
+<LI>1 star for very mild effect (e.g., Alpha-1-antitrypsin deficiency)</LI>
+<LI>2 stars for mild effect</LI>
+<LI>3 stars for moderate effect</LI>
+<LI>4 stars for severe effect: potentially lethal (e.g., sickle-cell)</LI>
+<LI>5 stars for very severe effect: lethal or severe damage (e.g., Bardet-Biedl, PKU)</LI>
+</UL>",
+		       "Clinical Outcomes" => "The quality of studies investigating the effectiveness of action based on the described impact of this mutation given a specific phenotype/family history.
 <UL class=\"tipped\">
 <LI>0 stars for poor outcome for intervention (diagnostic and medical)</LI>
 <LI>1 star no proven benefit for intervention</LI>
@@ -172,7 +181,7 @@ function editable_quality ($id, $content, $title, $options)
 	}
 
 	$html .= "<TR>\n";
-	$html .= "<TD class=\"rowlabel nowrap\"><SPAN onmouseover=\"Tip('".htmlspecialchars(ereg_replace("\n","\\n",$desc),ENT_QUOTES)."',BALLOON,true,FIX,[this,0,0],FOLLOWMOUSE,false,ABOVE,true,WIDTH,-400);\" onmouseout=\"UnTip();\">$axis</SPAN></TD>\n";
+	$html .= "<TD class=\"rowlabel nowrap\"><SPAN onmouseover=\"Tip('".htmlspecialchars(ereg_replace("\n","\\n",addslashes($desc)),ENT_QUOTES)."',BALLOON,true,FIX,[this,0,0],FOLLOWMOUSE,false,ABOVE,true,WIDTH,-400);\" onmouseout=\"UnTip();\">$axis</SPAN></TD>\n";
 
 	$cellid = "{$id}__o_{$axis_index}__";
 
