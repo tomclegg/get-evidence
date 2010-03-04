@@ -622,7 +622,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       $flat["n_articles_annotated"] ++;
   }
   $i = -1;
-  foreach (array ("in_silico", "in_vitro", "case_control", "familial", "clinical") as $scoreaxis) {
+  foreach (array ("in_silico", "in_vitro", "case_control", "familial", "severity", "treatability") as $scoreaxis) {
     ++$i;
     if (sizeof ($nonflat["quality_scores"]) >= $i+1) {
       $flat["qualityscore_".$scoreaxis] = $nonflat["quality_scores"][$i];
