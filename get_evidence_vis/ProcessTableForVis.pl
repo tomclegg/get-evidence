@@ -5,7 +5,6 @@ use warnings;
 
 my $data_file = $ARGV[0];
 my $snp_freq_file = $ARGV[1];
-my $output_file = $ARGV[2];
 
 my $MIN_SCORE = 1;
 
