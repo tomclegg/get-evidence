@@ -65,7 +65,7 @@ void setup() {
   textFont(plotFont);
   
   // Read in file
-  data = ReadTable("http://mad.printf.net/latest-flat_final.tsv"); //"http://evidence.personalgenomes.org/latest_vis_data.tsv");
+  data = ReadTable("http://evidence.personalgenomes.org/latest_vis_data.tsv");
   data_plot_positions = new HashMap();
   variant_ID_display = "";
   
