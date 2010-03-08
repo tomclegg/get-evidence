@@ -5,5 +5,5 @@ RewriteRule ^([0-9]+)$ /?q=$1 [L]
 
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType text/tab-separated-values "modification plus 1 days"
+  ExpiresByType text/tab-separated-values "access plus 1 seconds"
 </IfModule>
