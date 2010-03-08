@@ -1008,20 +1008,24 @@ function evidence_compute_certainty ($scores, $impact)
   $score_max_clinical = 0;
   $score_max_human = 0;
   foreach ($scores as $cat => $score) {
+    if (($cat == 4 || $cat == 5) &&
+	($impact == "benign" || $impact == "protective"))
+      // don't count clinical scores for benign/protective
+      continue;
     if (($cat == 2 || $cat == 3) && $score_max_human < $score)
       $score_max_human = $score;
     else if (($cat == 4 || $cat == 5) && $score_max_clinical < $score)
       $score_max_clinical = $score;
     $score_total += $score;
   }
-  if ($impact == "benign") {
-    if ($score_total >= 10 && $score_max_human >= 4)
+  if ($impact == "benign" || $impact == "protective") {
+    if ($score_total >= 8 && $score_max_human >= 4)
       return 2;
     if ($score_total >= 6 && $score_max_human >= 3)
       return 1;
     return 0;
   }
-  if ($score_total >= 14 && $score_max_human >= 4 && $score_max_clinical >= 4)
+  if ($score_total >= 12 && $score_max_human >= 4 && $score_max_clinical >= 4)
     return 2;
   if ($score_total >= 10 && $score_max_human >= 3 && $score_max_clinical >= 3)
     return 1;
