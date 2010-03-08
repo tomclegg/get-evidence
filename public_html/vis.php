@@ -9,7 +9,7 @@ $gOut["content"] = <<<EOF
 				<object classid="java:get_evidence_vis.class" 
             			type="application/x-java-applet"
             			archive="get_evidence_vis.jar"
-            			width="800" height="500"
+            			width="900" height="550"
             			standby="Loading Processing software..." > 
             			
 					<param name="archive" value="get_evidence_vis.jar" /> 

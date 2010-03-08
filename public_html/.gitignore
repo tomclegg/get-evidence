@@ -2,4 +2,5 @@ config.php
 get-evidence.sql.gz
 get-evidence.sql.gz.tmp
 evidence_base_vis.jar
-latest_vis_data.tsv
+latest_vis_data.tsv*
+latest-flat.tsv*

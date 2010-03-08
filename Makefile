@@ -27,6 +27,7 @@ public_html/js/tip_balloon.js:
 	cp -p wz_tooltip/tip_balloon/* public_html/js/tip_balloon/
 	perl -p -e 's:".*?":"/js/tip_balloon/": if m:^config\.\s*BalloonImgPath:' < wz_tooltip/tip_balloon.js > public_html/js/tip_balloon.js
 
+GETEVIDENCEHOST?=evidence.personalgenomes.org
 TRAITOMATICHOST?=snp.oxf.freelogy.org
 CACHEDIR=$(shell pwd)/tmp
 CACHEFILE=$(CACHEDIR)/allsnps-$(TRAITOMATICHOST).txt
@@ -46,11 +47,16 @@ import_genomes: $(CACHEFILE)
 dump_database:
 	./dump_database.php public_html/get-evidence.sql.gz
 
-vis_data_local:
+vis_data_local: latest_flat_tmp_local latest_flat vis_data
+vis_data_http: latest_flat_tmp_http latest_flat vis_data
+latest_flat_tmp_local:
 	mkdir -p $(CACHEDIR)
-	(cd public_html && php ./download.php latest flat max_or_or) > $(CACHEDIR)/latest_vis_data.tmp
-	mv $(CACHEDIR)/latest_vis_data.tmp public_html/latest_vis_data.tsv
-vis_data_http:
+	(cd public_html && php ./download.php latest flat max_or_or) > $(CACHEDIR)/latest-flat.tsv.tmp
+latest_flat_tmp_http:
 	mkdir -p $(CACHEDIR)
-	wget -O$(CACHEDIR)/latest_vis_data.tmp http://evidence.personalgenomes.org/latest_vis_data.tsv
-	mv $(CACHEDIR)/latest_vis_data.tmp public_html/latest_vis_data.tsv
+	wget -O$(CACHEDIR)/latest-flat.tsv.tmp http://$(GETEVIDENCEHOST)/latest-flat.tsv
+latest_flat:
+	mv $(CACHEDIR)/latest-flat.tsv.tmp public_html/latest-flat.tsv
+vis_data:
+	cd get_evidence_vis && ./ProcessTableForVis.pl ../public_html/latest-flat.tsv nsSNP-freq.gff >../public_html/latest_vis_data.tsv.tmp
+	cd public_html && mv latest_vis_data.tsv.tmp latest_vis_data.tsv
