@@ -51,7 +51,7 @@ vis_data_local: latest_flat_tmp_local latest_flat vis_data
 vis_data_http: latest_flat_tmp_http latest_flat vis_data
 latest_flat_tmp_local:
 	mkdir -p $(CACHEDIR)
-	(cd public_html && php ./download.php latest flat max_or_or) > $(CACHEDIR)/latest-flat.tsv.tmp
+	(cd public_html && php ./download.php latest flat) > $(CACHEDIR)/latest-flat.tsv.tmp
 latest_flat_tmp_http:
 	mkdir -p $(CACHEDIR)
 	wget -O$(CACHEDIR)/latest-flat.tsv.tmp http://$(GETEVIDENCEHOST)/latest-flat.tsv
