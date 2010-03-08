@@ -24,7 +24,7 @@ if ($snap &&
      ereg ("/flat", $_SERVER["PATH_INFO"]) ||
      $_SERVER["argc"] > 2 && $_SERVER["argv"][2] == "flat")) {
     ini_set ("memory_limit", 33554432);
-    $q = theDb()->query ("SELECT s.variant_id, s.summary_short, flat_summary FROM snap_$snap s LEFT JOIN flat_summary fs ON fs.variant_id=s.variant_id GROUP BY s.variant_id");
+    $q = theDb()->query ("SELECT s.variant_id, s.summary_short, flat_summary FROM snap_$snap s LEFT JOIN flat_summary fs ON fs.variant_id=s.variant_id WHERE s.article_pmid=0 AND s.genome_id=0 AND s.disease_id=0 ORDER BY s.variant_id");
     $n = 0;
     header ("Content-type: text/tab-separated-values");
     while ($row =& $q->fetchRow()) {
