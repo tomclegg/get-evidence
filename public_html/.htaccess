@@ -2,3 +2,8 @@ Options +MultiViews
 RewriteEngine On
 RewriteRule "^([A-Za-z0-9]+(-|%20|\+| )[A-Za-z][a-z]*[0-9]+[A-Za-z\*][a-z]*(;[0-9]+)?)" /?q=$1 [L]
 RewriteRule ^([0-9]+)$ /?q=$1 [L]
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/tab-separated-values "modification plus 1 days"
+</IfModule>
