@@ -450,34 +450,61 @@ function evidence_get_report ($snap, $variant_id)
   // Make sure for every pmid>0 row all of the article=A, disease=D
   // rows are there too (and ditto for article=0, genome=0)
 
-  $have_a_d = array();
+  $have_a_d = array();		// will contain one array per article
+				// id (incl. "0" for the main variant
+				// summary section)
   foreach ($v as $row) {
     if (!$row["genome_id"]) {
       $have_a_d[$row["article_pmid"]][$row["disease_id"]] = 1;
     }
   }
 
+  // Get a list of all the diseases that should be listed in each disease table
+
   $v_d = theDb()->getAll ("SELECT diseases.* FROM diseases
- WHERE disease_id IN (SELECT disease_id FROM variant_disease WHERE variant_id=? UNION SELECT disease_id FROM gene_disease WHERE gene = ?)", array ($variant_id, $v[0]["variant_gene"]));
-  foreach ($v_d as $row) {
-    foreach ($have_a_d as $a => $have_d) {
+ WHERE disease_id IN
+ (SELECT disease_id
+  FROM variant_disease
+  WHERE variant_id=?
+ UNION
+  SELECT disease_id
+  FROM gene_disease
+ WHERE gene = ?)", array ($variant_id, $v[0]["variant_gene"]));
+
+  // Look for article=A, disease=D rows that should be there but
+  // aren't... and add them
+
+  foreach ($v_d as $row) {		   // for each disease...
+    foreach ($have_a_d as $a => $have_d) { // for each article...
       $d = $row["disease_id"];
-      if (!isset ($have_d[$d])) {
-	for ($i=0; $i<sizeof($v); $i++) {
-	  if ($v[$i]["article_pmid"] != $a)
-	    continue;
-	  if ($i<sizeof($v)-1 && $v[$i+1]["article_pmid"] == $a)
-	    continue;
-	  array_splice ($v, $i+1, 0, array($v[$i]));
-	  $v[$i+1]["disease_id"] = $row["disease_id"];
-	  $v[$i+1]["disease_name"] = $row["disease_name"];
-	  $v[$i+1]["summary_short"] = "";
-	  $v[$i+1]["summary_long"] = "";
-	  $v[$i+1]["talk_text"] = "";
-	  $v[$i+1]["edit_id"] = "";
-	  $v[$i+1]["previous_edit_id"] = "";
-	  break;
-	}
+      if (isset ($have_d[$d]))
+	// already have a result row for this {article, disease}
+	continue;
+
+      // add a row after all of the existing rows pertaining to the
+      // target article
+
+      for ($i=0; $i<sizeof($v); $i++) {
+	// skip until we reach the target article's row
+	if ($v[$i]["article_pmid"] != $a)
+	  continue;
+	// skip until we reach the last row for the target article
+	if ($i<sizeof($v)-1 &&
+	    $a != 0 &&
+	    $v[$i+1]["article_pmid"] == $a)
+	  continue;
+
+	// found the last row for this article.  copy the existing row
+	// (minus the editable stuff) and insert after.
+	array_splice ($v, $i+1, 0, array($v[$i]));
+	$v[$i+1]["disease_id"] = $row["disease_id"];
+	$v[$i+1]["disease_name"] = $row["disease_name"];
+	$v[$i+1]["summary_short"] = "";
+	$v[$i+1]["summary_long"] = "";
+	$v[$i+1]["talk_text"] = "";
+	$v[$i+1]["edit_id"] = "";
+	$v[$i+1]["previous_edit_id"] = "";
+	break;
       }
     }
   }
