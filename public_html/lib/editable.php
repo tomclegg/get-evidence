@@ -112,7 +112,7 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>presence in active domain</LI>
 <LI>SIFT</LI>
 <LI>PolyPhen</LI>
-<LI>NBLOSUM</LI>
+<LI>NBLOSUM &gt;= 2</LI>
 <LI>GVGD</LI>
 <LI>Other variants in this gene cause similar disease</LI>
 <LI>etc.</LI>
@@ -124,14 +124,14 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>animal models</LI>
 <LI>etc.</LI>
 </UL>",
-		       "Case/Control" => "Odds Ratio:
+		       "Case/Control" => "A combination of odds ratio and significance test (currently using Fisher&rsquo;s Exact Test). For protective alleles, use inverse OR = 1 &divide; OR. Do not count related individuals, count probands -- i.e., one per family.
 <UL class=\"tipped\">
-<LI>0 stars for OR&lt;1</LI>
-<LI>1 star for 1&lt;OR&lt;1.5</LI>
-<LI>2 stars for 1.5&lt;OR&lt;2</LI>
-<LI>3 stars for 2&lt;OR&lt;3</LI>
-<LI>4 stars for 3&lt;OR&lt;5</LI>
-<LI>5 stars for OR&gt;5</LI>
+<LI>0 stars if no higher ranking is allowed</LI>
+<LI>1 star if OR &gt; 1 and significance &lt;= 0.1</LI>
+<LI>2 stars if OR &gt;= 1.5 and significance &lt;= 0.05</LI>
+<LI>3 stars if OR &gt;= 2 and significance &lt;= 0.025</LI>
+<LI>4 stars if OR &gt;= 3 and significance &lt;= 0.01</LI>
+<LI>5 stars if OR &gt;= 5 and significance &lt;= 0.0001</LI>
 </UL>",
 		       "Familial Disease Segregation" => "<UL class=\"tipped\">
 <LI>0 stars for no segregation (LOD &lt; -2)</LI>
@@ -141,23 +141,22 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>4 stars for LOD &gt; 2</LI>
 <LI>5 stars for LOD &gt; 3</LI>
 </UL>",
-		       "Disease Severity" => "downgraded according to disease penetrance (eg. Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" is only increased the chances by ~.15% and so is called mild).
+		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" only increases the chances by ~.15% and so is called mild).
 <UL class=\"tipped\">
 <LI>0 stars for benign</LI>
-<LI>1 star for very mild effect (e.g., Alpha-1-antitrypsin deficiency)</LI>
-<LI>2 stars for mild effect</LI>
-<LI>3 stars for moderate effect</LI>
-<LI>4 stars for severe effect: potentially lethal (e.g., sickle-cell)</LI>
-<LI>5 stars for very severe effect: lethal or severe damage (e.g., Bardet-Biedl, PKU)</LI>
+<LI>1 star for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with OR = 4.5, causing a ~.2% risk of Crohn&rsquo;s)</LI>
+<LI>2 stars for mild effect on quality of life or unlikely to be symptomatic (Cystinuria)</LI>
+<LI>3 stars for moderate effect on quality of life (e.g., familial mediterranean fever)</LI>
+<LI>4 stars for severe effect: causes serious disability or reduces life expectancy (e.g., sickle-cell, Stargardt&rsquo;s disease)</LI>
+<LI>5 stars for very severe effect: early lethal (e.g., familial adenomatous polypopsis, adrenoleukodystrophy)</LI>
 </UL>",
-		       "Treatability" => "The quality of studies investigating the effectiveness of action based on the described impact of this mutation given a specific phenotype/family history.
-<UL class=\"tipped\">
-<LI>0 stars for poor outcome for intervention (diagnostic and medical)</LI>
-<LI>1 star no proven benefit for intervention</LI>
-<LI>2 stars anecdotal evidence for intervention (unpublished results)</LI>
-<LI>3 stars weak evidence for intervention (less than 10 cases)</LI>
-<LI>4 stars standard recommendations for further intervention in development (or more than 10 cases)</LI>
-<LI>5 stars for further intervention in routine use</LI>
+		       "Treatability" => "<UL class=\"tipped\">
+<LI>0 stars for no clinical evidence supporting intervention (e.g., PAF acetylhydrolase deficiency)</LI>
+<LI>1 star for incurable: treatment only to alleviate symptoms (e.g., adrenoleukodystrophy)</LI>
+<LI>2 stars for potentially treatable: Treatment is in development or controversial</LI>
+<LI>3 stars for treatable but a significant fraction do not require treatment (Cystinuria)</LI>
+<LI>4 stars for treatable: Standard treatment reduces the amount of mortality/morbidity but does not eliminate it (e.g., sickle-cell disease)</LI>
+<LI>5 stars for extremely treatable: Well-established treatment essentially eliminates the effect of the disease (e.g., PKU)</LI>
 </UL>");
 
 function editable_quality ($id, $content, $title, $options)
