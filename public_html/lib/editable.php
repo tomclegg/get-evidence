@@ -141,7 +141,7 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>4 stars for LOD &gt; 2</LI>
 <LI>5 stars for LOD &gt; 3</LI>
 </UL>",
-		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" only increases the chances by ~.15% and so is called mild).
+		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" could only mean that the chances are increased by ~.15% and so would be called mild).
 <UL class=\"tipped\">
 <LI>0 stars for benign</LI>
 <LI>1 star for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with OR = 4.5, causing a ~.2% risk of Crohn&rsquo;s)</LI>
