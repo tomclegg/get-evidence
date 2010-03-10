@@ -510,13 +510,18 @@ function evidence_get_report ($snap, $variant_id)
   }
 
   if ($v && is_array ($v[0])) {
+    if (1) {
+      // fix up obsolete impacts (until they get fixed in the db, at which
+      // point this section can be removed)
+      if ($v[0]["variant_impact"] == "unknown" ||
+	  $v[0]["variant_impact"] == "none")
+	$v[0]["variant_impact"] = "not reviewed";
+    }
+
     $v[0]["certainty"] = evidence_compute_certainty ($v[0]["variant_quality"],
 						     $v[0]["variant_impact"]);
-
-    // fix up obsolete impacts (until they get fixed in the db, at which
-    // point this section can be removed)
-    if ($v[0]["variant_impact"] == "unknown" || $v[0]["variant_impact"] == "none")
-      $v[0]["variant_impact"] = "not reviewed";
+    $v[0]["qualified_impact"] = evidence_qualify_impact ($v[0]["variant_quality"],
+							 $v[0]["variant_impact"]);
   }
 
   return $v;
@@ -527,7 +532,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_impact:impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or certainty");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or certainty");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -616,7 +621,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 {
   $nonflat =& evidence_get_assoc ($snap, $variant_id);
   $flat = array ();
-  foreach (array ("gene", "aa_change", "aa_change_short", "impact", "inheritance") as $k)
+  foreach (array ("gene", "aa_change", "aa_change_short", "impact", "qualified_impact", "inheritance") as $k)
       $flat[$k] = $nonflat[$k];
   $flat["dbsnp_id"] = "";
   foreach ($nonflat["genomes"] as &$g) {
@@ -859,24 +864,20 @@ class evidence_row_renderer {
 			     $row,
 			     "Variant quality");
 
-	  $certainty = 0 + $row["certainty"];
-	  $howcertain = array ("uncertain ", "likely ", "");
 	  global $gImpactOptions;
 	  $opts =& $gImpactOptions;
-
-	  $qualifier = $row[variant_impact] == "not reviewed"
-	      ? "" : $howcertain[$certainty];
-
+	  $qualified_impact = evidence_qualify_impact ($row["variant_quality"],
+						       $row["variant_impact"]);
 	  $html .= editable ("${id_prefix}f_variant_impact__",
-			     $row[variant_impact],
+			     $row["variant_impact"],
 			     "Impact",
 			     array ("select_options"
 				    => $opts,
-				    "previewtextile" => $qualifier.$row[variant_impact],
+				    "previewtextile" => $qualified_impact,
 				    "tip" => "Categorize the expected impact of this variant."));
 
-	  if ($certainty < 2) {
-	    $html .= "<P><I>(The \"".trim($howcertain[$certainty])."\" qualifier is assigned automatically based on the above quality scores.)</I></P>";
+	  if ($qualified_impact != $row["variant_impact"]) {
+	    $html .= "<P><I>(The \"".ereg_replace (" ".$row["variant_impact"], "", $qualified_impact)."\" qualifier is assigned automatically based on the above evidence and importance scores.)</I></P>";
 	  }
 
 	  global $gInheritanceOptions;
@@ -1027,36 +1028,41 @@ function evidence_render_oddsratio_summary_table ($report)
 
 function evidence_compute_certainty ($scores, $impact)
 {
-  if ($impact == "not reviewed")
-    return 0;
+  if ($impact == "not reviewed" || $impact == "unknown" || $impact == "none")
+    return "--";
 
   $scores = str_split (str_pad ($scores, 6, "-"));
-  $score_total = 0;
-  $score_max_clinical = 0;
-  $score_max_human = 0;
-  foreach ($scores as $cat => $score) {
-    if (($cat == 4 || $cat == 5) &&
-	($impact == "benign" || $impact == "protective"))
-      // don't count clinical scores for benign/protective
-      continue;
-    if (($cat == 2 || $cat == 3) && $score_max_human < $score)
-      $score_max_human = $score;
-    else if (($cat == 4 || $cat == 5) && $score_max_clinical < $score)
-      $score_max_clinical = $score;
-    $score_total += $score;
-  }
-  if ($impact == "benign" || $impact == "protective") {
-    if ($score_total >= 8 && $score_max_human >= 4)
-      return 2;
-    if ($score_total >= 6 && $score_max_human >= 3)
-      return 1;
-    return 0;
-  }
-  if ($score_total >= 12 && $score_max_human >= 4 && $score_max_clinical >= 4)
-    return 2;
-  if ($score_total >= 10 && $score_max_human >= 3 && $score_max_clinical >= 3)
-    return 1;
-  return 0;
+
+  $score_evidence = $scores[0]+$scores[1]+$scores[2]+$scores[3];
+  if (($scores[2] >= 4 || $scores[3] >= 4) && $score_evidence >= 8)
+    $certainty = "2";
+  else if (($scores[2] >= 3 || $scores[3] >= 3) && $score_evidence >= 5)
+    $certainty = "1";
+  else
+    $certainty = "0";
+
+  if ($impact == "benign" || $impact == "protective")
+    $certainty .= "-";
+  else if ($scores[4] >= 4 || ($scores[4] >= 3 && $scores[5] >= 4))
+    $certainty .= "2";
+  else if ($scores[4] >= 3 || ($scores[4] >= 2 && $scores[5] >= 3))
+    $certainty .= "1";
+  else
+    $certainty .= "0";
+
+  return $certainty;
+}
+
+
+function evidence_qualify_impact ($scores, $impact)
+{
+  $c = str_split (evidence_compute_certainty ($scores, $impact));
+  if ($c[0] == "-") return $impact;
+  if ($c[1] >= 1) $impact = "important $impact";
+  if ($c[1] >= 2) $impact = "very $impact";
+  if ($c[0] == 0) return "uncertain $impact";
+  if ($c[0] == 1) return "likely $impact";
+  return $impact;
 }
 
 

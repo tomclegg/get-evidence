@@ -185,6 +185,7 @@ $sql_orderby
 
     $certainty = evidence_compute_certainty ($row["variant_quality"],
 					     $row["variant_impact"]);
+    $certainty = substr ($certainty, 0, 1);
     if ($min_certainty > $certainty || $max_certainty < $certainty) {
       $genome_rows = array();
       continue;

@@ -191,9 +191,7 @@ foreach ($_POST as $param => $newvalue)
 	    break;
 	  }
 	}
-	$certainty = evidence_compute_certainty ($scores, $newvalue);
-	$c = array ("uncertain ", "likely ", "");
-	$preview = $c[$certainty] . $newvalue;
+	$preview = evidence_qualify_impact ($scores, $newvalue);
       }
       $preview = $gTheTextile->textileRestricted ($preview);
       $response["saved__${clients_previous_edit_id}__${field_id}"] = $newvalue;

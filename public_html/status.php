@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* separate impact qualifiers for variant evidence and clinical importance
 * keep odds ratio updated when editing individual figures
 * find out why NSF-Lys702Asn shows wrong hapmap frequency
 * (trait-o-matic) auto-update get-evidence results when db changes
@@ -31,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* separate impact qualifiers for variant evidence and clinical importance
 * split "variant quality" into "variant evidence" and "clinical importance"
 * bug: FBN2-Ser2580Leu shows case/control table under NA18956
 * fix variant frequency merge so SNP frequency shows up in all applicable variants, not just 1st
