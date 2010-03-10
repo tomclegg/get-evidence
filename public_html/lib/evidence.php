@@ -926,6 +926,8 @@ SELECT
  u.fullname AS edit_fullname,
  article_pmid,
  s.genome_id AS genome_id,
+ s.disease_id AS disease_id,
+ d.disease_name AS disease_name,
  IF(g.name IS NULL OR g.name='',concat('[',global_human_id,']'),g.name) AS genome_name,
  is_delete,
  previous_edit_id,
@@ -935,6 +937,7 @@ FROM edits s
 LEFT JOIN variants v ON v.variant_id=s.variant_id
 LEFT JOIN eb_users u ON u.oid=s.edit_oid
 LEFT JOIN genomes g ON g.genome_id=s.genome_id
+LEFT JOIN diseases d ON d.disease_id=s.disease_id
 WHERE s.variant_id=? AND is_draft=0
 ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
 ",
@@ -958,7 +961,8 @@ ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
     else if ($row["previous_edit_id"]) { $li .= "edited "; $summary = " summary"; }
     else $li .= "added ";
 
-    if ($row["article_pmid"]) $li .= "article ".htmlspecialchars($row["article_pmid"]).$summary;
+    if ($row["disease_id"]) $li .= "OR figures for ".htmlspecialchars($row["disease_name"])." from ".($row["article_pmid"] ? "article ".$row["article_pmid"] : "unpublished research section");
+    else if ($row["article_pmid"]) $li .= "article ".htmlspecialchars($row["article_pmid"]).$summary;
     else if ($row["genome_id"]) $li .= htmlspecialchars($row["genome_name"]).$summary;
     else $li .= "variant$summary";
 

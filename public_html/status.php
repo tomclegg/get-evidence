@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* display OR table adds/edits properly in history
 * separate impact qualifiers for variant evidence and clinical importance
 * split "variant quality" into "variant evidence" and "clinical importance"
 * bug: FBN2-Ser2580Leu shows case/control table under NA18956
