@@ -46,7 +46,7 @@ theDb()->query ("CREATE TEMPORARY TABLE yahoo_boss_queue (
 ) AS
  SELECT v.variant_id
  FROM variants v
- LEFT JOIN genetests_genes
+ LEFT JOIN gene_disease
   ON gene=v.variant_gene
  LEFT JOIN yahoo_boss_cache c
   ON c.variant_id=v.variant_id
