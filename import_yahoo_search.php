@@ -51,7 +51,8 @@ theDb()->query ("CREATE TEMPORARY TABLE yahoo_boss_queue (
  LEFT JOIN yahoo_boss_cache c
   ON c.variant_id=v.variant_id
  WHERE gene IS NOT NULL
-  AND c.xml IS NULL");
+  AND c.xml IS NULL
+ GROUP BY v.variant_id");
 print theDb()->affectedRows();
 print "\n";
 
