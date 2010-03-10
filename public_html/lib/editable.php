@@ -168,10 +168,18 @@ function editable_quality ($id, $content, $title, $options)
     $rationale = json_decode ($content["variant_quality_text"], true);
 
     $html = "<TABLE class=\"quality_table\">\n";
-    $html .= "<TR><TH class=\"rowlabel\" width=\"1\">Variant quality</TH><TH width=\"1\"></TH><TH width=\"16\"></TH><TH width=\"1\"></TH><TH width=\"*\"></TH></TR>\n";
+    $header_row = "<TR><TH class=\"rowlabel\" width=\"120\">Variant evidence</TH><TH width=\"1\"></TH><TH width=\"16\"></TH><TH width=\"1\"></TH><TH width=\"*\"></TH></TR>\n";
+    $empty_row = "<TR><TD colspan=\"5\">&nbsp;</TD></TR>\n";
+    $html .= $header_row;
+
     $axis_index = 0;
     global $gQualityAxes;
     foreach ($gQualityAxes as $axis => $desc) {
+	if ($axis_index == 4) {
+	    $html .= $empty_row;
+	    $html .= ereg_replace ("Variant evidence", "Clinical&nbsp;importance", $header_row);
+	}
+
 	if (strlen($content["variant_quality"]) <= $axis_index)
 	    $score = "-";
 	else {
@@ -230,7 +238,8 @@ function editable_quality ($id, $content, $title, $options)
 	++$axis_index;
     }
 
-    $html .= "</TABLE><P>&nbsp;</P>\n";
+    $html .= $empty_row;
+    $html .= "</TABLE>\n";
     $html .= "<INPUT type=\"hidden\" id=\"orig_{$id}_text__\" value=\"";
     $html .= htmlentities ($content[variant_quality_text]);
     $html .= "\" />";
