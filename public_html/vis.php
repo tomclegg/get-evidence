@@ -26,7 +26,7 @@ $gOut["content"] = <<<EOF
 				
 				<object classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93" 
 						codebase="http://java.sun.com/update/1.5.0/jinstall-1_5_0_15-windows-i586.cab"
-						width="800" height="500"
+						width="900" height="550"
 						standby="Loading Processing software..."  > 
 						
 					<param name="code" value="get_evidence_vis" /> 
