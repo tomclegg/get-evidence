@@ -7,11 +7,13 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* add "-1" option for star-ratings
 * keep odds ratio updated when editing individual figures
-* find out why NSF-Lys702Asn shows wrong hapmap frequency
 * (trait-o-matic) auto-update get-evidence results when db changes
 * *submit article*
-* find out why NA12878 has no chr:pos on CYP2C9-R144C
+* bug: firefox on mac seems to always save as if "unpublished research" button is checked, even if it isn't
+* bug: find out why NSF-Lys702Asn shows wrong hapmap frequency
+* bug: find out why NA12878 has no chr:pos on CYP2C9-R144C
 * IE test/fix
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * import snpedia data
