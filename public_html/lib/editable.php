@@ -106,7 +106,7 @@ function editable_oddsratio ($id, $content, $title, $options)
   return $html;
 }
 
-$gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent prediction and one star subtracted for conflicting results from:
+$gQualityAxes = array ("Computational" => "One star for each consistent prediction and one star subtracted for conflicting results from:
 <UL class=\"tipped\">
 <LI>evolutionary conservation (minimum of three species)</LI>
 <LI>presence in active domain</LI>
@@ -117,14 +117,14 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>Other variants in this gene cause similar disease</LI>
 <LI>etc.</LI>
 </UL>",
-		       "<I>In vitro</I>" => "One star for each experiment supporting the result, and penalize one star for conflicting results from:
+		       "Functional" => "One star for each experiment supporting the result, and penalize one star for conflicting results from:
 <UL class=\"tipped\">
 <LI>enzyme extracts</LI>
 <LI>cell lines</LI>
 <LI>animal models</LI>
 <LI>etc.</LI>
 </UL>",
-		       "Case/Control" => "A combination of odds ratio and significance test (currently using Fisher&rsquo;s Exact Test). For protective alleles, use inverse OR = 1 &divide; OR. Do not count related individuals, count probands -- i.e., one per family.
+		       "Case/Control" => "A combination of odds ratio and significance test (currently using Fisher&rsquo;s Exact Test). For protective alleles, use inverse&nbsp;OR&nbsp;=&nbsp;1&divide;OR. Do not count related individuals, count probands -- i.e., one per family.
 <UL class=\"tipped\">
 <LI>0 stars if no higher ranking is allowed</LI>
 <LI>1 star if OR &gt; 1 and significance &lt;= 0.1</LI>
@@ -133,13 +133,14 @@ $gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent predi
 <LI>4 stars if OR &gt;= 3 and significance &lt;= 0.01</LI>
 <LI>5 stars if OR &gt;= 5 and significance &lt;= 0.0001</LI>
 </UL>",
-		       "Familial Disease Segregation" => "<UL class=\"tipped\">
-<LI>0 stars for no segregation (LOD &lt; -2)</LI>
-<LI>1 star if segregation exists in one family pedigree</LI>
-<LI>2 stars for segregation in more than one family with some conflicting information (e.g. asymptomatic carrier of young age or possibility of second causative mutation)</LI>
-<LI>3 stars for more than one family no conflicting information</LI>
-<LI>4 stars for LOD &gt; 2</LI>
-<LI>5 stars for LOD &gt; 3</LI>
+		       "Familial" => "<UL class=\"tipped\">
+<LI>-1 star if best LOD &lt; 0.5 and LOD &lt; -2 for theta = 0.1</LI>
+<LI>0 stars for no familial information</LI>
+<LI>1 star for LOD &gt;= 0.5</LI>
+<LI>2 star for LOD &gt;= 1</LI>
+<LI>3 star for LOD &gt;= 1.5</LI>
+<LI>4 stars for LOD &gt; 3</LI>
+<LI>5 stars for LOD &gt; 5</LI>
 </UL>",
 		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" could only mean that the chances are increased by ~.15% and so would be called mild).
 <UL class=\"tipped\">
