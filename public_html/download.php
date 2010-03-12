@@ -36,6 +36,14 @@ if ($snap &&
 	    theDb()->query ("REPLACE INTO flat_summary SET variant_id=?, flat_summary=?",
 			    array ($row["variant_id"], json_encode($flat)));
 	}
+	if (array_key_exists ("certainty", $flat)) {
+	    // split certainty into evidence/importance fields (until
+	    // they get updated in the db, at which point this section
+	    // can be removed)
+	    list ($flat["variant_evidence"], $flat["clinical_importance"])
+		= str_split ($flat["certainty"]);
+	    unset ($flat["certainty"]);
+	}
 	if ($n == 0) {
 	    $columns = array_keys ($flat);
 	    print implode ("\t", $columns);

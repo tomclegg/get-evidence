@@ -30,6 +30,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* split "certainty" into "variant_evidence" and "clinical_importance" in latest-flat
 * fixed: firefox on mac always saves as if "unpublished research" button is checked, even if it isn't
 * add "-1" option for star-ratings
 * display OR table adds/edits properly in history

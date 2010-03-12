@@ -518,10 +518,14 @@ function evidence_get_report ($snap, $variant_id)
 	$v[0]["variant_impact"] = "not reviewed";
     }
 
-    $v[0]["certainty"] = evidence_compute_certainty ($v[0]["variant_quality"],
-						     $v[0]["variant_impact"]);
-    $v[0]["qualified_impact"] = evidence_qualify_impact ($v[0]["variant_quality"],
-							 $v[0]["variant_impact"]);
+    $v[0]["certainty"]
+	= evidence_compute_certainty ($v[0]["variant_quality"],
+				      $v[0]["variant_impact"]);
+    $v[0]["qualified_impact"]
+	= evidence_qualify_impact ($v[0]["variant_quality"],
+				   $v[0]["variant_impact"]);
+    list ($v[0]["variant_evidence"], $v[0]["clinical_importance"])
+	= str_split ($v[0]["certainty"]);
   }
 
   return $v;
@@ -532,7 +536,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or certainty");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -690,7 +694,8 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 	     as $f)
       $flat["max_or_".$f] = "";
   }
-  $flat["certainty"] = $nonflat["certainty"];
+  $flat["variant_evidence"] = $nonflat["variant_evidence"];
+  $flat["clinical_importance"] = $nonflat["clinical_importance"];
   return $flat;
 }
 
