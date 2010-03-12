@@ -1032,10 +1032,20 @@ function evidence_render_oddsratio_summary_table ($report)
 
 function evidence_compute_certainty ($scores, $impact)
 {
+  // Summarize the given quality scores (in the context of the given
+  // impact category) as a two-character string, the first character
+  // representing variant evidence and the second character
+  // representing clinical importance.  Each can be 0
+  // (uncertain/unimportant), 1 (likely/important), 2 (well
+  // established/very important), or "-" (not applicable).
+
   if ($impact == "not reviewed" || $impact == "unknown" || $impact == "none")
     return "--";
 
   $scores = str_split (str_pad ($scores, 6, "-"));
+  foreach ($scores as $i => &$score)
+      if ($score === "-") $score = 0;
+      else if ($score === "!") $score = -1;
 
   $score_evidence = $scores[0]+$scores[1]+$scores[2]+$scores[3];
   if (($scores[2] >= 4 || $scores[3] >= 4) && $score_evidence >= 8)

@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* add "-1" option for star-ratings
 * keep odds ratio updated when editing individual figures
 * (trait-o-matic) auto-update get-evidence results when db changes
 * *submit article*
@@ -32,6 +31,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "-1" option for star-ratings
 * display OR table adds/edits properly in history
 * separate impact qualifiers for variant evidence and clinical importance
 * split "variant quality" into "variant evidence" and "clinical importance"

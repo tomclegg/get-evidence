@@ -12,16 +12,15 @@ function editable_5star_click (eid, newrating)
 {
     if (!$('edited_' + eid))
 	$(eid).insert('<INPUT type="hidden" name="edited_'+eid+'" id="edited_'+eid+'" value="">');
-    var newvalue = (newrating >= 0 ? newrating : '-');
-    $('edited_' + eid).value = newvalue;
-    $('preview_'+eid).innerHTML = newvalue;
-    for (i=1; i<=5; i++) {
-	var starimg = $('star'+i+'_'+eid);
-	starimg.src
-	    = '/img/star-'
-	    + (i <= newrating ? 'blue' : 'white')
-	    + '16.png';
-	if (newrating >= 0)
+    $('edited_' + eid).value = newrating;
+    $('preview_'+eid).innerHTML = newrating;
+    for (i=-1; i<=5; i++) {
+	var starimg = $('star'+(i<0 ? 'N'+(-i) : i)+'_'+eid);
+	if (!starimg || i==0) continue;
+	if (i < 0) color = (i <= newrating && newrating < 0) ? 'red' : 'white';
+	if (i > 0) color = (i <= newrating) ? 'blue' : 'white';
+	starimg.src = '/img/star-' + color + '16.png';
+	if (newrating != 0)
 	    starimg.removeClassName ('halfthere');
 	else
 	    starimg.addClassName ('halfthere');

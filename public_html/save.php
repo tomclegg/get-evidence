@@ -1,4 +1,4 @@
-<?php
+<?php;
 
 include "lib/setup.php";
 
@@ -39,15 +39,19 @@ foreach ($_POST as $param => $newvalue)
 $cooked = array();
 foreach ($oddsratio_arrays as $param => $figs)
 {
-  if (ereg ('__f_variant_quality__', $param)) {
-    $cooked[$param] = "";
-    for ($i=0; array_key_exists ("$i", $figs); $i++)
-      $cooked[$param] .= (strlen($figs[$i])==1) ? $figs[$i] : "-";
-  }
-  else
-    $cooked[$param] = json_encode ($figs);
-  if ($oddsratio_actually_changed[$param])
-    $_POST[$param] = $cooked[$param];
+    if (ereg ('__f_variant_quality__', $param)) {
+	$cooked[$param] = "";
+	for ($i=0; array_key_exists ("$i", $figs); $i++) {
+	    if ($figs[$i] == -1)
+		$cooked[$param] .= "!";
+	    else
+		$cooked[$param] .= (strlen($figs[$i])==1) ? $figs[$i] : "-";
+	}
+    }
+    else
+	$cooked[$param] = json_encode ($figs);
+    if ($oddsratio_actually_changed[$param])
+	$_POST[$param] = $cooked[$param];
 }
 
 $response = array();

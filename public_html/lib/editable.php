@@ -106,7 +106,7 @@ function editable_oddsratio ($id, $content, $title, $options)
   return $html;
 }
 
-$gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent prediction and one start subtracted for conflicting results from:
+$gQualityAxes = array ("<I>In silico</I>" => "One star for each consistent prediction and one star subtracted for conflicting results from:
 <UL class=\"tipped\">
 <LI>evolutionary conservation (minimum of three species)</LI>
 <LI>presence in active domain</LI>
@@ -183,7 +183,8 @@ function editable_quality ($id, $content, $title, $options)
 	    $score = "-";
 	else {
 	    $score = substr($content["variant_quality"], $axis_index, 1);
-	    if (!ereg ('^[0-5]$', $score))
+	    if ($score === "!") $score = "-1";
+	    else if (!ereg ('^[0-5]$', $score))
 		$score = "-";
 	}
 
@@ -194,14 +195,22 @@ function editable_quality ($id, $content, $title, $options)
 
 	$cancel_cell = "<TD></TD>";
 	$stars = "";
-	for ($i=($editable ? -1 : 1); $i<=5; $i++) {
+	for ($i=($editable ? "-" : -1);
+	     $i === "-" || $i <= 5;
+	     $i = ($i === "-" ? -1 : $i+1)) {
+	    if (!$editable && $i==0)
+		continue;
 	    $attrs = "width=\"16\" height=\"16\" alt=\"\"";
-	    if ($editable)
-		$attrs .= " onclick=\"editable_5star_click('{$cellid}',$i);\"";
-	    if ($i > 0)
-		$attrs .= " id=\"star{$i}_{$cellid}\"";
+	    if ($editable) {
+		$arg_i = $i === "-" ? "'-'" : $i;
+		$attrs .= " onclick=\"editable_5star_click('{$cellid}',$arg_i);\"";
+	    }
+	    if ($i != 0 && $i != "-") {
+		$id_i = $i < 0 ? "N".(-$i) : $i;
+		$attrs .= " id=\"star{$id_i}_{$cellid}\"";
+	    }
 
-	    if ($i == -1)
+	    if ($i === "-")
 		$stars .= "<SPAN $attrs class=\"halfthere x\">&times;</SPAN>";
 	    else {
 		if ($i == 0 || $score == "-")
@@ -209,11 +218,13 @@ function editable_quality ($id, $content, $title, $options)
 
 		if ($i > 0 && $i <= $score)
 		    $stars .= "<IMG src=\"/img/star-blue16.png\" $attrs />";
+		else if ($i < 0 && $score < 0 && $i <= $score)
+		    $stars .= "<IMG src=\"/img/star-red16.png\" $attrs />";
 		else
 		    $stars .= "<IMG src=\"/img/star-white16.png\" $attrs />";
 	    }
 
-	    if ($i == -1) {
+	    if ($i === "-") {
 		// Show the "X" (null) button last, although I made it first
 		$cancel_cell = $stars;
 		$stars = "";
