@@ -154,7 +154,7 @@ function evidence_rationale_compose ()
 		    if (!e.checked) return;
 		    seealso.push (a.id);
 		});
-	    if ($(base_id+'__check_0') && $(base_id+'__check_0').value)
+	    if ($(base_id+'__check_0') && $(base_id+'__check_0').checked)
 		seealso.push ('0');
 	    var rationale = new Object();
 	    rationale.text = $(base_id+'__text').value;
