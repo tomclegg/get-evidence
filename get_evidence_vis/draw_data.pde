@@ -17,6 +17,7 @@ void drawData (EvidenceData data) {
     // dot color & dot size get set according to coloring scheme
     color dot_color = color_unknown;
     float dot_size = 2;
+    float second_dot_size = 0;
     
     if (data_color_mode.equals("inheritance")) {
       String inheritance = (String) current_variant.information.get("inheritance");
@@ -32,12 +33,13 @@ void drawData (EvidenceData data) {
       }
     } else if (data_color_mode.equals("impact")) {
       String impact = (String) current_variant.information.get("impact");
+      String variant_evidence = (String) current_variant.information.get("variant_evidence");
+      String clinical_importance = (String) current_variant.information.get("clinical_importance");
       if (impact.equals("pathogenic")) {
-        String certainty = (String) current_variant.information.get("certainty");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2") && clinical_importance.equals("2") ) {
           dot_color = pathogenic;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+        } else if (!(variant_evidence.equals("0")) && !(clinical_importance.equals("0"))) {
           dot_color = pathogenic_likely;
           dot_size = 5;
         } else {
@@ -45,23 +47,24 @@ void drawData (EvidenceData data) {
           dot_size = 4;
         }
       } else if (impact.equals("pharmacogenetic")) {
-        String certainty = (String) current_variant.information.get("certainty");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2")) {
           dot_color = pharmacogenetic;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+          second_dot_size = 4;
+        } else if (variant_evidence.equals("1")) {
           dot_color = pharmacogenetic_likely;
           dot_size = 5;
+          second_dot_size = 3;
         } else {
           dot_color = pharmacogenetic_uncertain;
           dot_size = 4;
+          second_dot_size = 2;
         }
       } else if (impact.equals("benign")) {
-        String certainty = (String) current_variant.information.get("certainty");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2")) {
           dot_color = benign;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+        } else if (variant_evidence.equals("1")) {
           dot_color = benign_likely;
           dot_size = 5;
         } else {
@@ -69,16 +72,18 @@ void drawData (EvidenceData data) {
           dot_size = 4;
         }
       } else if (impact.equals("protective")) {
-        String certainty = (String) current_variant.information.get("impact");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2")) {
           dot_color = protective;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+          second_dot_size = 4;
+        } else if (variant_evidence.equals("1")) {
           dot_color = protective_likely;
           dot_size = 5;
+          second_dot_size = 3;
         } else {
           dot_color = protective_uncertain;
           dot_size = 4;
+          second_dot_size = 2;
         }
       }
     }
@@ -98,6 +103,11 @@ void drawData (EvidenceData data) {
       stroke(dot_color);
       strokeWeight(dot_size);
       point(x_pos, y_pos);
+      if (second_dot_size > 0) {
+        stroke(255);
+        strokeWeight(second_dot_size);
+        point(x_pos, y_pos);
+      }
       float[] position = {x_pos, y_pos};
       data_plot_positions.put(variant_ID, position);
     } else {
@@ -158,9 +168,14 @@ void drawVariantInfo (Variant target_variant) {
   text("Impact: ", infoX1 + 130, curr_y);
   textAlign(LEFT,TOP);
   String impact_text = (String) target_variant.information.get("impact");
-  if (target_variant.information.get("certainty").equals("1")) {
+  if (target_variant.information.get("clinical_importance").equals("2")) {
+    impact_text = "very important " + impact_text;
+  } else if (target_variant.information.get("clinical_importance").equals("1")) {
+    impact_text = "important " + impact_text;
+  }
+  if (target_variant.information.get("variant_evidence").equals("1")) {
     impact_text = "likely " + impact_text;
-  } else if (target_variant.information.get("certainty").equals("0")) {
+  } else if (target_variant.information.get("variant_evidence").equals("0")) {
     impact_text = "uncertain " + impact_text;
   }
   text( impact_text, infoX1 + 135, curr_y);
@@ -379,25 +394,43 @@ void drawKey() {
     stroke(pharmacogenetic);
     strokeWeight(6);
     point(infoX1 + 140, keyY1 + 20);
+    stroke(255);
+    strokeWeight(4);
+    point(infoX1 + 140, keyY1 + 20);
     text("= pharmacogenetic", infoX1 + 150, keyY1 + 20);
     stroke(pharmacogenetic_likely);
     strokeWeight(5);
+    point(infoX1 + 140, keyY1 + 32);
+    stroke(255);
+    strokeWeight(3);
     point(infoX1 + 140, keyY1 + 32);
     text("= likely pharmacogenetic", infoX1 + 150, keyY1 + 32);
     stroke(pharmacogenetic_uncertain);
     strokeWeight(4);
     point(infoX1 + 140, keyY1 + 44);
+    stroke(255);
+    strokeWeight(2);
+    point(infoX1 + 140, keyY1 + 44);
     text("= uncertain pharmacogenetic", infoX1 + 150, keyY1 + 44);
     stroke(protective);
     strokeWeight(6);
+    point(infoX1 + 140, keyY1 + 56);
+    stroke(255);
+    strokeWeight(4);
     point(infoX1 + 140, keyY1 + 56);
     text("= protective", infoX1 + 150, keyY1 + 56);
     stroke(protective_likely);
     strokeWeight(5);
     point(infoX1 + 140, keyY1 + 68);
+    stroke(255);
+    strokeWeight(3);
+    point(infoX1 + 140, keyY1 + 68);
     text("= likely protective", infoX1 + 150, keyY1 + 68);
     stroke(protective_uncertain);
     strokeWeight(4);
+    point(infoX1 + 140, keyY1 + 80);
+    stroke(255);
+    strokeWeight(2);
     point(infoX1 + 140, keyY1 + 80);
     text("= uncertain protective", infoX1 + 150, keyY1 + 80);
   } else if (data_color_mode.equals("inheritance")) {

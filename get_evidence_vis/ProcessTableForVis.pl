@@ -76,6 +76,7 @@ sub processData {
     # Add stars
     @data = addStars(\@data, \%columns);
     @data = adjustFreq(\@data, \%columns);
+    #$data[$columns{"certainty"}] = substr($data[$columns{"certainty"}], 0, 1);
     # Print if freq > 0 and freq < 1 and total quality score > 0
     my $is_freq_good = ( ($data[$columns{"overall_frequency"}] ne "") and
                       ($data[$columns{"overall_frequency"}] > 0) and
@@ -105,22 +106,22 @@ sub getTotalQualityScore {
   my @data = @{$data_ref};
   my %columns = %{$columns_ref};
   my $total = 0;
-  if ($data[$columns{"qualityscore_in_silico"}] ne "-") {
+  if ($data[$columns{"qualityscore_in_silico"}] ne "-" and $data[$columns{"qualityscore_severity"}] ne "!") {
     $total += $data[$columns{"qualityscore_in_silico"}];
   }
-  if ($data[$columns{"qualityscore_in_vitro"}] ne "-") {
+  if ($data[$columns{"qualityscore_in_vitro"}] ne "-" and $data[$columns{"qualityscore_in_vitro"}] ne "!") {
     $total += $data[$columns{"qualityscore_in_vitro"}];
   }
-  if ($data[$columns{"qualityscore_case_control"}] ne "-") {
+  if ($data[$columns{"qualityscore_case_control"}] ne "-" and $data[$columns{"qualityscore_case_control"}] ne "!") {
     $total += $data[$columns{"qualityscore_case_control"}];
   }
-  if ($data[$columns{"qualityscore_familial"}] ne "-") {
+  if ($data[$columns{"qualityscore_familial"}] ne "-" and $data[$columns{"qualityscore_familial"}] ne "!") {
     $total += $data[$columns{"qualityscore_familial"}];
   }
-  if ($data[$columns{"qualityscore_severity"}] ne "-" and $data[$columns{"qualityscore_severity"}] ne "") {
+  if ($data[$columns{"qualityscore_severity"}] ne "-" and $data[$columns{"qualityscore_severity"}] ne "" and $data[$columns{"qualityscore_severity"}] ne "!") {
     $total += $data[$columns{"qualityscore_severity"}];
   }
-  if ($data[$columns{"qualityscore_treatability"}] ne "-" and $data[$columns{"qualityscore_severity"}] ne "") {
+  if ($data[$columns{"qualityscore_treatability"}] ne "-" and $data[$columns{"qualityscore_severity"}] ne "" and $data[$columns{"qualityscore_severity"}] ne "!") {
     $total += $data[$columns{"qualityscore_treatability"}];
   }
   
@@ -139,8 +140,8 @@ sub printData {
                           "qualityscore_severity", "qualityscore_treatability", 
                           "max_or_case_pos", "max_or_case_neg", 
                           "max_or_control_pos", "max_or_control_neg", 
-                          "max_or_or", "max_or_disease_name", "certainty", 
-                          "summary_short");
+                          "max_or_or", "max_or_disease_name", "variant_evidence", 
+                          "clinical_importance", "summary_short");
   print "$data[$columns{$printed_header[0]}]";
   for (my $i = 1; $i <= $#printed_header; $i++) {
     print "\t$data[$columns{$printed_header[$i]}]";

@@ -32,7 +32,8 @@ float init_value_x_min, init_value_x_max, init_value_y_min, init_value_y_max;
 // Buttons to change coloring systems
 float color_button_size = 15;
 float color_button_y = 20;
-float color_impact_x_rel = 40; float color_inheritance_x_rel = 120; 
+float color_impact_x_rel = 40; 
+float color_inheritance_x_rel = 120; 
 
 // inheritance
 int dominant = color(255,0,0);
@@ -43,21 +44,21 @@ int inheritance_other = color(180,0,180);
 int pathogenic = color(255,0,0);
 int pathogenic_likely = color(255,80,20);
 int pathogenic_uncertain = color(255,200,80);
-int pharmacogenetic = color(200,0,200);
-int pharmacogenetic_likely = color(200,30,200);
-int pharmacogenetic_uncertain = color(200,60,200);
+int pharmacogenetic = color(255,0,0);
+int pharmacogenetic_likely = color(255,30,30);
+int pharmacogenetic_uncertain = color(255,60,60);
 int benign = color(0,0,255);
 int benign_likely = color(30,30,255);
 int benign_uncertain = color(60,60,255);
-int protective = color(0,180,120);
-int protective_likely = color(0,180,120);
-int protective_uncertain = color(0,180,120);
+int protective = color(0,0,180);
+int protective_likely = color(30,30,180);
+int protective_uncertain = color(60,60,180);
 int color_unknown = color(120,120,120,150);
 
 String data_color_mode = "impact";
 
 public void setup() {
-  
+
   // Set coordinates
   size(900, 550);
   plotX1 = 70;
@@ -69,62 +70,63 @@ public void setup() {
   infoY1 = plotY1;
   infoY2 = plotY1 + 335;
   keyY1 = infoY2 + 25;
-  
+
   // Set X and Y values
   init_value_x_min = value_x_min = log(1.6f);
   init_value_x_max = value_x_max = log(31);
   init_value_y_min = value_y_min = (log(0.0009f) / log(10));
   init_value_y_max = value_y_max = (log(0.5f) / log(10));
-    
+
   // set font
   plotFont = createFont("Arial", 16);
   textFont(plotFont);
-  
+
   // Read in file
   data = ReadTable("http://evidence.personalgenomes.org/latest_vis_data.tsv");
   data_plot_positions = new HashMap();
   variant_ID_display = "";
-  
+
   smooth();
 }
 
 public void draw() {
   background(255);
   randomSeed(100);  // This is for noise added to X coordinates when plotting
-  
+
   stroke(0);
   strokeWeight(2);
   noFill();
   line(plotX1,plotY1,plotX1,plotY2);
   line(plotX1,plotY2,plotX2,plotY2);
-  
+
   drawYLogLabels();
   drawXLogLabels(1);
-  
+
   drawData(data);
-  
+
   // Draw titles
   textAlign(CENTER, TOP);
   textSize(16);
-  String xtitle = "Variant quality score";
+  String xtitle = "Variant score";
   text(xtitle, (plotX1 + plotX2) / 2, plotY2 + 20);
-  
+
   textAlign(CENTER, BOTTOM);
   String ytitle = "Allele frequency";
   rotate(-PI/2);
   text(ytitle,-1 * (plotY1 + plotY2) / 2, plotX1 - 35);
   rotate(PI/2);
-  
+
   stroke(220);
   noFill();
   rect(infoX1, infoY1, infoX2 - infoX1, infoY2 - infoY1);
   if (variant_ID_display.length() > 0) {
     drawVariantInfo(data.getVariant(variant_ID_display));
-  } else {
+  } 
+  else {
     drawInstructionInfo();
   }
   drawKey();
-  
+
   drawColorTypeButtons();
 
 }
@@ -143,7 +145,7 @@ public void drawXLogLabels(float interval) {
   if (log(end_x) > value_x_max) {
     end_x--;
   }
-  
+
   for (float x_value = start_x; x_value <= end_x; x_value += interval) {
     float log_x_value = log(x_value);
     float x = map(log_x_value, value_x_min, value_x_max, plotX1, plotX2);
@@ -152,7 +154,7 @@ public void drawXLogLabels(float interval) {
     //println(x_value + " " + log_x_value + " " + x + " " + out);
     text(out, x, plotY2 + 6);
     line(x,plotY2,x,plotY2+3);
-    
+
     float next_x = map(log(x_value+interval),value_x_min,value_x_max,plotX1,plotX2);
     while (abs(next_x - x) < 24) {
       interval++;
@@ -187,8 +189,8 @@ public void drawYLogLabels() {
   int power = 0;
   int start_y_value;
   while (PApplet.parseInt(pow(10,power)*y_min_value) <= 0) {
-   power++;
-   //println(int(pow(10,power) * y_min_value));
+    power++;
+    //println(int(pow(10,power) * y_min_value));
   }
   start_y_value = PApplet.parseInt(pow(10,power) * y_min_value);
   //println("Done");
@@ -204,16 +206,16 @@ public void drawYLogLabels() {
     if (y_value >= 0.001f) {
       out = nf(y_value,0,0);
     }
-    
+
     float next_major_y = map(-1 * (power - 1), value_y_min, value_y_max, plotY2, plotY1);
     if (next_major_y < plotY1 && (abs(plotY1 - y) > 1)) {
-        next_major_y = plotY1;
+      next_major_y = plotY1;
     }
     if ( abs(next_major_y - y) >= 15) {
       if ( (log_y_value > value_y_min) ) {
         text(out, plotX1 - 6, y);
         line(plotX1,y,plotX1-3,y);
-        
+
         float next_y_value = (i + 1) * pow(10,(-1 * power));
         float log_next_y_value = log(next_y_value) / log(10);
         float next_y = map(log_next_y_value, value_y_min, value_y_max, plotY2, plotY1);
@@ -230,6 +232,7 @@ public void drawYLogLabels() {
     }
   }
 }
+
 
 class Variant {
   String gene_ID;
@@ -317,6 +320,7 @@ public void drawData (EvidenceData data) {
     // dot color & dot size get set according to coloring scheme
     int dot_color = color_unknown;
     float dot_size = 2;
+    float second_dot_size = 0;
     
     if (data_color_mode.equals("inheritance")) {
       String inheritance = (String) current_variant.information.get("inheritance");
@@ -332,12 +336,13 @@ public void drawData (EvidenceData data) {
       }
     } else if (data_color_mode.equals("impact")) {
       String impact = (String) current_variant.information.get("impact");
+      String variant_evidence = (String) current_variant.information.get("variant_evidence");
+      String clinical_importance = (String) current_variant.information.get("clinical_importance");
       if (impact.equals("pathogenic")) {
-        String certainty = (String) current_variant.information.get("certainty");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2") && clinical_importance.equals("2") ) {
           dot_color = pathogenic;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+        } else if (!(variant_evidence.equals("0")) && !(clinical_importance.equals("0"))) {
           dot_color = pathogenic_likely;
           dot_size = 5;
         } else {
@@ -345,23 +350,24 @@ public void drawData (EvidenceData data) {
           dot_size = 4;
         }
       } else if (impact.equals("pharmacogenetic")) {
-        String certainty = (String) current_variant.information.get("certainty");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2")) {
           dot_color = pharmacogenetic;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+          second_dot_size = 4;
+        } else if (variant_evidence.equals("1")) {
           dot_color = pharmacogenetic_likely;
           dot_size = 5;
+          second_dot_size = 3;
         } else {
           dot_color = pharmacogenetic_uncertain;
           dot_size = 4;
+          second_dot_size = 2;
         }
       } else if (impact.equals("benign")) {
-        String certainty = (String) current_variant.information.get("certainty");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2")) {
           dot_color = benign;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+        } else if (variant_evidence.equals("1")) {
           dot_color = benign_likely;
           dot_size = 5;
         } else {
@@ -369,16 +375,18 @@ public void drawData (EvidenceData data) {
           dot_size = 4;
         }
       } else if (impact.equals("protective")) {
-        String certainty = (String) current_variant.information.get("impact");
-        if (certainty.equals("2")) {
+        if (variant_evidence.equals("2")) {
           dot_color = protective;
           dot_size = 6;
-        } else if (certainty.equals("1")) {
+          second_dot_size = 4;
+        } else if (variant_evidence.equals("1")) {
           dot_color = protective_likely;
           dot_size = 5;
+          second_dot_size = 3;
         } else {
           dot_color = protective_uncertain;
           dot_size = 4;
+          second_dot_size = 2;
         }
       }
     }
@@ -398,6 +406,11 @@ public void drawData (EvidenceData data) {
       stroke(dot_color);
       strokeWeight(dot_size);
       point(x_pos, y_pos);
+      if (second_dot_size > 0) {
+        stroke(255);
+        strokeWeight(second_dot_size);
+        point(x_pos, y_pos);
+      }
       float[] position = {x_pos, y_pos};
       data_plot_positions.put(variant_ID, position);
     } else {
@@ -458,9 +471,14 @@ public void drawVariantInfo (Variant target_variant) {
   text("Impact: ", infoX1 + 130, curr_y);
   textAlign(LEFT,TOP);
   String impact_text = (String) target_variant.information.get("impact");
-  if (target_variant.information.get("certainty").equals("1")) {
+  if (target_variant.information.get("clinical_importance").equals("2")) {
+    impact_text = "very important " + impact_text;
+  } else if (target_variant.information.get("clinical_importance").equals("1")) {
+    impact_text = "important " + impact_text;
+  }
+  if (target_variant.information.get("variant_evidence").equals("1")) {
     impact_text = "likely " + impact_text;
-  } else if (target_variant.information.get("certainty").equals("0")) {
+  } else if (target_variant.information.get("variant_evidence").equals("0")) {
     impact_text = "uncertain " + impact_text;
   }
   text( impact_text, infoX1 + 135, curr_y);
@@ -679,25 +697,43 @@ public void drawKey() {
     stroke(pharmacogenetic);
     strokeWeight(6);
     point(infoX1 + 140, keyY1 + 20);
+    stroke(255);
+    strokeWeight(4);
+    point(infoX1 + 140, keyY1 + 20);
     text("= pharmacogenetic", infoX1 + 150, keyY1 + 20);
     stroke(pharmacogenetic_likely);
     strokeWeight(5);
+    point(infoX1 + 140, keyY1 + 32);
+    stroke(255);
+    strokeWeight(3);
     point(infoX1 + 140, keyY1 + 32);
     text("= likely pharmacogenetic", infoX1 + 150, keyY1 + 32);
     stroke(pharmacogenetic_uncertain);
     strokeWeight(4);
     point(infoX1 + 140, keyY1 + 44);
+    stroke(255);
+    strokeWeight(2);
+    point(infoX1 + 140, keyY1 + 44);
     text("= uncertain pharmacogenetic", infoX1 + 150, keyY1 + 44);
     stroke(protective);
     strokeWeight(6);
+    point(infoX1 + 140, keyY1 + 56);
+    stroke(255);
+    strokeWeight(4);
     point(infoX1 + 140, keyY1 + 56);
     text("= protective", infoX1 + 150, keyY1 + 56);
     stroke(protective_likely);
     strokeWeight(5);
     point(infoX1 + 140, keyY1 + 68);
+    stroke(255);
+    strokeWeight(3);
+    point(infoX1 + 140, keyY1 + 68);
     text("= likely protective", infoX1 + 150, keyY1 + 68);
     stroke(protective_uncertain);
     strokeWeight(4);
+    point(infoX1 + 140, keyY1 + 80);
+    stroke(255);
+    strokeWeight(2);
     point(infoX1 + 140, keyY1 + 80);
     text("= uncertain protective", infoX1 + 150, keyY1 + 80);
   } else if (data_color_mode.equals("inheritance")) {

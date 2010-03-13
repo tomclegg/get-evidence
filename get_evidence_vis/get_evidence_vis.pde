@@ -16,7 +16,8 @@ float init_value_x_min, init_value_x_max, init_value_y_min, init_value_y_max;
 // Buttons to change coloring systems
 float color_button_size = 15;
 float color_button_y = 20;
-float color_impact_x_rel = 40; float color_inheritance_x_rel = 120; 
+float color_impact_x_rel = 40; 
+float color_inheritance_x_rel = 120; 
 
 // inheritance
 color dominant = color(255,0,0);
@@ -27,21 +28,21 @@ color inheritance_other = color(180,0,180);
 color pathogenic = color(255,0,0);
 color pathogenic_likely = color(255,80,20);
 color pathogenic_uncertain = color(255,200,80);
-color pharmacogenetic = color(200,0,200);
-color pharmacogenetic_likely = color(200,30,200);
-color pharmacogenetic_uncertain = color(200,60,200);
+color pharmacogenetic = color(255,0,0);
+color pharmacogenetic_likely = color(255,30,30);
+color pharmacogenetic_uncertain = color(255,60,60);
 color benign = color(0,0,255);
 color benign_likely = color(30,30,255);
 color benign_uncertain = color(60,60,255);
-color protective = color(0,180,120);
-color protective_likely = color(0,180,120);
-color protective_uncertain = color(0,180,120);
+color protective = color(0,0,180);
+color protective_likely = color(30,30,180);
+color protective_uncertain = color(60,60,180);
 color color_unknown = color(120,120,120,150);
 
 String data_color_mode = "impact";
 
 void setup() {
-  
+
   // Set coordinates
   size(900, 550);
   plotX1 = 70;
@@ -53,62 +54,63 @@ void setup() {
   infoY1 = plotY1;
   infoY2 = plotY1 + 335;
   keyY1 = infoY2 + 25;
-  
+
   // Set X and Y values
   init_value_x_min = value_x_min = log(1.6);
   init_value_x_max = value_x_max = log(31);
   init_value_y_min = value_y_min = (log(0.0009) / log(10));
   init_value_y_max = value_y_max = (log(0.5) / log(10));
-    
+
   // set font
   plotFont = createFont("Arial", 16);
   textFont(plotFont);
-  
+
   // Read in file
   data = ReadTable("http://evidence.personalgenomes.org/latest_vis_data.tsv");
   data_plot_positions = new HashMap();
   variant_ID_display = "";
-  
+
   smooth();
 }
 
 void draw() {
   background(255);
   randomSeed(100);  // This is for noise added to X coordinates when plotting
-  
+
   stroke(0);
   strokeWeight(2);
   noFill();
   line(plotX1,plotY1,plotX1,plotY2);
   line(plotX1,plotY2,plotX2,plotY2);
-  
+
   drawYLogLabels();
   drawXLogLabels(1);
-  
+
   drawData(data);
-  
+
   // Draw titles
   textAlign(CENTER, TOP);
   textSize(16);
-  String xtitle = "Variant quality score";
+  String xtitle = "Variant score";
   text(xtitle, (plotX1 + plotX2) / 2, plotY2 + 20);
-  
+
   textAlign(CENTER, BOTTOM);
   String ytitle = "Allele frequency";
   rotate(-PI/2);
   text(ytitle,-1 * (plotY1 + plotY2) / 2, plotX1 - 35);
   rotate(PI/2);
-  
+
   stroke(220);
   noFill();
   rect(infoX1, infoY1, infoX2 - infoX1, infoY2 - infoY1);
   if (variant_ID_display.length() > 0) {
     drawVariantInfo(data.getVariant(variant_ID_display));
-  } else {
+  } 
+  else {
     drawInstructionInfo();
   }
   drawKey();
-  
+
   drawColorTypeButtons();
 
 }
@@ -127,7 +129,7 @@ void drawXLogLabels(float interval) {
   if (log(end_x) > value_x_max) {
     end_x--;
   }
-  
+
   for (float x_value = start_x; x_value <= end_x; x_value += interval) {
     float log_x_value = log(x_value);
     float x = map(log_x_value, value_x_min, value_x_max, plotX1, plotX2);
@@ -136,7 +138,7 @@ void drawXLogLabels(float interval) {
     //println(x_value + " " + log_x_value + " " + x + " " + out);
     text(out, x, plotY2 + 6);
     line(x,plotY2,x,plotY2+3);
-    
+
     float next_x = map(log(x_value+interval),value_x_min,value_x_max,plotX1,plotX2);
     while (abs(next_x - x) < 24) {
       interval++;
@@ -171,8 +173,8 @@ void drawYLogLabels() {
   int power = 0;
   int start_y_value;
   while (int(pow(10,power)*y_min_value) <= 0) {
-   power++;
-   //println(int(pow(10,power) * y_min_value));
+    power++;
+    //println(int(pow(10,power) * y_min_value));
   }
   start_y_value = int(pow(10,power) * y_min_value);
   //println("Done");
@@ -188,16 +190,16 @@ void drawYLogLabels() {
     if (y_value >= 0.001) {
       out = nf(y_value,0,0);
     }
-    
+
     float next_major_y = map(-1 * (power - 1), value_y_min, value_y_max, plotY2, plotY1);
     if (next_major_y < plotY1 && (abs(plotY1 - y) > 1)) {
-        next_major_y = plotY1;
+      next_major_y = plotY1;
     }
     if ( abs(next_major_y - y) >= 15) {
       if ( (log_y_value > value_y_min) ) {
         text(out, plotX1 - 6, y);
         line(plotX1,y,plotX1-3,y);
-        
+
         float next_y_value = (i + 1) * pow(10,(-1 * power));
         float log_next_y_value = log(next_y_value) / log(10);
         float next_y = map(log_next_y_value, value_y_min, value_y_max, plotY2, plotY1);
@@ -214,4 +216,5 @@ void drawYLogLabels() {
     }
   }
 }
+
 
