@@ -881,8 +881,8 @@ class evidence_row_renderer {
 				    "previewtextile" => $qualified_impact,
 				    "tip" => "Categorize the expected impact of this variant."));
 
-	  if ($qualified_impact != $row["variant_impact"]) {
-	    $html .= "<P><I>(The \"".ereg_replace (",? ".$row["variant_impact"], "", $qualified_impact)."\" qualifier is assigned automatically based on the above evidence and importance scores.)</I></P>";
+	  if (strtolower ($qualified_impact) != strtolower ($row["variant_impact"])) {
+	    $html .= "<P><I>(The \"".strtolower (eregi_replace (",? ".$row["variant_impact"], "", $qualified_impact))."\" qualifier is assigned automatically based on the above evidence and importance scores.)</I></P>";
 	  }
 
 	  global $gInheritanceOptions;
@@ -1076,13 +1076,13 @@ function evidence_compute_certainty ($scores, $impact)
 function evidence_qualify_impact ($scores, $impact)
 {
   $c = str_split (evidence_compute_certainty ($scores, $impact));
-  if ($c[0] == "-") return $impact;
-  if ($c[0] == 0) $impact = "uncertain $impact";
-  else if ($c[0] == 1) $impact = "likely $impact";
-  if ($c[1] == 0) $impact = "low clinical importance, $impact";
-  else if ($c[1] == 1) $impact = "moderate clinical importance, $impact";
-  else if ($c[1] == 2) $impact = "high clinical importance, $impact";
-  return $impact;
+  if ($c[0] === "-") return ucfirst ($impact);
+  if ($c[0] === 0) $impact = "uncertain $impact";
+  else if ($c[0] === 1) $impact = "likely $impact";
+  if ($c[1] === 0) $impact = "low clinical importance, $impact";
+  else if ($c[1] === 1) $impact = "moderate clinical importance, $impact";
+  else if ($c[1] === 2) $impact = "high clinical importance, $impact";
+  return ucfirst ($impact);
 }
 
 
