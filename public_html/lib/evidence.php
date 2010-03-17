@@ -882,7 +882,7 @@ class evidence_row_renderer {
 				    "tip" => "Categorize the expected impact of this variant."));
 
 	  if ($qualified_impact != $row["variant_impact"]) {
-	    $html .= "<P><I>(The \"".ereg_replace (" ".$row["variant_impact"], "", $qualified_impact)."\" qualifier is assigned automatically based on the above evidence and importance scores.)</I></P>";
+	    $html .= "<P><I>(The \"".ereg_replace (",? ".$row["variant_impact"], "", $qualified_impact)."\" qualifier is assigned automatically based on the above evidence and importance scores.)</I></P>";
 	  }
 
 	  global $gInheritanceOptions;
