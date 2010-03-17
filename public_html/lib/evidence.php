@@ -1077,10 +1077,11 @@ function evidence_qualify_impact ($scores, $impact)
 {
   $c = str_split (evidence_compute_certainty ($scores, $impact));
   if ($c[0] == "-") return $impact;
-  if ($c[1] >= 1) $impact = "important $impact";
-  if ($c[1] >= 2) $impact = "very $impact";
-  if ($c[0] == 0) return "uncertain $impact";
-  if ($c[0] == 1) return "likely $impact";
+  if ($c[0] == 0) $impact = "uncertain $impact";
+  else if ($c[0] == 1) $impact = "likely $impact";
+  if ($c[1] == 0) $impact = "low clinical importance, $impact";
+  else if ($c[1] == 1) $impact = "moderate clinical importance, $impact";
+  else if ($c[1] == 2) $impact = "high clinical importance, $impact";
   return $impact;
 }
 
