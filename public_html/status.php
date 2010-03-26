@@ -9,7 +9,6 @@ In expected approximate chronological order:
 
 * keep odds ratio updated when editing individual figures
 * (trait-o-matic) auto-update get-evidence results when db changes
-* *submit article*
 * bug: find out why NSF-Lys702Asn shows wrong hapmap frequency
 * bug: find out why NA12878 has no chr:pos on CYP2C9-R144C
 * IE test/fix
@@ -30,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* *submit article*
 * update qualifiers to "[low/moderate/high] clinical importance, [uncertain/likely]"
 * split "certainty" into "variant_evidence" and "clinical_importance" in latest-flat
 * fixed: firefox on mac always saves as if "unpublished research" button is checked, even if it isn't
