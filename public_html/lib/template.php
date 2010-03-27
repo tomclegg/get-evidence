@@ -141,7 +141,7 @@ header('Content-Type: text/html; charset=UTF-8');
 			</div>
 <?php		endif; ?>
 
-		<div class="unsubmitted_message_container"><div id="message" class="unsubmitted_message" style="display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
+		<div class="unsubmitted_message_container"><div id="message" class="message unsubmitted_message" style="display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
 
 		</div>
 <?php } ?>
@@ -152,7 +152,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 </div>
 
-<div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2009 Scalable Computing Experts.</div>
+<div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2010 Scalable Computing Experts.</div>
 <!--
 Template from <a href="http://arcsin.se">Arcsin</a>
 -->
