@@ -141,7 +141,7 @@ header('Content-Type: text/html; charset=UTF-8');
 			</div>
 <?php		endif; ?>
 
-		<div style="height: 300px;"><div id="message" class="message" style="border: 1px dashed #000; margin-top: 20px; margin-bottom: 20px; padding: 10px; background-color: #ffb; display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
+		<div class="unsubmitted_message_container"><div id="message" class="unsubmitted_message" style="display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
 
 		</div>
 <?php } ?>
