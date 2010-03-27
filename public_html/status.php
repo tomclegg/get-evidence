@@ -7,23 +7,25 @@ h1. Next steps
 
 In expected approximate chronological order:
 
+* prevent "you have unsaved changes" box from scrolling off the top
+* "talk" page for each variant (like forum? or like mediawiki?)
+* implement visualizer's auto-scoring mechanism as "Scoring Robot"
+* curator sign-off on latest version... and add link to download resulting "release" snapshot
+* "curator's report": pages with un-signed-off edits
+* add "user manager" (control membership in groups: admin/curator/...)
+* allow "lab members" (?) group members upload/view publication PDFs
+* integrate trait-o-matic
 * keep odds ratio updated when editing individual figures
 * (trait-o-matic) auto-update get-evidence results when db changes
 * bug: find out why NSF-Lys702Asn shows wrong hapmap frequency
 * bug: find out why NA12878 has no chr:pos on CYP2C9-R144C
 * IE test/fix
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
-* import snpedia data
-* curator sign-off on latest version... and add link to download resulting "release" snapshot
-* "curator's report": pages with un-signed-off edits
-* handle edit conflicts
-* prevent "you have unsaved changes" from scrolling off the top on long pages
-* auto-complete and sanity-check gene names based on refFlat
-* graph frequency vs. odds ratio
+* detect "version you're editing already superseded" and ask user what to do
+* detect "someone else is editing this page/section" if logged in
+* auto-complete and sanity-check gene names based on refFlat / existing variants
 * support publications without PMIDs (other namespaces? original contributions? OWW?)
-* fix character encoding in pubmed summaries
 * figure out better solution to HNF1A-Ser574Gly (genomes) vs. HNF1A-Gly574Ser (omim)
-* create separate impact category for susceptibility variants?
 
 h1. Recent steps
 
