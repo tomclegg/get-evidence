@@ -43,21 +43,21 @@ function editable_decorate (e)
     if (!$('toolbar_'+e.id))
 	e.insert({top: '<DIV id="toolbar_'+e.id+'" class="toolbar"></DIV>'});
     $('toolbar_'+e.id).className = 'toolbar';
-    $('toolbar_'+e.id).insert
-	('<P class="toolbar_span">'
-	 + '<A href="#" id="pbutton_'+e.id+'" onclick="return editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A>'
-	 + '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A>'
-	 + (			// No point showing Delete button on
-				// genome entries; the robot will just
-				// add them back anyway.  And it
-				// doesn't make sense to delete
-				// variant fields.  So, only show
-				// Delete on the summary_short fields
-				// of publication entries.
-	    /_a_0_/.exec(e.id) || !/_f_summary_short/.exec(e.id)
-	    ? ''
-	    : '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_delete($(\''+e.id+'\'))" class="toolbar_tab">Delete</A>')
-	 + '</P>');
+    var toolbar_html = '<P class="toolbar_span">';
+    if (e.hasClassName ('editable')) {
+	toolbar_html += '<A href="#" id="pbutton_'+e.id+'" onclick="return editable_preview($(\''+e.id+'\'))" style="display:none;" class="toolbar_tab">Preview</A>';
+	toolbar_html += '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_click($(\''+e.id+'\'))" class="toolbar_tab">Edit</A>';
+    }
+    if (e.hasClassName ('editable') &&
+	!/_a_0_/.exec(e.id) &&
+	/_f_summary_short/.exec(e.id)) {
+	toolbar_html += '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_delete($(\''+e.id+'\'))" class="toolbar_tab">Delete</A>';
+    }
+    if (/_f_talk_text/.exec(e.id)) {
+	toolbar_html += '<A href="#" id="hbutton_'+e.id+'" onclick="return show_what_click($(\''+e.id+'\'))" class="toolbar_tab">Hide</A>';
+    }
+    toolbar_html += '</P>';
+    $('toolbar_'+e.id).insert (toolbar_html);
 }
 
 function editable_delete (e)
@@ -450,7 +450,7 @@ function editable_init_single (e)
 function editable_init ()
 {
     if (!$('mainform')) return;
-    $$('.editable').each(function(e){ editable_init_single (e); });
+    $$('.editable,.uneditable').each(function(e){ editable_init_single (e); });
     new PeriodicalExecuter (editable_update_last_saved, 5);
     new Form.Observer ($('mainform'), 3, editable_check_unsaved_all);
     editable_get_draft();

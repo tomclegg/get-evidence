@@ -42,6 +42,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
 <script type="text/javascript" src="/js/evidence.js"></script>
 <script type="text/javascript" src="/js/report.js"></script>
+<script type="text/javascript" src="/js/show-what.js"></script>
 <title><?php frag("title"); ?></title>
 </head>
 

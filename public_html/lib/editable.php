@@ -45,8 +45,10 @@ function editable($id, $content, $title="", $options=false)
     . $html
     . "</SPAN>";
 
-  if ($gDisableEditing || !getCurrentUser())
+  if ($gDisableEditing)
     return $html;
+  if (!getCurrentUser())
+    return "<SPAN id=\"$id\" class=\"uneditable\">$html</SPAN>";
 
   $selector = "";
   if ($options && is_array($options["select_options"])) {
