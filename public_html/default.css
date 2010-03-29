@@ -206,6 +206,14 @@ h1,h2,h3 {
 	border-top: 3px solid #ddd;
 	border-left: 3px solid #ddd;
 	border-right: 3px solid #ddd;
+
+	/* css3 */
+	-moz-border-radius-topleft:10px; 
+	-webkit-border-top-left-radius:10px; 
+	border-top-left-radius:10px; 
+	-moz-border-radius-topright:10px; 
+	-webkit-border-top-right-radius:10px; 
+	border-top-right-radius:10px; 
 }
 .toolbar_tab_current {
 	background-color: #fff;
@@ -346,4 +354,73 @@ ul.tipped {
 }
 .invisible {
 	visibility: hidden;
+}
+
+
+/* Speech bubble code adapted from
+   http://nicolasgallagher.com/progressive-enhancement-pure-css-speech-bubbles/ */
+
+.rectangle-speech-border {
+    position:relative;
+    padding:15px 15px;
+    margin:0 0 12px 30px;
+    border:1px solid #88f;
+    background:#fff;
+
+    /* css3 */
+    -moz-border-radius:20px;
+    -webkit-border-radius:20px;
+    border-radius:20px;
+}
+
+/* creates larger curve */
+.rectangle-speech-border:before {
+    content:"\00a0"; 		/* non-breaking space */
+    position:absolute;
+    z-index:10;
+    top:20px;
+    left:-31px;
+    width:30px;
+    height:30px;
+    border-style:solid;
+    border-width:0 1px 1px 0;
+    border-color:#88f;
+    background:transparent;
+
+    /* css3 */
+    -moz-border-radius-bottomleft:30px 30px;
+    -webkit-border-bottom-left-radius:30px 30px;
+    border-bottom-left-radius:30px 30px;
+}
+
+/* creates smaller curve */
+.rectangle-speech-border:after {
+    content:"\00a0";  		/* non-breaking space */
+    position:absolute;
+    z-index:10;
+    top:20px;
+    left:-31px;
+    width:30px;
+    height:15px;
+    border-style:solid;
+    border-width:0 1px 1px 0;
+    border-color:#88f;
+    background:transparent;
+
+    /* css3 */
+    -moz-border-radius-bottomleft:30px 20px;
+    -webkit-border-bottom-left-radius:30px 20px;
+    border-bottom-left-radius:30px 20px;
+}
+
+/* creates a white rectangle to cover part of the oval border*/
+.rectangle-speech-border>:first-child:after {
+    content:"\00a0";
+    position:absolute;
+    z-index:11;
+    top:36px;
+    left:-1px;
+    width:3px;
+    height:14px;
+    background:#fff;
 }

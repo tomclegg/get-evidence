@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* "talk" page for each variant (like forum? or like mediawiki?)
 * implement visualizer's auto-scoring mechanism as "Scoring Robot"
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
 * "curator's report": pages with un-signed-off edits
@@ -30,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* add "discussion" section after each free text field
 * prevent "you have unsaved changes" box from scrolling off the top
 * *submit article*
 * update qualifiers to "[low/moderate/high] clinical importance, [uncertain/likely]"

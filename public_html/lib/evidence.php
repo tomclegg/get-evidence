@@ -780,6 +780,7 @@ class evidence_row_renderer {
 
     function render_row (&$row)
     {
+	global $gDisableEditing;
 	$html = "";
 
 	$this->row_transition ($row);
@@ -808,11 +809,10 @@ class evidence_row_renderer {
 	else if ($row["article_pmid"] != "0") {
 	  $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
 	  $summary = article_get_summary ($row["article_pmid"]);
-	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+	  $html .= editable ("${id_prefix}f_summary_short__70x8__textile",
 			     $row[summary_short],
 			     $summary . "<BR />",
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
-
 	}
 
 	else if ($row["genome_id"] != "0") {
@@ -850,7 +850,7 @@ class evidence_row_renderer {
 	    $name = nl2br ($name);
 	  }
 
-	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+	  $html .= editable ("${id_prefix}f_summary_short__70x8__textile",
 			     $row[summary_short],
 			     $name);
 	}
@@ -860,7 +860,7 @@ class evidence_row_renderer {
 	}
 
 	else {
-	  $html .= editable ("${id_prefix}f_summary_short__70x5__textile",
+	  $html .= editable ("${id_prefix}f_summary_short__70x8__textile",
 			     $row[summary_short],
 			     "Short summary",
 			     array ("tip" => "Provide a one line summary of clinical action to be undertaken given this variant (possibly modified by known phenotypes)."));
@@ -890,7 +890,7 @@ class evidence_row_renderer {
 			     $row[variant_dominance],
 			     "Inheritance pattern",
 			     array ("select_options" => $gInheritanceOptions));
-	  $html .= editable ("${id_prefix}f_summary_long__70x5__textile",
+	  $html .= editable ("${id_prefix}f_summary_long__70x8__textile",
 			     $row[summary_long],
 			     "Summary of published research, and additional commentary",
 			     array ("tip" => "Provide a comprehensive review of the variant including youngest age of onset, oldest age of onset and oldest asymptomatic individual."));
@@ -904,6 +904,16 @@ class evidence_row_renderer {
 	  // somehow; for now just don't indicate them at all
 	  if ($row["is_delete"]) return;
 	  if ($row["flag_edited_id"]) { $this->html .= $html; return; }
+	}
+
+	else if (!$gDisableEditing && getCurrentUser() ||
+		 0 < strlen ($row["talk_text"])) {
+	  $html .= "<DIV class=\"rectangle-speech-border\"><DIV>";
+	  $html .= editable ("${id_prefix}f_talk_text__70x8__textile",
+			     $row[talk_text],
+			     "Discussion<BR />",
+			     array ("tip" => "Comments about this section"));
+	  $html .= "</DIV></DIV>";
 	}
 
 	if ($row["is_delete"])

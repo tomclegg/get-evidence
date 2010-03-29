@@ -52,8 +52,9 @@ function editable_decorate (e)
 				// add them back anyway.  And it
 				// doesn't make sense to delete
 				// variant fields.  So, only show
-				// Delete on publication entries.
-	    /_a_0_/.exec(e.id)
+				// Delete on the summary_short fields
+				// of publication entries.
+	    /_a_0_/.exec(e.id) || !/_f_summary_short/.exec(e.id)
 	    ? ''
 	    : '<A href="#" id="ebutton_'+e.id+'" onclick="return editable_delete($(\''+e.id+'\'))" class="toolbar_tab">Delete</A>')
 	 + '</P>');
