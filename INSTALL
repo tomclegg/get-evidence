@@ -25,7 +25,14 @@ Create MySQL db and user:
  create user evidence@localhost identified by 'shakespeare';
  grant all privileges on evidence.* to evidence@localhost;
 
-Point apache DocumentRoot to public_html
+Point apache DocumentRoot to public_html and turn on .htaccess support
+(replace /path/to/get-evidence here with the real path to your local
+git repo):
+
+ DocumentRoot /path/to/get-evidence/public_html
+ <Directory /path/to/get-evidence/public_html>
+   AllowOverride All
+ </Directory>
 
 Put real database password in public_html/config.php like this (but
 make sure there is no leading space or anything else before "<?php")
