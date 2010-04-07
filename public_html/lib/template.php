@@ -35,6 +35,9 @@ header('Content-Type: text/html; charset=UTF-8');
 <meta name="keywords" content="keywords"/> 
 <meta name="author" content="author"/> 
 <link rel="stylesheet" type="text/css" href="default.css" media="screen"/>
+<?php if (!ereg ('Firefox/3\.0|MSIE 7\.0', $_SERVER["HTTP_USER_AGENT"])): ?>
+<link rel="stylesheet" type="text/css" href="optional-css3.css" media="screen"/>
+<?php endif; ?>
 <script type="text/javascript" 
  src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1/prototype.js"></script>
 <script type="text/javascript" src="/js/addEvent.js"></script>
