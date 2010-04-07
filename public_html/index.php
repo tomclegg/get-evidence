@@ -60,7 +60,7 @@ if (!$variant_id)
   {
     if (!$_GET["q"])
       {
-	header ("Location: /edits");
+	header ("Location: /about");
 	exit;
       }
     else
