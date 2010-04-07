@@ -29,8 +29,16 @@ blockquote,cite {
 	margin-right: 4em;
 }
 h1 {
-	font-size: 1.4em;
+	font-size: 2em;
 	margin-bottom: 4px;
+}
+h2 {
+	font-size: 1.6em;
+	margin-bottom: 3px;
+}
+h3 {
+	font-size: 1.2em;
+	margin-bottom: 2px;
 }
 code {
 	background: url(img/bgcode.gif);
