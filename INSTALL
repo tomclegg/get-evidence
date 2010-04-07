@@ -19,11 +19,15 @@ Set MySQL server character set:
    ' /etc/mysql/my.cnf
  sudo /etc/init.d/mysql restart
 
-Create MySQL db and user:
+Create MySQL db and user (change "shakespeare" to be your own password,
+note that it will be used later in scripts):
 
+ mysql -u root -p
+ [type in MySQL root password]
  create database evidence character set = utf8;
  create user evidence@localhost identified by 'shakespeare';
  grant all privileges on evidence.* to evidence@localhost;
+ exit
 
 Point apache DocumentRoot to public_html and turn on .htaccess support
 (replace /path/to/get-evidence here with the real path to your local
