@@ -7,6 +7,10 @@ h1. GET-Evidence
 
 GET-Evidence is a system for analyzing genetic variants. All aspects of GET-Evidence are subject to improvement&mdash;we hope that others will contribute to the design of the system as well as to individual variant evaluations. Please see our "guide to editing GET-evidence":guide_editing to learn how to participate.
 
+h2. Disclaimer
+
+GET-evidence is a research tool and not intended for clinical use. The GET-evidence system is still under development, many variants have not been fully curated and some fields may contain "default scoring":guide_preliminary_score.
+
 h2. Variants
 
 Currently GET-evidence only tracks nonsynonymous SNPs (missense and nonsense mutations). The automatic portion of genome analysis takes all reported SNPs and finds all nonsynonymous SNPs (missense and nonsense mutations)—these are then loaded into GET-evidence's database of variants. There variants are specified by gene name followed by amino acid change, for example "NPHP4 R848W":NPHP4-R848W (or NPHP4 Arg848Trp) refers to an amino acid change of arginine to tryptophan at position 848 in the gene product of NPHP4. 
