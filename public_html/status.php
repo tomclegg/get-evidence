@@ -17,7 +17,6 @@ In expected approximate chronological order:
 * (trait-o-matic) auto-update get-evidence results when db changes
 * bug: find out why NSF-Lys702Asn shows wrong hapmap frequency
 * bug: find out why NA12878 has no chr:pos on CYP2C9-R144C
-* degrade "show discussion" a little more nicely in firefox 3.0
 * IE test/fix
 * (trait-o-matic) add "affects self (hom or dominant)" checkbox (vs "affects offspring") on result page
 * detect "version you're editing already superseded" and ask user what to do
@@ -30,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* degrade "show discussion" a little more nicely in firefox 3.0
 * add "discussion" section after each free text field
 * prevent "you have unsaved changes" box from scrolling off the top
 * *submit article*
