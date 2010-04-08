@@ -7,9 +7,11 @@ h1. Guide to editing
 
 GET-evidence variant evaluations can be edited by anyone&mdash;our only requirement is that you log in using OpenID to edit using your real name and provide your email address. Editor contributions are critical to GET-evidence's success, we encourage all users of GET-evidence to also edit. Things you can do include: evaluating new variants, correcting errors, and updating evaluations.
 
-h3. Related pages
+h3. Other guides
 
-* "Variant impact score":guide_impact_score: Explains how variant impact score (which is used to determine qualifiers) is generated.
+* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
+* "Preliminary variant impact score":guide_preliminary_score: Explains how automatic preliminary scores are assigned, these should be overwritten by later evaluation.
+* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 
 h2. Logging in with OpenID
 
@@ -31,14 +33,22 @@ The "visualization":vis is interactive: you can find variants that appear to lac
 
 On the "reports":report page you can find various lists of GET-evidence entries. "Summaries needed" lists variants that have been marked pathogenic but lack summaries. "Variants with genome evidence and web search results" lists variants that have been found in one of the published genomes and have web search results (indicating that someone somewhere said something about that variant). These are good starting points for looking for variants that need more evaluation.
 
+h3. What sort of information is relevant?
+
+You should go read our description of "variant impact scores":guide_impact_score if you haven't already. Relevant information will be anything that contributes to scoring: Case/control numbers, familial inheritance, biochemical studies, etc.
+
+You should also note other details that may be relevant to interpreting the variant. For example, if a variant is linked to another putatively pathogenic variant&mdash;this isn't captured in the scoring but is relevant to interpreting the variant.
+
 h3. Where to find information?
 
 Once editing a variant, you'll need to start reading publications that reported observations relevant to that variant. The "other external references" section at the bottom of a variant page contains useful starting points: OMIM, GeneTests, and web search results. Once you find publications, you should add entries for them to GET-evidence and record the relevant information.
 
 * *Web search*: You should always search for a variant using a search engine (internet search or journal search), if you're lucky you'll find a recent review article that summarizes research relevant to the variant. You can then follow those citations.
-* *OMIM*: If available, OMIM is useful for providing a summary of the variant and a few relevant publications. Keep in mind that the OMIM entry may not be up-to-date and might not cite all relevant literature. You can find a link to the relevant OMIM entry in the "other external references" section.
-* *GeneTests*: If a gene is in GeneTests, you can try clicking on the GeneTests link in the "other external references" section. Sometimes you will find an associated GeneReviews link that summarizes the disease and treatment. This is especially useful for evaluating clinical importance categories (disease severity and disease treatability).
+* *GeneTests*: If a gene is in GeneTests, you can try clicking on the GeneTests link in the "other external references" section. Sometimes you will find an associated GeneReviews link that summarizes the disease and treatment. This is especially useful for evaluating clinical importance categories (disease severity and disease treatability). If the review mentions this variant, it is a good starting point for finding relevant literature.
+* *OMIM*: If available, OMIM is useful for providing a summary of the variant and a few relevant publications. You can find a link to the relevant OMIM entry in the "other external references" section.
 * *Adding publications*: Once you find relevant publications, add them to the GET-Evidence page using their PMID (at the bottom of the page in the "Publications" section). This brings up a field where you can record information from that publication. Read the paper and record information relevant to the variant's evaluation, including any data that would contribute to the "variant impact score":guide_impact_score criteria.
+
+Keep in mind that reviews like GeneReviews and OMIM may not be up-to-date and might not reference all the relevant literature. Remember to exhaust all sources to find as much evidence for a variant as possible!
 
 h2. Things to edit
 
