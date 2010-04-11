@@ -908,7 +908,8 @@ class evidence_row_renderer {
 
 	else if (!$gDisableEditing && getCurrentUser() ||
 		 0 < strlen ($row["talk_text"])) {
-	  $html .= "<DIV class=\"rectangle-speech-border-hidden\"><DIV></DIV>";
+	  $show_label = 0 < strlen ($row["talk_text"]) ? "<B>show discussion</B>" : "start discussion";
+	  $html .= "<DIV class=\"rectangle-speech-border-hidden\"><DIV>$show_label</DIV>";
 	  $html .= editable ("${id_prefix}f_talk_text__70x8__textile",
 			     $row[talk_text],
 			     "Discussion<BR />",

@@ -7,7 +7,6 @@ h1. Next steps
 
 In expected approximate chronological order:
 
-* distinguish between empty and non-empty discussion placeholders when logged in
 * implement visualizer's auto-scoring mechanism as "Scoring Robot"
 * curator sign-off on latest version... and add link to download resulting "release" snapshot
 * "curator's report": pages with un-signed-off edits
@@ -30,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* distinguish between empty and non-empty discussion placeholders when logged in
 * degrade "show discussion" a little more nicely in firefox 3.0
 * add "discussion" section after each free text field
 * prevent "you have unsaved changes" box from scrolling off the top

@@ -43,6 +43,7 @@
 
 /* creates a white rectangle to cover part of the oval border*/
 .rectangle-speech-border>:first-child:after {
+    visibility:visible;
     content:"\00a0";
     position:absolute;
     z-index:2;

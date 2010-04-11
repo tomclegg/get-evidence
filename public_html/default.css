@@ -389,7 +389,7 @@ ul.tipped {
     text-align: center;
     left:10px;
     top:-6px;
-    width:95px;
+    width:115px;
     height:14px;
     padding:0 0;
     margin:0 0 0 0;
@@ -397,7 +397,6 @@ ul.tipped {
     background:transparent;
     cursor: pointer;
     cursor: hand;
-    overflow: hidden;
 
     /* css3 */
     -moz-border-radius:4px;
@@ -405,9 +404,16 @@ ul.tipped {
     border-radius:4px;
 }
 
-.rectangle-speech-border-hidden>:first-child:before {
+.rectangle-speech-border>:first-child {
+    visibility:hidden;
+}
+
+.rectangle-speech-border-hidden>:first-child {
     visibility:visible;
-    content:"show discussion";
-    color:#bbf;
+    color:#aaf;
     z-index:5;
+}
+
+.rectangle-speech-border-hidden>:first-child b {
+    color:#000;
 }
