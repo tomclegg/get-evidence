@@ -23,7 +23,7 @@ if ($_GET["domorhom"])
 $sql_right_join = "";
 $sql_orderby = "";
 $sql_params = array();
-$min_certainty = 0;
+$min_certainty = -1;
 $max_certainty = 2;
 
 
@@ -43,16 +43,19 @@ else if ($want_report_type == "population-path-pharma") {
   $report_title = "Pathogenic and pharmacogenetic variants with genome hits";
   $sql_where = "s.variant_impact IN ('pathogenic','pharmacogenetic')";
   $sql_having .= " AND d_dataset_id IS NOT NULL";
-  $min_certainty = 0;
+  $min_certainty = -1;
 }
-else if (ereg ('^(all|uncertain|likely)?-?(pathogenic|pharmacogenetic|benign|protective)', $want_report_type, $regs)) {
+else if (ereg ('^(all|uncertain|likely|insufficient)?-?(pathogenic|pharmacogenetic|benign|protective)', $want_report_type, $regs)) {
   if ($regs[1] != "all") {
-    $min_certainty = $regs[1] == "uncertain" ? 0
-	: ($regs[1] == "likely" ? 1 : 2);
+    if ($regs[1] === "uncertain") $min_certainty = 0;
+    else if ($regs[1] == "likely") $min_certainty = 1;
+    else if ($regs[1] == "insufficient") $min_certainty = -1;
+    else $min_certainty = 2;
     $max_certainty = $min_certainty;
   }
   $impact = $regs[2];
   $report_title = ucfirst (($regs[1] ? $regs[1]." " : "") . $impact). " variants with genome hits";
+  $report_title = ereg_replace ('^Insufficient', 'Insufficiently evaluated', $report_title);
   $sql_where = "s.variant_impact = '$impact'";
   $sql_having .= " AND d_dataset_id IS NOT NULL";
 }
@@ -102,15 +105,15 @@ h1. Available reports
 
 Variants with genome hits, split by impact:
 table(report_table).
-|.|uncertain|likely|unqualified / well established|all|
-|pathogenic|"uncertain path.":report?type=uncertain-pathogenic|"likely path.":report?type=likely-pathogenic|"path.":report?type=pathogenic|"* path.":report?type=all-pathogenic|
-|pharmacogenetic|"uncertain pharm.":report?type=uncertain-pharmacogenetic|"likely pharm.":report?type=likely-pharmacogenetic|"pharm.":report?type=pharmacogenetic|"* pharm.":report?type=all-pharmacogenetic|
+|.|insufficiently evaluated|uncertain|likely|unqualified / well established|all|
+|pathogenic|"insuff. path.":report?type=insufficient-pathogenic|"uncertain path.":report?type=uncertain-pathogenic|"likely path.":report?type=likely-pathogenic|"path.":report?type=pathogenic|"* path.":report?type=all-pathogenic|
+|pharmacogenetic|"insuff. pharm.":report?type=insufficient-pharmacogenetic|"uncertain pharm.":report?type=uncertain-pharmacogenetic|"likely pharm.":report?type=likely-pharmacogenetic|"pharm.":report?type=pharmacogenetic|"* pharm.":report?type=all-pharmacogenetic|
 
 Variants with genome hits, split by impact, omitting het SNPs for recessive variants:
 table(report_table).
-|.|uncertain|likely|unqualified / well established|all|
-|pathogenic|"uncertain path.":report?domorhom=1&type=uncertain-pathogenic|"likely path.":report?domorhom=1&type=likely-pathogenic|"path.":report?domorhom=1&type=pathogenic|"* path.":report?domorhom=1&type=all-pathogenic|
-|pharmacogenetic|"uncertain pharm.":report?domorhom=1&type=uncertain-pharmacogenetic|"likely pharm.":report?domorhom=1&type=likely-pharmacogenetic|"pharm.":report?domorhom=1&type=pharmacogenetic|"* pharm.":report?domorhom=1&type=all-pharmacogenetic|
+|.|insufficiently evaluated|uncertain|likely|unqualified / well established|all|
+|pathogenic|"insuff. path.":report?domorhom=1&type=insufficient-pathogenic|"uncertain path.":report?domorhom=1&type=uncertain-pathogenic|"likely path.":report?domorhom=1&type=likely-pathogenic|"path.":report?domorhom=1&type=pathogenic|"* path.":report?domorhom=1&type=all-pathogenic|
+|pharmacogenetic|"insuff. pharm.":report?domorhom=1&type=insufficient-pharmacogenetic|"uncertain pharm.":report?domorhom=1&type=uncertain-pharmacogenetic|"likely pharm.":report?domorhom=1&type=likely-pharmacogenetic|"pharm.":report?domorhom=1&type=pharmacogenetic|"* pharm.":report?domorhom=1&type=all-pharmacogenetic|
 
 EOF
       ;
@@ -186,6 +189,23 @@ $sql_orderby
     $certainty = evidence_compute_certainty ($row["variant_quality"],
 					     $row["variant_impact"]);
     $certainty = substr ($certainty, 0, 1);
+
+    if ($certainty == 0 && ($min_certainty == 0 || $max_certainty == -1)) {
+      // need to distinguish between "insufficiently evaluated" and "uncertain"
+      $have_2or3 = 0;
+      $have_4or5 = 0;
+      $nonempty_scores = 0;
+      $category_index = -1;
+      $scores = str_split (str_pad ($row["variant_quality"], 6, "-"));
+      foreach ($scores as $score)
+	if ($score != "-")
+	  ++$nonempty_scores;
+      if ($nonempty_scores < 4 ||
+	  ($scores[2] == "-" && $scores[3] == "-") ||
+	  ($scores[4] == "-" && $scores[5] == "-"))
+	$certainty = -1;
+    }
+
     if ($min_certainty > $certainty || $max_certainty < $certainty) {
       $genome_rows = array();
       continue;
@@ -214,9 +234,11 @@ $sql_orderby
     $rowspan = "rowspan=\"$rowspan\"";
 
     $impact = ereg_replace ("^likely ", "l.", $row["variant_impact"]);
-    if ($certainty == 1)
+    if ($certainty == -1)
+      $impact = "insufficiently evaluated / uncertain $impact";
+    else if ($certainty == 1)
       $impact = "likely $impact";
-    else if ($certainty == 0)
+    else if ($certainty <= 0)
       $impact = "uncertain $impact";
     if (strlen($row["variant_frequency"]))
 	$impact .= sprintf (", f=%.3f", $row["variant_frequency"]);

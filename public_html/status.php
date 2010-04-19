@@ -29,6 +29,7 @@ h1. Recent steps
 
 In reverse chronological order:
 
+* distinguish between "uncertain" and "insufficiently evaluated" in "split by impact" reports
 * distinguish between empty and non-empty discussion placeholders when logged in
 * degrade "show discussion" a little more nicely in firefox 3.0
 * add "discussion" section after each free text field
