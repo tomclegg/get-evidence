@@ -12,9 +12,11 @@ Qualifiers are added to this to describe the variant evidence and clinical impor
 |_. moderate importance | moderate clinical importance,<br>uncertain pathogenic | moderate clinical importance,<br>likely pathogenic | moderate clinical importance,<br>pathogenic |
 |_. high importance | high clinical importance,<br>uncertain pathogenic | high clinical importance,<br>likely pathogenic | high clinical importance,<br>pathogenic |
 
-h3. Related pages
+h3. Other guides
 
-* "Variant impact score":guide_impact_score: Explains how variant impact score (which is used to determine qualifiers) is generated.
+* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
+* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
+* "Preliminary variant impact score":guide_preliminary_score: Explains how automatic preliminary scores are assigned, these should be overwritten by later evaluation.
 
 h2. Variant evidence qualifier
 

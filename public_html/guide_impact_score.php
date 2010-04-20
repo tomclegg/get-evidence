@@ -7,10 +7,11 @@ h1. Variant Impact Score
 
 Each variant is graded in six categories, the first four related to evidence and last two related to clinical importance. Each category may be assigned up to five points to reflect the strength of evidence in that category. Zero points reflects no significant evidence in a category, -1 reflects contradicting evidence. These six categories are the "variant impact score".
 
-h3. Related pages
+h3. Other guides
 
-* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as "uncertain", "likely", etc.
+* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
 * "Preliminary variant impact score":guide_preliminary_score: Explains how automatic preliminary scores are assigned, these should be overwritten by later evaluation.
+* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 
 h2. Computational evidence
 

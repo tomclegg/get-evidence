@@ -7,9 +7,11 @@ h1. Preliminary variant impact scores
 
 To sort through variants automatically and find the variants more likely to have clinically relevant effects, we assign "preliminary variant impact scores":guide_impact_score on the basis of information in our databases. This focuses attention on variants; these scores should be replaced when the variant is evaluated.
 
-h3. Related pages
+h3. Other guides
 
-* "Variant impact score":guide_impact_score: Explains how variant impact score should be calculated when a variant is evaluated.
+* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
+* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
+* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 
 h2. Preliminary score criteria
 
