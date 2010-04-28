@@ -3,7 +3,7 @@
 include "lib/setup.php";
 
 $report_title = "Contributors";
-$gOut["title"] = "Evidence Base: $report_title";
+$gOut["title"] = "GET-Evidence: $report_title";
 
 function print_content($x)
 {

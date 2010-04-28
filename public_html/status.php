@@ -1,7 +1,7 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "Evidence Base: Status";
+$gOut["title"] = "GET-Evidence: Status";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
 h1. Next steps
 

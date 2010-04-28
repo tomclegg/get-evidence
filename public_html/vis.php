@@ -1,7 +1,7 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "Evidence Base: Visual";
+$gOut["title"] = "GET-Evidence: Visual";
 $gOut["content"] = <<<EOF
 			<div id="get_evidence_vis_container"> 
 			

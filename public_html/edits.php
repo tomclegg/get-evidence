@@ -21,7 +21,7 @@ else {
 if (isset ($_GET["before_edit_id"]))
   $where_sql .= " AND edit_id < " . (0 + $_GET["before_edit_id"]);
 
-$gOut["title"] = "Evidence Base: $report_title";
+$gOut["title"] = "GET-Evidence: $report_title";
 
 function print_content($x)
 {
