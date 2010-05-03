@@ -108,18 +108,19 @@ function editable_oddsratio ($id, $content, $title, $options)
   return $html;
 }
 
-$gQualityAxes = array ("Computational" => "One star for each consistent prediction and one star subtracted for conflicting results from:
+$gQualityAxes = array ("Computational" => "One point for each consistent prediction, substract points if there are conflicting results:
 <UL class=\"tipped\">
+<LI>Other variants in this gene cause similar disease</LI>
+<LI>NBLOSUM100 score &gt;= 3</LI>
+<LI>Nonsense mutation (NBLOSUM100 = 10)</LI>
 <LI>evolutionary conservation (minimum of three species)</LI>
 <LI>presence in active domain</LI>
 <LI>SIFT</LI>
 <LI>PolyPhen</LI>
-<LI>NBLOSUM &gt;= 2</LI>
 <LI>GVGD</LI>
-<LI>Other variants in this gene cause similar disease</LI>
 <LI>etc.</LI>
 </UL>",
-		       "Functional" => "One star for each experiment supporting the result, and penalize one star for conflicting results from:
+		       "Functional" => "One point for each experiment supporting the result, and penalize one point for conflicting results from:
 <UL class=\"tipped\">
 <LI>enzyme extracts</LI>
 <LI>cell lines</LI>
@@ -128,38 +129,37 @@ $gQualityAxes = array ("Computational" => "One star for each consistent predicti
 </UL>",
 		       "Case/Control" => "A combination of odds ratio and significance test (currently using Fisher&rsquo;s Exact Test). For protective alleles, use inverse&nbsp;OR&nbsp;=&nbsp;1&divide;OR. Do not count related individuals, count probands -- i.e., one per family.
 <UL class=\"tipped\">
-<LI>0 stars if no higher ranking is allowed</LI>
-<LI>1 star if OR &gt; 1 and significance &lt;= 0.1</LI>
-<LI>2 stars if OR &gt;= 1.5 and significance &lt;= 0.05</LI>
-<LI>3 stars if OR &gt;= 2 and significance &lt;= 0.025</LI>
-<LI>4 stars if OR &gt;= 3 and significance &lt;= 0.01</LI>
-<LI>5 stars if OR &gt;= 5 and significance &lt;= 0.0001</LI>
+<LI>0 points if no higher ranking is allowed</LI>
+<LI>1 point if OR &gt; 1 and significance &lt;= 0.1</LI>
+<LI>2 points if OR &gt;= 1.5 and significance &lt;= 0.05</LI>
+<LI>3 points if OR &gt;= 2 and significance &lt;= 0.025</LI>
+<LI>4 points if OR &gt;= 3 and significance &lt;= 0.01</LI>
+<LI>5 points if OR &gt;= 5 and significance &lt;= 0.0001</LI>
 </UL>",
 		       "Familial" => "<UL class=\"tipped\">
-<LI>-1 star if best LOD &lt; 0.5 and LOD &lt; -2 for theta = 0.1</LI>
-<LI>0 stars for no familial information</LI>
-<LI>1 star for LOD &gt;= 0.5</LI>
-<LI>2 star for LOD &gt;= 1</LI>
-<LI>3 star for LOD &gt;= 1.5</LI>
-<LI>4 stars for LOD &gt; 3</LI>
-<LI>5 stars for LOD &gt; 5</LI>
+<LI>0 points for no familial information</LI>
+<LI>1 point for LOD &gt;= 0.5</LI>
+<LI>2 points for LOD &gt;= 1</LI>
+<LI>3 points for LOD &gt;= 1.5, at least two families</LI>
+<LI>4 points for LOD &gt; 3, at least two families</LI>
+<LI>5 points for LOD &gt; 5, at least two families</LI>
 </UL>",
 		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" could only mean that the chances are increased by ~.15% and so would be called mild).
 <UL class=\"tipped\">
-<LI>0 stars for benign</LI>
-<LI>1 star for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with OR = 4.5, causing a ~.2% risk of Crohn&rsquo;s)</LI>
-<LI>2 stars for mild effect on quality of life or unlikely to be symptomatic (Cystinuria)</LI>
-<LI>3 stars for moderate effect on quality of life (e.g., familial mediterranean fever)</LI>
-<LI>4 stars for severe effect: causes serious disability or reduces life expectancy (e.g., sickle-cell, Stargardt&rsquo;s disease)</LI>
-<LI>5 stars for very severe effect: early lethal (e.g., familial adenomatous polypopsis, adrenoleukodystrophy)</LI>
+<LI>0 points for benign</LI>
+<LI>1 point for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with a 4-fold relative risk, causing an overall risk of ~.7%)</LI>
+<LI>2 points for mild effect on quality of life or unlikely to be symptomatic (Cystinuria)</LI>
+<LI>3 points for moderate effect on quality of life (e.g., Familial Mediterranean Fever)</LI>
+<LI>4 points for severe effect: causes serious disability or reduces life expectancy (e.g., Sickle-cell, Stargardt&rsquo;s disease)</LI>
+<LI>5 points for very severe effect, lethal by early adulthood (e.g., Lethal junctional epidermolysis bullosa, Adrenoleukodystrophy)</LI>
 </UL>",
 		       "Treatability" => "<UL class=\"tipped\">
-<LI>0 stars for no clinical evidence supporting intervention (e.g., PAF acetylhydrolase deficiency)</LI>
-<LI>1 star for incurable: treatment only to alleviate symptoms (e.g., adrenoleukodystrophy)</LI>
-<LI>2 stars for potentially treatable: Treatment is in development or controversial</LI>
-<LI>3 stars for treatable but a significant fraction do not require treatment (Cystinuria)</LI>
-<LI>4 stars for treatable: Standard treatment reduces the amount of mortality/morbidity but does not eliminate it (e.g., sickle-cell disease)</LI>
-<LI>5 stars for extremely treatable: Well-established treatment essentially eliminates the effect of the disease (e.g., PKU)</LI>
+<LI>0 points for no clinical evidence supporting intervention (e.g., PAF acetylhydrolase deficiency)</LI>
+<LI>1 point for incurable: treatment only to alleviate symptoms</LI>
+<LI>2 points for potentially treatable: Treatment is in development or controversial</LI>
+<LI>3 points for treatable but a significant fraction do not require treatment (Cystinuria)</LI>
+<LI>4 points for treatable: Standard treatment reduces the amount of mortality/morbidity but does not eliminate it (e.g., sickle-cell disease)</LI>
+<LI>5 points for extremely treatable: Well-established treatment essentially eliminates the effect of the disease (e.g., PKU)</LI>
 </UL>");
 
 function editable_quality ($id, $content, $title, $options)
