@@ -2,6 +2,8 @@
 
 include "lib/setup.php";
 
+$orderby_sql = "edit_timestamp DESC, edit_id DESC";
+
 if ($_GET["oid"]) {
   $report_title = "Edit history";
   $where_sql = "edit_oid=?";
@@ -18,14 +20,16 @@ else {
   $where_param = array();
 }
 
-if (isset ($_GET["before_edit_id"]))
+if (isset ($_GET["before_edit_id"])) {
   $where_sql .= " AND edit_id < " . (0 + $_GET["before_edit_id"]);
+  $orderby_sql = "edit_id DESC";
+}
 
 $gOut["title"] = "GET-Evidence: $report_title";
 
 function print_content($x)
 {
-  global $report_title, $where_sql, $where_param;
+  global $report_title, $where_sql, $where_param, $orderby_sql;
   if (!$_GET["bareli"])
     print "<h1>$report_title</h1>\n\n";
 
@@ -37,7 +41,7 @@ function print_content($x)
 	LEFT JOIN genomes ON edits.genome_id>0 AND edits.genome_id=genomes.genome_id
 	LEFT JOIN diseases ON diseases.disease_id=edits.disease_id
 	WHERE $where_sql AND is_draft=0
-	ORDER BY edit_timestamp DESC
+	ORDER BY $orderby_sql
 	$sql_limit",
 		       $where_param);
   if (theDb()->isError ($q)) die ($q->getMessage());
