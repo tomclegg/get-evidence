@@ -87,7 +87,7 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Adding 1 prefix to chr_pos column to get 1-based coordinates...";
+print "Adding 1 to chr_pos column to get 1-based coordinates...";
 theDb()->query ("UPDATE dbsnp_tmp SET chr_pos=chr_pos+1");
 print theDb()->affectedRows();
 print "\n";
