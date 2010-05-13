@@ -226,8 +226,8 @@ $sql_orderby
 	continue;
     }
 
-    $gene = $row["variant_gene"];
-    $aa = aa_short_form($row["variant_aa_from"] . $row["variant_aa_pos"] . $row["variant_aa_to"]);
+    $variant_name_display = evidence_get_variant_name ($row, "&nbsp;", true);
+    $variant_name_link = evidence_get_variant_name ($row, "-", true);
 
     $rowspan = count($genome_rows);
     if ($rowspan < 1) $rowspan = 1;
@@ -250,7 +250,7 @@ $sql_orderby
     }
 
     printf ("<TR$tr_attrs><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD><TD $rowspan>%s</TD>",
-	    "<A href=\"$gene-$aa\">$gene&nbsp;$aa</A>",
+	    "<A href=\"$variant_name_link\">$variant_name_display</A>",
 	    $impact,
 	    $row["variant_dominance"],
 	    $summary_short
@@ -262,7 +262,7 @@ $sql_orderby
 	print "<TD></TD>";
 	continue;
       }
-      print "<TD width=\"15%\"><A href=\"$gene-$aa#g$id\">".htmlspecialchars($row["name"])."</A>";
+      print "<TD width=\"15%\"><A href=\"$variant_name_link#g$id\">".htmlspecialchars($row["name"])."</A>";
       if ($row["max_zygosity"] == 'homozygous')
 	print " (hom)";
       print "</TD>";
