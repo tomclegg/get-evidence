@@ -382,11 +382,17 @@ function editable_check_unsaved_all ()
 		else
 		    saved = [{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]}];
 
+		orig = $('orig_'+rkey).value;
+		if (orig == '')
+		    orig = [{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]},{text:'',seealso:[]}];
+		else
+		    orig = orig.evalJSON();
+
 		if (!object_data_equal (r[rkey], saved)) {
 		    editable_have_unsaved = true;
 		    editable_have_unsubmitted = true;
 		}
-		else if (!object_data_equal (saved, $('orig_'+rkey).value.evalJSON()))
+		else if (!object_data_equal (saved, orig))
 		    editable_have_unsubmitted = true;
 	    });
     }
