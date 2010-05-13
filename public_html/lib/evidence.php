@@ -17,6 +17,7 @@ function evidence_create_tables ()
   variant_aa_to ENUM('Ala','Arg','Asn','Asp','Cys','Gln','Glu','Gly','His','Ile','Leu','Lys','Met','Phe','Pro','Ser','Thr','Trp','Tyr','Val','Stop'),
   UNIQUE (variant_gene, variant_aa_pos, variant_aa_from, variant_aa_to)
 )");
+  theDb()->query ("ALTER TABLE variants ADD variant_rsid BIGINT UNSIGNED, ADD UNIQUE (variant_rsid)");
   theDb()->query ("
   CREATE TABLE IF NOT EXISTS edits (
   edit_id SERIAL,
@@ -205,6 +206,20 @@ function evidence_get_variant_id ($gene,
 				  $aa_to=false,
 				  $create_flag=false)
 {
+  if ($aa_pos === false && ereg ('^rs([0-9]+)$', $gene, $regs)) {
+    if ($create_flag) {
+      $q = theDb()->query ("INSERT IGNORE INTO variants
+			    SET variant_rsid=?",
+			   array ($regs[1]));
+      if (!theDb()->isError($q) &&
+	  theDb()->affectedRows())
+	return theDb()->getOne ("SELECT LAST_INSERT_ID()");
+    }
+    return theDb()->getOne ("SELECT variant_id FROM variants
+				WHERE variant_rsid=?",
+			    array ($regs[1]));
+  }
+
   if ($aa_pos === false) {
     if (ereg ("^([-A-Za-z0-9_]+)[- ]+([A-Za-z]+)([0-9]+)([A-Za-z\\*]+)$", $gene, $regs)) {
       $gene = $regs[1];
@@ -982,7 +997,8 @@ ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
     else if ($row["genome_id"]) $li .= htmlspecialchars($row["genome_name"]).$summary;
     else $li .= "variant$summary";
 
-    $li .= " <A href=\"".$row["variant_gene"]."-".$row["variant_aa_from"].$row["variant_aa_pos"].$row["variant_aa_to"].";".$row["edit_id"]."\">view</A>";
+    $variant_name = evidence_get_variant_name (&$row, "-");
+    $li .= " <A href=\"".$variant_name.";".$row["edit_id"]."\">view</A>";
 
     $li .= "</LI>\n";
 
@@ -997,6 +1013,22 @@ ORDER BY edit_timestamp DESC, edit_id DESC, previous_edit_id DESC
   }
   $html .= "</UL>\n";
   return $html;
+}
+
+
+function evidence_get_variant_name (&$variant, $separator=" ", $shortp=false)
+{
+  if (is_array ($variant))
+    $row =& $variant;
+  else if (ereg ("^[0-9]+$", $variant))
+    $row =& theDb()->getRow ("SELECT * from variants WHERE variant_id=?", array ($variant));
+
+  if ($row["variant_rsid"])
+    return "rs".$row["variant_rsid"];
+  else if ($shortp)
+    return $row["variant_gene"].$separator.aa_short_form ($row["variant_aa_from"].$row["variant_aa_pos"].$row["variant_aa_to"]);
+  else
+    return $row["variant_gene"].$separator.$row["variant_aa_from"].$row["variant_aa_pos"].$row["variant_aa_to"];
 }
 
 

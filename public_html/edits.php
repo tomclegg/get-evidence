@@ -60,10 +60,10 @@ function print_content($x)
 	$lastrow["previous_edit_id"] > 0 == $row["previous_edit_id"] > 0)
       continue;
 
-    $variant_link = $row[variant_gene]." ".aa_short_form("$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]");
-    $version_link = "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to];$row[edit_id]\">view</A>";
+    $variant_link = evidence_get_variant_name ($row, " ", true);
+    $version_link = "<A href=\"".evidence_get_variant_name(&$row,"-").";$row[edit_id]\">view</A>";
     if (!$lastrow || $lastrow[variant_id] != $row[variant_id])
-      $variant_link = "<A href=\"$row[variant_gene]-$row[variant_aa_from]$row[variant_aa_pos]$row[variant_aa_to]\">$variant_link</A>";
+      $variant_link = "<A href=\"".evidence_get_variant_name(&$row,"-")."\">$variant_link</A>";
 
     $lastrow = $row;
 

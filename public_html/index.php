@@ -24,17 +24,24 @@ $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
+else if (ereg ("^(rs[0-9]+)(;([0-9]+))?$", $_GET["q"], $regs)) {
+  $variant_id = evidence_get_variant_id ($variant_name = $regs[1]);
+  $max_edit_id = $regs[3];
+}
 else if (ereg ("^([A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
 	 aa_sane ($aa = $regs[2])) {
   $gene = strtoupper($regs[1]);
   $max_edit_id = $regs[4];
-  $variant_id = evidence_get_variant_id ("$gene $aa");
-  if (!$variant_id) {
-    $aa_long = aa_long_form ($aa);
-    $aa_short = aa_short_form ($aa_long);
-    header ("HTTP/1.1 404 Not found");
-    $gOut["title"] = "$gene $aa_short";
-    $gOut["content"] = <<<EOF
+  $variant_id = evidence_get_variant_id ($variant_name = "$gene $aa");
+}
+
+
+if (!$variant_id && $aa) {
+  $aa_long = aa_long_form ($aa);
+  $aa_short = aa_short_form ($aa_long);
+  header ("HTTP/1.1 404 Not found");
+  $gOut["title"] = "$gene $aa_short";
+  $gOut["content"] = <<<EOF
 <H1>$gene $aa_short</H1>
 
 <P>($gene $aa_long)</P>
@@ -43,19 +50,20 @@ else if (ereg ("^([A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+)
 
 EOF
 ;
-    if (ereg("[0-9]+", $aa, $regs))
-	$gOut["content"] .= seealso_related ($gene, $regs[0], 0);
-    if (getCurrentUser())
+  if (ereg("[0-9]+", $aa, $regs))
+      $gOut["content"] .= seealso_related ($gene, $regs[0], 0);
+  if (getCurrentUser())
       $gOut["content"] .= <<<EOF
 &nbsp;
 
 <BUTTON onclick="return evidence_add_variant('$gene','$aa_long');">Create new entry</BUTTON>
 EOF
 ;
-    go();
-    exit;
-  }
+  go();
+  exit;
 }
+
+
 if (!$variant_id)
   {
     if (!$_GET["q"])
@@ -76,11 +84,7 @@ if (!$variant_id)
 	else if (count($rows) == 1)
 	  {
 	    header ("Location: "
-		    .urlencode ($rows[0]["variant_gene"]
-				. "-"
-				. aa_short_form ($rows[0]["variant_aa_from"]
-						 . $rows[0]["variant_aa_pos"]
-						 . $rows[0]["variant_aa_to"])));
+		    .urlencode (evidence_get_variant_name ($rows[0], "-")));
 	  }
 	else
 	  {
@@ -116,16 +120,18 @@ if ($max_edit_id) {
 	$history_box .= "the latest version of this page, saved on <STRONG>$version_date</STRONG>";
     $history_box .= " by <A href=\"edits?oid=".urlencode($contributor["oid"])."\">".htmlspecialchars($contributor["fullname"])."</A>.</P><UL>";
 
+    $variant_name = evidence_get_variant_name ($variant_id, "-");
+
     if ($previous_version)
-	$history_box .= "<LI>View the <A href=\"$gene-$aa;$previous_version\">previous version</A>";
+	$history_box .= "<LI>View the <A href=\"$variant_name;$previous_version\">previous version</A>";
 
     if ($next_version)
-	$history_box .= "<LI>View the <A href=\"$gene-$aa;$next_version\">next version</A>";
+	$history_box .= "<LI>View the <A href=\"$variant_name;$next_version\">next version</A>";
 
     if ($next_version)
-	$history_box .= "<LI>View the <A href=\"$gene-$aa\">latest version";
+	$history_box .= "<LI>View the <A href=\"$variant_name\">latest version";
     else
-	$history_box .= "<LI>View <A href=\"$gene-$aa\">this version without highlighted changes";
+	$history_box .= "<LI>View <A href=\"$variant_name\">this version without highlighted changes";
     $history_box .= "</A>";
     if (getCurrentUser())
 	$history_box .= " and enable editing features";
@@ -140,22 +146,18 @@ $report =& evidence_get_report (($history_box && $max_edit_id) ? 0 + $max_edit_i
 				$variant_id);
 $row0 =& $report[0];
 
-$aa_long = "$row0[variant_aa_from]$row0[variant_aa_pos]$row0[variant_aa_to]";
-$aa_short = aa_short_form($aa_long);
+$variant_name_long = evidence_get_variant_name ($row0, " ", false);
+$variant_name_short = evidence_get_variant_name ($row0, " ", true);
 
 
-$gOut["title"] = "$row0[variant_gene] $aa_short - GET-Evidence";
+$gOut["title"] = "$variant_name_short - GET-Evidence";
 
-$gOut["content"] = "
-<h1>$row0[variant_gene] $aa_short</h1>
+$gOut["content"] = "<h1>$variant_name_short</h1>\n<!-- $variant_id -->\n";
+if ($variant_name_long != $variant_name_short)
+    $gOut["content"] .= "<p>($variant_name_long)</p>\n";
 
-<p>($row0[variant_gene] $aa_long)</p>
-
-<!-- $variant_id -->
-
-"
-    .seealso_related($row0["variant_gene"], $row0["variant_aa_pos"], $variant_id)
-    .$history_box;
+$gOut["content"] .= seealso_related($row0["variant_gene"], $row0["variant_aa_pos"], $variant_id);
+$gOut["content"] .= $history_box;
 
 
 $renderer = new evidence_row_renderer;
@@ -276,6 +278,10 @@ if (sizeof($gt)) {
     array_unshift ($external_refs, $ref);
 }
 
+
+if (ereg ("^rs([0-9]+)$", $variant_name_short, $regs))
+  $rsid_seen[$regs[1]] = 1;
+
 foreach ($rsid_seen as $rsid => $dummy) {
   array_unshift ($external_refs,
 		 array ("tag" => "dbSNP",
@@ -322,12 +328,14 @@ if (count($external_refs)) {
     $html .= "</DIV>\n";
 }
 
-$html .= "<H2>Other <I>in silico</I> analyses<BR />&nbsp;</H2>\n<DIV id=\"in_silico\">";
-$html .= "<UL><LI>NBLOSUM100 score = <STRONG>"
-    .ereg_replace ("-", "&ndash;",
-		   0-blosum100 ($row0["variant_aa_from"], $row0["variant_aa_to"]))
-    ."</STRONG></LI></UL>\n";
-$html .= "</DIV>";
+if ($aa) {
+  $html .= "<H2>Other <I>in silico</I> analyses<BR />&nbsp;</H2>\n<DIV id=\"in_silico\">";
+  $html .= "<UL><LI>NBLOSUM100 score = <STRONG>"
+      .ereg_replace ("-", "&ndash;",
+		     0-blosum100 ($row0["variant_aa_from"], $row0["variant_aa_to"]))
+      ."</STRONG></LI></UL>\n";
+  $html .= "</DIV>";
+}
 
 $html .= "<H2>Edit history<BR />&nbsp;</H2>\n<DIV id=\"edit_history\">";
 $html .= evidence_render_history ($variant_id);
