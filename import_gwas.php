@@ -249,35 +249,42 @@ print theDb()->affectedRows();
 print "\n";
 
 
+print "Adding serial number...";
+theDb()->query ("ALTER TABLE gwas ADD gwas_id SERIAL");
+print theDb()->affectedRows();
+print "\n";
+
+
 print "Adding variants...";
 $q = theDb()->query ("
-SELECT gene_aa
+SELECT gene_aa, snps, gwas_id
 FROM gwas
-WHERE variant_id IS NULL
-AND gene_aa IS NOT NULL");
+WHERE variant_id IS NULL");
 $n=0;
 $did = array();
 while ($row =& $q->fetchRow())
     {
-	if (isset ($did[$row["gene_aa"]])) {
-	    $variant_id = $did[$row["gene_aa"]];
-	    theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
-			    array ($variant_id, $row["gene_aa"]));
+	$variant_name = $row["gene_aa"] ? $row["gene_aa"] : $row["snps"];
+	if (isset ($did[$variant_name])) {
+	    $variant_id = $did[$variant_name];
+	    theDb()->query ("UPDATE gwas SET variant_id=? WHERE gwas_id=?",
+			    array ($variant_id, $row["gwas_id"]));
 	    continue;
 	}
 
 	// create the variant, and an "initial edit/add" row in edits table
-	$variant_id = evidence_get_variant_id ($row["gene_aa"],
+	$variant_id = evidence_get_variant_id ($variant_name,
 					       false, false, false,
 					       true);
 	$edit_id = evidence_get_latest_edit ($variant_id,
 					     0, 0, 0,
 					     true);
-	$did[$row["gene_aa"]] = $variant_id;
-	theDb()->query ("UPDATE gwas SET variant_id=? WHERE gene_aa=?",
-			array ($variant_id, $row["gene_aa"]));
-	theDb()->query ("UPDATE variant_locations SET variant_id=? WHERE gene_aa=?",
-			array ($variant_id, $row["gene_aa"]));
+	$did[$variant_name] = $variant_id;
+	theDb()->query ("UPDATE gwas SET variant_id=? WHERE gwas_id=?",
+			array ($variant_id, $row["gwas_id"]));
+	if ($row["gene_aa"])
+	    theDb()->query ("UPDATE variant_locations SET variant_id=? WHERE gene_aa=?",
+			    array ($variant_id, $row["gene_aa"]));
 
 	++$n;
 	if ($n % 100 == 0)
@@ -344,7 +351,7 @@ SET or_or_beta_is_or=IF(or_or_beta IS NOT NULL
 }
 
 
-print "Adding/updating gwas_or column in variants table...";
+print "Adding/updating gwas_max_or column in variants table...";
 theDb()->query ("ALTER TABLE variants ADD gwas_max_or DECIMAL(6,3)");
 theDb()->query ("CREATE TEMPORARY TABLE gwas_or_tmp
  AS SELECT variant_id, MAX(or_or_beta) or_or_beta
