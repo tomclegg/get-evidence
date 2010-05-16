@@ -278,7 +278,7 @@ while ($row =& $q->fetchRow())
 					       true);
 	$edit_id = evidence_get_latest_edit ($variant_id,
 					     0, 0, 0,
-					     true);
+					     true, array ("variant_impact" => "pathogenic"));
 	$did[$variant_name] = $variant_id;
 	theDb()->query ("UPDATE gwas SET variant_id=? WHERE gwas_id=?",
 			array ($variant_id, $row["gwas_id"]));
