@@ -551,7 +551,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -640,7 +640,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 {
   $nonflat =& evidence_get_assoc ($snap, $variant_id);
   $flat = array ();
-  foreach (array ("gene", "aa_change", "aa_change_short", "impact", "qualified_impact", "inheritance") as $k)
+  foreach (array ("gene", "aa_change", "aa_change_short", "rsid", "impact", "qualified_impact", "inheritance") as $k)
       $flat[$k] = $nonflat[$k];
   $flat["dbsnp_id"] = "";
   foreach ($nonflat["genomes"] as &$g) {
@@ -716,7 +716,8 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 
 function evidence_get_latest_edit ($variant_id,
 				   $article_pmid, $genome_id, $disease_id,
-				   $create_flag=false)
+				   $create_flag=false,
+				   $defaults=false)
 {
   if (!$variant_id) return null;
   $edit_id = theDb()->getOne
@@ -732,12 +733,18 @@ function evidence_get_latest_edit ($variant_id,
     $edit_id = FALSE;
 
   if (!$edit_id && $create_flag) {
-    theDb()->query
-      ("INSERT INTO edits
+    $sql = "INSERT INTO edits
 	SET edit_timestamp=NOW(), edit_oid=?, is_draft=1,
-	variant_id=?, article_pmid=?, genome_id=?, disease_id=?",
-       array (getCurrentUser("oid"),
-	      $variant_id, $article_pmid, $genome_id, $disease_id));
+	variant_id=?, article_pmid=?, genome_id=?, disease_id=?";
+    $params = array (getCurrentUser("oid"),
+		     $variant_id, $article_pmid, $genome_id, $disease_id);
+    if (is_array ($defaults)) {
+      foreach ($defaults as $col => $value) {
+	$sql .= ", $col=?";
+	$params[] = $value;
+      }
+    }
+    theDb()->query ($sql, $params);
     $edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
     evidence_submit ($edit_id);
   }
