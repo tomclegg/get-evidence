@@ -59,6 +59,20 @@ Import dbSNP:
  gunzip dbsnp.bcp.gz
  ./import_dbsnp.php tmp/dbsnp.bcp.gz
 
+ wget -Otmp/snp130.txt.gz http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/snp130.txt.gz
+ wget -Otmp/snp130.sql http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/snp130.sql
+ mysql -uevidence -p evidence < tmp/snp130.sql
+ if [ -e tmp/fifo ]; then rm tmp/fifo; fi
+ mkfifo tmp/fifo
+ gunzip < tmp/snp130.txt.gz > tmp/fifo &
+ echo "load data local infile 'tmp/fifo' into table snp130 fields terminated by '\t' lines terminated by '\n'" | mysql -uevidence -p evidence
+
+Import PharmGKB data:
+
+ wget -Otmp/variantAnnotations.zip http://www.pharmgkb.org/commonFileDownload.action?filename=variantAnnotations.zip
+ (cd tmp && unzip variantAnnotations.zip)
+ ./import_pharmgkb.php tmp/variantAnnotations.tsv
+
 Import OMIM data using omim.tsv from Trait-o-matic import process:
 
  ./import_omim.php omim.tsv
