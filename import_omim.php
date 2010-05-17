@@ -87,7 +87,7 @@ while ($row =& $q->fetchRow())
 					       false, false, false,
 					       true);
 	$edit_id = evidence_get_latest_edit ($variant_id,
-					     0, 0,
+					     0, 0, 0,
 					     true);
 	$did[$row["gene_aa_change"]] = 1;
 
