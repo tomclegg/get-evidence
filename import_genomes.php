@@ -104,7 +104,7 @@ while (($line = fgets ($fh)) !== FALSE)
 						   false, false, false,
 						   true);
 	    $edit_id = evidence_get_latest_edit ($variant_id,
-						 0, 0,
+						 0, 0, 0,
 						 true);
 	}
 	if (ereg("^(rs?)([0-9]+)$", $rsid, $regs)) $rsid=$regs[2];
