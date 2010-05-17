@@ -56,7 +56,10 @@ $zygosity = array ('hom' => 'homozygous',
 		   'het' => 'heterozygous');
 while (($line = fgets ($fh)) !== FALSE)
     {
-	if (++$ops % 1000 == 0)
+	++$ops;
+	if ($ops % 10000 == 0)
+	    print $ops;
+	if ($ops % 1000 == 0)
 	    print ".";
 
 	list ($gene, $aa_change,
@@ -87,10 +90,17 @@ while (($line = fgets ($fh)) !== FALSE)
 	  $taf = NULL;
 	}
 
-	$variant_id = evidence_get_variant_id ("$gene $aa_change");
+	if ($gene && $aa_change)
+	  $variant_name = "$gene $aa_change";
+	else if ($rsid)
+	  $variant_name = $rsid;
+	else
+	  continue;
+	$variant_id = evidence_get_variant_id ($variant_name);
+
 	if (!$variant_id) {
 	    // create the variant, and an "initial edit/add" row in edits table
-	    $variant_id = evidence_get_variant_id ("$gene $aa_change",
+	    $variant_id = evidence_get_variant_id ($variant_name,
 						   false, false, false,
 						   true);
 	    $edit_id = evidence_get_latest_edit ($variant_id,
