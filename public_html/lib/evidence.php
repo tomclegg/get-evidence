@@ -207,6 +207,22 @@ function evidence_get_variant_id ($gene,
 				  $create_flag=false)
 {
   if ($aa_pos === false && ereg ('^rs([0-9]+)$', $gene, $regs)) {
+
+    // Return the gene/AA variant if one is already known to be caused
+    // by this rsid
+    $variant_id = theDb()->getOne ("SELECT v.variant_id
+				 FROM variant_occurs vo
+				 LEFT JOIN variants v
+				  ON v.variant_id = vo.variant_id
+				 WHERE vo.rsid=?
+				  AND v.variant_rsid IS NULL
+				  AND v.variant_id IS NOT NULL
+				 LIMIT 1",
+				   array ($regs[1]));
+    if (theDb()->isError ($variant_id)) die ($variant_id->getMessage());
+    if ($variant_id)
+      return $variant_id;
+
     if ($create_flag) {
       $q = theDb()->query ("INSERT IGNORE INTO variants
 			    SET variant_rsid=?",

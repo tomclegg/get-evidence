@@ -25,7 +25,12 @@ $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
 else if (ereg ("^(rs[0-9]+)(;([0-9]+))?$", $_GET["q"], $regs)) {
-  $variant_id = evidence_get_variant_id ($variant_name = $regs[1]);
+  $variant_id = evidence_get_variant_id ($regs[1]);
+  $variant_name = evidence_get_variant_name ($variant_id, "-", true);
+  if ($regs[1] != $variant_name) {
+    header ("Location: $variant_name");
+    exit;
+  }
   $max_edit_id = $regs[3];
 }
 else if (ereg ("^([A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
