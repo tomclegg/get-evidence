@@ -192,6 +192,7 @@ SELECT gene_aa, rsid, pharmgkb_id, pmid
 FROM pharmgkb");
 if (theDb()->isError($q)) die ($q->getMessage());
 $n=0;
+$n_marked_pharma=0;
 $did = array();
 while ($row =& $q->fetchRow())
     {
@@ -215,6 +216,15 @@ while ($row =& $q->fetchRow())
 	    ($variant_id,
 	     0, 0, 0,
 	     true, array ("variant_impact" => "pharmacogenetic"));
+	$latestrow = evidence_get_edit ($edit_id);
+	if (in_array ($latestrow["variant_impact"],
+		      array ("not reviewed", "none", "unknown"))) {
+	    $newrow = evidence_generate_edit (null, null, $latestrow);
+	    $newrow["variant_impact"] = "pharmacogenetic";
+	    $new_edit_id = evidence_save_draft (null, $newrow);
+	    evidence_submit ($new_edit_id);
+	    ++$n_marked_pharma;
+	}
 	if (ereg ('^[0-9]+$', $row["pmid"]))
 	    evidence_get_latest_edit
 		($variant_id,
@@ -227,7 +237,7 @@ while ($row =& $q->fetchRow())
 	if ($n % 100 == 0)
 	    print "$n...";
     }
-print "$n\n";
+print "$n ($n_marked_pharma existing variants changed to pharmacogenetic)\n";
 
 
 

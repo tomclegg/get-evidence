@@ -289,29 +289,60 @@ function evidence_approve ($edit_id, $signoff_oid)
     }
 }
 
-function evidence_edit_id_generate ($previous_edit_id=null, $variant_id=null)
+function evidence_get_edit ($edit_id)
 {
-  if ($previous_edit_id)
-    $variant_id = theDb()->getOne ("SELECT variant_id FROM edits WHERE edit_id=?",
-				   $previous_edit_id);
-  else if (!$variant_id)
+  return theDb()->getRow ("SELECT * FROM edits WHERE edit_id=?",
+			  array ($edit_id));
+}
+
+function evidence_generate_edit ($previous_edit_id=null,
+				 $variant_id=null,
+				 $row=array())
+{
+  if ($previous_edit_id) {
+    $row = evidence_get_edit ($previous_edit_id);
+    $variant_id = $row["variant_id"];
+  }
+  else if ($variant_id)
+    $row["variant_id"] = $variant_id;
+  else if (!$row["variant_id"])
     die ("evidence_edit_id_generate(): need either previous edit id or variant id");
 
-  theDb()->query ("INSERT INTO edits (variant_id, edit_oid, previous_edit_id, is_draft)
-		   VALUES (?, ?, ?, 1)",
-		  array ($variant_id,
-			 $_SESSION["user"]["oid"],
-			 $previous_edit_id));
+  $row["is_draft"] = 1;
+  $row["is_delete"] = 0;
+  $row["previous_edit_id"] = $previous_edit_id;
+  $row["edit_oid"] = $_SESSION["user"]["oid"];
+  unset ($row["edit_id"]);
+  unset ($row["edit_timestamp"]);
+  unset ($row["signoff_oid"]);
+  unset ($row["signoff_timestamp"]);
+
+  $sqlfields = "edit_timestamp=NOW()";
+  $sqlparams = array();
+  foreach ($row as $column => $value) {
+    $sqlfields .= ", $column=?";
+    $sqlparams[] = $value;
+  }
+  theDb()->query ("INSERT INTO edits SET $sqlfields", $sqlparams);
   $new_edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
-  return $new_edit_id;
+  return theDb()->getRow ("SELECT * FROM edits WHERE edit_id=?",
+			  array ($new_edit_id));
 }
 
 function evidence_save_draft ($edit_id, $newrow)
 {
+  if (!$edit_id && array_key_exists ("edit_id", $newrow))
+    $edit_id = $newrow["edit_id"];
+
   $stmt = "UPDATE edits SET edit_timestamp=now()";
   $params = array();
 
-  foreach (explode (" ", "variant_impact variant_dominance summary_short summary_long talk_text article_pmid") as $field)
+  foreach (array ("variant_impact",
+		  "variant_dominance",
+		  "summary_short",
+		  "summary_long",
+		  "talk_text",
+		  "article_pmid") as $field)
     {
       $stmt .= ", $field=?";
       $params[] = $newrow[$field];
@@ -332,7 +363,7 @@ function evidence_save_draft ($edit_id, $newrow)
       die ("evidence_save_draft ($edit_id) failed: row not updated");
       return false;
     }
-  return true;
+  return $edit_id;
 }
 
 function evidence_submit ($edit_id)
