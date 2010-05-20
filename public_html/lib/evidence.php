@@ -779,13 +779,12 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   // TODO: ++$autoscore if within 1 base of a splice site
   // TODO: ++$autoscore if indel in coding region
   // TODO: ++$autoscore if indel in coding region and causes frameshift
-  if ($flat["in_omim"]) ++$autoscore;
-  if (in_array ("OMIM", $tags)) $autoscore += 2;
+  if ($flat["in_omim"] == 'Y') $autoscore += 2;
+  if ($flat["in_gwas"] == 'Y') ++$autoscore;
   if (in_array ("PharmGKB", $tags)) ++$autoscore;
-  if (in_array ("GWAS", $tags)) ++$autoscore;
   if ($flat["gwas_max_or"] >= 1.5) ++$autoscore;
   if (strlen($nonflat["genetests_testable"])) ++$autoscore;
-  if (strlen($nonflat["genetests_reviewed"])) ++$autoscore;
+  if ($nonflat["genetests_reviewed"]) ++$autoscore;
   $flat["autoscore"] = $autoscore;
 
   $flat["variant_evidence"] = $nonflat["variant_evidence"];
