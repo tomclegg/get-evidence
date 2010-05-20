@@ -65,7 +65,7 @@ if ($snap &&
 
 	foreach ($columns as $c)
 	    print $flat[$c]."\t";
-	print ereg_replace("\t", " ", $row["summary_short"])."\n";
+	print ereg_replace("[\t\n]", " ", $row["summary_short"])."\n";
     }
     exit;
 }
