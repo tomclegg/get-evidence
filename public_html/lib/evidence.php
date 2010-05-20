@@ -126,6 +126,12 @@ function evidence_create_tables ()
   gene CHAR(16) NOT NULL PRIMARY KEY
   )");
 
+  theDb()->query ("CREATE TABLE IF NOT EXISTS genetests (
+  gene CHAR(16) NOT NULL PRIMARY KEY,
+  testable TINYINT NOT NULL,
+  reviewed TINYINT NOT NULL
+  )");
+
   theDb()->query ("CREATE TABLE IF NOT EXISTS allele_frequency (
   chr CHAR(6),
   chr_pos INT UNSIGNED,
@@ -462,6 +468,8 @@ function evidence_get_report ($snap, $variant_id)
 			variants.variant_id AS variant_id,
 			$table.genome_id AS genome_id,
 			$table.disease_id AS disease_id,
+			genetests.testable AS genetests_testable,
+			genetests.reviewed AS genetests_reviewed,
 			diseases.disease_name AS disease_name,
 			variant_occurs.chr AS chr,
 			variant_occurs.chr_pos AS chr_pos,
@@ -478,6 +486,11 @@ function evidence_get_report ($snap, $variant_id)
 			FROM variants
 			LEFT JOIN $table
 				ON variants.variant_id = $table.variant_id
+			LEFT JOIN genetests
+				ON $table.disease_id=0
+				AND $table.article_pmid=0
+				AND $table.genome_id=0
+				AND variants.variant_gene = genetests.gene
 			LEFT JOIN diseases
 				ON $table.disease_id = diseases.disease_id
 			LEFT JOIN genomes
@@ -598,7 +611,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -734,15 +747,18 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
     else
       $flat["qualitycomment_".$scoreaxis] = "-";
   }
+
   $flat["gene_in_genetests"]
       = theDb()->getOne ("SELECT 1 FROM gene_disease WHERE gene=? LIMIT 1",
 			 array ($flat["gene"])) ? 'Y' : '-';
-  $flat["in_omim"]
-      = theDb()->getOne ("SELECT 1 FROM variant_external WHERE variant_id=? AND tag='OMIM' LIMIT 1",
-			 array ($nonflat["id"])) ? 'Y' : '-';
-  $flat["in_gwas"]
-      = theDb()->getOne ("SELECT 1 FROM variant_external WHERE variant_id=? AND tag='GWAS' LIMIT 1",
-			 array ($nonflat["id"])) ? 'Y' : '-';
+
+  $tags = array();
+  foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($nonflat["id"])) as $row) {
+    $tags[] = $row["tag"];
+  }
+
+  $flat["in_omim"] = in_array ("OMIM", $tags) ? 'Y' : '-';
+  $flat["in_gwas"] = in_array ("GWAS", $tags) ? 'Y' : '-';
   $flat["nblosum100>2"] = $nonflat["nblosum100"] > 2 ? 'Y' : '-';
   if ($nonflat["disease_max_or"]) {
     $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
@@ -756,6 +772,22 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 	     as $f)
       $flat["max_or_".$f] = "";
   }
+
+  $autoscore = 0;
+  if ($flat["nblosum100"] > 2) ++$autoscore;
+  if ($flat["nblosum100"] > 9) ++$autoscore;
+  // TODO: ++$autoscore if within 1 base of a splice site
+  // TODO: ++$autoscore if indel in coding region
+  // TODO: ++$autoscore if indel in coding region and causes frameshift
+  if ($flat["in_omim"]) ++$autoscore;
+  if (in_array ("OMIM", $tags)) $autoscore += 2;
+  if (in_array ("PharmGKB", $tags)) ++$autoscore;
+  if (in_array ("GWAS", $tags)) ++$autoscore;
+  if ($flat["gwas_max_or"] >= 1.5) ++$autoscore;
+  if (strlen($nonflat["genetests_testable"])) ++$autoscore;
+  if (strlen($nonflat["genetests_reviewed"])) ++$autoscore;
+  $flat["autoscore"] = $autoscore;
+
   $flat["variant_evidence"] = $nonflat["variant_evidence"];
   $flat["clinical_importance"] = $nonflat["clinical_importance"];
   return $flat;

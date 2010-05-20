@@ -15,6 +15,9 @@ chdir ('public_html');
 require_once 'lib/setup.php';
 
 
+ini_set ("memory_limit", 67108864);
+
+
 print "Creating/updating get-evidence tables...";
 evidence_create_tables ();
 print "\n";
@@ -33,9 +36,11 @@ while (($line = fgets ($fh)) !== FALSE) {
     if ($f[4] == "na")		// no gene listed
 	continue;
     $disease = $f[1];
+    $testable = eregi ("clinical", $f[5]) ? 1 : 0;
+    $reviewed = $f[6] && $f[6] != "na" ? 1 : 0;
     foreach (explode ("|", $f[4]) as $gene) {
-	$g_sql .= "(?, ?), ";
-	array_push ($g_sql_param, $gene, $disease);
+	$g_sql .= "(?, ?, ?, ?), ";
+	array_push ($g_sql_param, $gene, $disease, $testable, $reviewed);
 	++$out;
     }
 }
@@ -45,8 +50,13 @@ if (!$out)
 
 
 print "Importing to database...";
-theDb()->query ("CREATE TEMPORARY TABLE gt (gene VARCHAR(32) NOT NULL, disease VARCHAR(64) NOT NULL, UNIQUE `gene_disease` (gene,disease))");
-$q = theDb()->query ("INSERT IGNORE INTO gt (gene, disease) VALUES "
+theDb()->query ("CREATE TEMPORARY TABLE gt (
+ gene VARCHAR(32) NOT NULL,
+ disease VARCHAR(64) NOT NULL,
+ testable TINYINT NOT NULL,
+ reviewed TINYINT NOT NULL,
+ UNIQUE `gene_disease` (gene,disease))");
+$q = theDb()->query ("INSERT IGNORE INTO gt (gene, disease, testable, reviewed) VALUES "
 		     .ereg_replace(', $', '', $g_sql),
 		     $g_sql_param);
 if (theDb()->isError($q)) die($q->getMessage());
@@ -71,7 +81,7 @@ print "\n";
 theDb()->query ("UNLOCK TABLES");
 
 
-print "Copying to live table...";
+print "Copying to live gene>disease table...";
 theDb()->query ("LOCK TABLES gene_disease WRITE");
 theDb()->query ("DELETE FROM gene_disease WHERE dbtag = ?",
 		array ("GeneTests"));
@@ -82,7 +92,43 @@ $q = theDb()->query ("INSERT INTO gene_disease
 if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
+theDb()->query ("UNLOCK TABLES");
 
+
+print "Merging genes using gene_canonical_name...";
+theDb()->query ("CREATE TEMPORARY TABLE gt2 (
+ gene VARCHAR(32) NOT NULL,
+ testable TINYINT NOT NULL,
+ reviewed TINYINT NOT NULL,
+ INDEX(gene))");
+$q = theDb()->query ("INSERT INTO gt2
+ (gene, testable, reviewed)
+ SELECT gene, testable, reviewed
+  FROM gene_canonical_name
+  LEFT JOIN gt ON gene=aka
+  WHERE aka IS NULL");
+if (theDb()->isError($q)) die($q->getMessage());
+print theDb()->affectedRows();
+print "...";
+$q = theDb()->query ("INSERT INTO gt2
+ (gene, testable, reviewed)
+ SELECT official, testable, reviewed
+  FROM gt
+  LEFT JOIN gene_canonical_name ON gene=aka
+  WHERE official IS NOT NULL");
+if (theDb()->isError($q)) die($q->getMessage());
+print theDb()->affectedRows();
+print "\n";
+
+print "Copying to live genetests table...";
+theDb()->query ("LOCK TABLES genetests WRITE");
+theDb()->query ("DELETE FROM genetests");
+$q = theDb()->query ("INSERT INTO genetests
+ (gene, testable, reviewed)
+ SELECT gene, max(testable), max(reviewed) FROM gt2 GROUP BY gene");
+if (theDb()->isError($q)) die($q->getMessage());
+print theDb()->affectedRows();
+print "\n";
 theDb()->query ("UNLOCK TABLES");
 
 ?>

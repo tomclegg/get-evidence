@@ -348,6 +348,8 @@ $html .= "</DIV>";
 
 $gOut["content"] .= $html;
 
+// $gOut["content"] .= "<!--\n" . ereg_replace ("-->", "\\-\\-\\>", json_encode ($report)) . "-->\n";
+
 go();
 
 ?>
