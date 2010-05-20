@@ -780,8 +780,10 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   // TODO: ++$autoscore if indel in coding region
   // TODO: ++$autoscore if indel in coding region and causes frameshift
   if ($flat["in_omim"] == 'Y') $autoscore += 2;
-  if ($flat["in_gwas"] == 'Y') ++$autoscore;
-  if (in_array ("PharmGKB", $tags)) ++$autoscore;
+  else {			// max (omim + gwas + pharmgkb scores) = 2
+    if ($flat["in_gwas"] == 'Y') ++$autoscore;
+    if (in_array ("PharmGKB", $tags)) ++$autoscore;
+  }
   if ($flat["gwas_max_or"] >= 1.5) ++$autoscore;
   if (strlen($nonflat["genetests_testable"])) ++$autoscore;
   if ($nonflat["genetests_reviewed"]) ++$autoscore;
