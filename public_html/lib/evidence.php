@@ -773,21 +773,32 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       $flat["max_or_".$f] = "";
   }
 
+
   $autoscore = 0;
+
+  // Computational (max of 2 points):
   if ($flat["nblosum100"] > 2) ++$autoscore;
   if ($flat["nblosum100"] > 9) ++$autoscore;
   // TODO: ++$autoscore if within 1 base of a splice site
   // TODO: ++$autoscore if indel in coding region
   // TODO: ++$autoscore if indel in coding region and causes frameshift
-  if ($flat["in_omim"] == 'Y') $autoscore += 2;
-  else {			// max (omim + gwas + pharmgkb scores) = 2
-    if ($flat["in_gwas"] == 'Y') ++$autoscore;
-    if (in_array ("PharmGKB", $tags)) ++$autoscore;
-  }
-  if ($flat["gwas_max_or"] >= 1.5) ++$autoscore;
+  if ($autoscore > 2) $autoscore = 2;
+
+  // Variant-specific lists (max of 2 points):
+  $autoscore_db = 0;
+  if ($flat["in_omim"] == 'Y') $autoscore_db += 2;
+  if ($flat["in_gwas"] == 'Y') ++$autoscore_db;
+  if ($flat["gwas_max_or"] >= 1.5) ++$autoscore_db;
+  if (in_array ("PharmGKB", $tags)) ++$autoscore_db;
+  if ($autoscore_db > 2) $autoscore_db = 2;
+  $autoscore += $autoscore_db;
+
+  // Gene-specific lists (max of 2 points):
   if (strlen($nonflat["genetests_testable"])) ++$autoscore;
   if ($nonflat["genetests_reviewed"]) ++$autoscore;
+
   $flat["autoscore"] = $autoscore;
+
 
   $flat["variant_evidence"] = $nonflat["variant_evidence"];
   $flat["clinical_importance"] = $nonflat["clinical_importance"];
