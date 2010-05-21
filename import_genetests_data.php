@@ -35,13 +35,14 @@ while (($line = fgets ($fh)) !== FALSE) {
     $f = explode ("\t", rtrim($line, "\n"));
     if ($f[4] == "na")		// no gene listed
 	continue;
-    $disease = $f[1];
     $testable = eregi ("clinical", $f[5]) ? 1 : 0;
     $reviewed = $f[6] && $f[6] != "na" ? 1 : 0;
-    foreach (explode ("|", $f[4]) as $gene) {
-	$g_sql .= "(?, ?, ?, ?), ";
-	array_push ($g_sql_param, $gene, $disease, $testable, $reviewed);
-	++$out;
+    foreach (explode ("|", $f[1]) as $disease) {
+	foreach (explode ("|", $f[4]) as $gene) {
+	    $g_sql .= "(?, ?, ?, ?), ";
+	    array_push ($g_sql_param, $gene, $disease, $testable, $reviewed);
+	    ++$out;
+	}
     }
 }
 print "$in inputs, $out outputs\n";
@@ -104,8 +105,8 @@ theDb()->query ("CREATE TEMPORARY TABLE gt2 (
 $q = theDb()->query ("INSERT INTO gt2
  (gene, testable, reviewed)
  SELECT gene, testable, reviewed
-  FROM gene_canonical_name
-  LEFT JOIN gt ON gene=aka
+  FROM gt
+  LEFT JOIN gene_canonical_name ON gene=aka
   WHERE aka IS NULL");
 if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
