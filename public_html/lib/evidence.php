@@ -656,7 +656,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed autoscore");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb autoscore");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -796,8 +796,8 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       = theDb()->getOne ("SELECT 1 FROM gene_disease WHERE gene=? LIMIT 1",
 			 array ($flat["gene"])) ? 'Y' : '-';
 
-  $flat["in_omim"] = $nonflat["in_omim"] ? 'Y' : '-';
-  $flat["in_gwas"] = $nonflat["in_gwas"] ? 'Y' : '-';
+  $flat["in_omim"] = $nonflat["in_omim"];
+  $flat["in_gwas"] = $nonflat["in_gwas"];
   $flat["in_pharmgkb"] = $nonflat["in_pharmgkb"];
   $flat["genetests_testable"] = $nonflat["genetests_testable"] ? 'Y' : '-';
   $flat["genetests_reviewed"] = $nonflat["genetests_reviewed"] ? 'Y' : '-';
