@@ -796,11 +796,11 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       = theDb()->getOne ("SELECT 1 FROM gene_disease WHERE gene=? LIMIT 1",
 			 array ($flat["gene"])) ? 'Y' : '-';
 
-  $flat["in_omim"] = $nonflat["in_omim"];
-  $flat["in_gwas"] = $nonflat["in_gwas"];
+  $flat["in_omim"] = $nonflat["in_omim"] ? 'Y' : '-';
+  $flat["in_gwas"] = $nonflat["in_gwas"] ? 'Y' : '-';
   $flat["in_pharmgkb"] = $nonflat["in_pharmgkb"];
-  $flat["genetests_testable"] = $nonflat["genetests_testable"];
-  $flat["genetests_reviewed"] = $nonflat["genetests_reviewed"];
+  $flat["genetests_testable"] = $nonflat["genetests_testable"] ? 'Y' : '-';
+  $flat["genetests_reviewed"] = $nonflat["genetests_reviewed"] ? 'Y' : '-';
   $flat["nblosum100"] = $nonflat["nblosum100"];
   $flat["nblosum100>2"] = $nonflat["nblosum100"] > 2 ? 'Y' : '-';
   if ($nonflat["disease_max_or"]) {
