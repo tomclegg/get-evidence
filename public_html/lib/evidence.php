@@ -603,6 +603,51 @@ function evidence_get_report ($snap, $variant_id)
 	= str_split ($v[0]["certainty"]);
   }
 
+  if ($v && is_array ($v[0])) {
+    $row =& $v[0];
+
+    $row["nblosum100"] = 0-blosum100($row["variant_aa_from"], $row["variant_aa_to"]);
+
+    $tags = array();
+    foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($variant_id)) as $tagrow) {
+      $tags[] = $tagrow["tag"];
+    }
+    $row["in_omim"] = in_array ("OMIM", $tags) ? 'Y' : '-';
+    $row["in_gwas"] = in_array ("GWAS", $tags) ? 'Y' : '-';
+    $row["in_pharmgkb"] = in_array ("PharmGKB", $tags) ? 'Y' : '-';
+
+    $autoscore = 0;
+    $why = array();
+
+    // Computational (max of 2 points):
+    if ($row["nblosum100"] > 9) { $autoscore+=2; $why[] = "nblosum100>9"; }
+    else if ($row["nblosum100"] > 2) { $autoscore++; $why[] = "nblosum100>2"; }
+    // TODO: ++$autoscore if within 1 base of a splice site
+    // TODO: ++$autoscore if indel in coding region
+    // TODO: ++$autoscore if indel in coding region and causes frameshift
+    if ($autoscore > 2) $autoscore = 2;
+
+    // Variant-specific lists (max of 2 points):
+    $autoscore_db = 0;
+    if ($row["in_omim"] == 'Y') { $autoscore_db+=2; $why[] = "omim"; }
+    if ($row["in_gwas"] == 'Y') {
+      $autoscore_db++; $why[] = "gwas";
+      if ($row["gwas_max_or"] >= 1.5) {
+	$autoscore_db++; $why[] = "gwas_or";
+      }
+    }
+    if ($row["in_pharmgkb"] == 'Y') { ++$autoscore_db; $why[] = "PharmGKB"; }
+    if ($autoscore_db > 2) $autoscore_db = 2;
+    $autoscore += $autoscore_db;
+
+    // Gene-specific lists (max of 2 points):
+    if ($row["genetests_testable"]) { $autoscore++; $why[] = "genetest"; }
+    if ($row["genetests_reviewed"]) { $autoscore++; $why[] = "genereview"; }
+
+    $row["autoscore"] = $autoscore;
+    $row["autoscore_flags"] = implode(", ",$why);
+  }
+
   return $v;
 }
 
@@ -611,7 +656,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed autoscore");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -657,7 +702,6 @@ function evidence_get_assoc ($snap, $variant_id)
       // TODO: combine these into one array and add labels
       $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 6, "-"));
       $row["quality_comments"] = $row["variant_quality_text"] ? json_decode ($row["variant_quality_text"], true) : array();
-      $row["nblosum100"] = 0-blosum100($row["variant_aa_from"], $row["variant_aa_to"]);
       $diseases = evidence_get_all_oddsratios ($rows);
       unset ($max_or_id);
       foreach ($diseases as $id => &$d) {
@@ -752,13 +796,12 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       = theDb()->getOne ("SELECT 1 FROM gene_disease WHERE gene=? LIMIT 1",
 			 array ($flat["gene"])) ? 'Y' : '-';
 
-  $tags = array();
-  foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($nonflat["id"])) as $row) {
-    $tags[] = $row["tag"];
-  }
-
-  $flat["in_omim"] = in_array ("OMIM", $tags) ? 'Y' : '-';
-  $flat["in_gwas"] = in_array ("GWAS", $tags) ? 'Y' : '-';
+  $flat["in_omim"] = $nonflat["in_omim"];
+  $flat["in_gwas"] = $nonflat["in_gwas"];
+  $flat["in_pharmgkb"] = $nonflat["in_pharmgkb"];
+  $flat["genetests_testable"] = $nonflat["genetests_testable"];
+  $flat["genetests_reviewed"] = $nonflat["genetests_reviewed"];
+  $flat["nblosum100"] = $nonflat["nblosum100"];
   $flat["nblosum100>2"] = $nonflat["nblosum100"] > 2 ? 'Y' : '-';
   if ($nonflat["disease_max_or"]) {
     $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
@@ -773,33 +816,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       $flat["max_or_".$f] = "";
   }
 
-
-  $autoscore = 0;
-
-  // Computational (max of 2 points):
-  if ($flat["nblosum100"] > 2) ++$autoscore;
-  if ($flat["nblosum100"] > 9) ++$autoscore;
-  // TODO: ++$autoscore if within 1 base of a splice site
-  // TODO: ++$autoscore if indel in coding region
-  // TODO: ++$autoscore if indel in coding region and causes frameshift
-  if ($autoscore > 2) $autoscore = 2;
-
-  // Variant-specific lists (max of 2 points):
-  $autoscore_db = 0;
-  if ($flat["in_omim"] == 'Y') $autoscore_db += 2;
-  if ($flat["in_gwas"] == 'Y') ++$autoscore_db;
-  if ($flat["gwas_max_or"] >= 1.5) ++$autoscore_db;
-  if (in_array ("PharmGKB", $tags)) ++$autoscore_db;
-  if ($autoscore_db > 2) $autoscore_db = 2;
-  $autoscore += $autoscore_db;
-
-  // Gene-specific lists (max of 2 points):
-  if ($nonflat["genetests_testable"]) ++$autoscore;
-  if ($nonflat["genetests_reviewed"]) ++$autoscore;
-
-  $flat["autoscore"] = $autoscore;
-
-
+  $flat["autoscore"] = $nonflat["autoscore"];
   $flat["variant_evidence"] = $nonflat["variant_evidence"];
   $flat["clinical_importance"] = $nonflat["clinical_importance"];
   return $flat;

@@ -340,8 +340,12 @@ if ($aa) {
 		     0-blosum100 ($row0["variant_aa_from"], $row0["variant_aa_to"]))
       ."</STRONG></LI>\n";
 }
-$flat = evidence_get_assoc_flat_summary ("latest", $variant_id);
-$html .= "<LI>GET-Evidence autoscore = <STRONG>" . $flat["autoscore"] . "</STRONG></LI>\n";
+$autoscore_html = $row0["autoscore"];
+if ($autoscore_html > 0) {
+  $autoscore_html = "<SPAN onmouseover=\"Tip('".htmlspecialchars($row0["autoscore_flags"])."',BALLOON,true,FIX,[this,-18,0],FOLLOWMOUSE,false,ABOVE,true,WIDTH,-400);\" onmouseout=\"UnTip();\">".$autoscore_html."</SPAN>";
+}
+$html .= "<LI>GET-Evidence autoscore = <STRONG>" . $autoscore_html . "</STRONG>";
+$html .= "</LI>\n";
 $html .= "</UL>\n";
 $html .= "</DIV>";
 
