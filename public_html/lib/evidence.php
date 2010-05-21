@@ -794,7 +794,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $autoscore += $autoscore_db;
 
   // Gene-specific lists (max of 2 points):
-  if (strlen($nonflat["genetests_testable"])) ++$autoscore;
+  if ($nonflat["genetests_testable"]) ++$autoscore;
   if ($nonflat["genetests_reviewed"]) ++$autoscore;
 
   $flat["autoscore"] = $autoscore;
