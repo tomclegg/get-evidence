@@ -83,12 +83,13 @@ theDb()->query ("UNLOCK TABLES");
 
 
 print "Copying to live gene>disease table...";
-theDb()->query ("LOCK TABLES gene_disease WRITE");
+theDb()->query ("LOCK TABLES gene_disease,gene_canonical_name WRITE");
 theDb()->query ("DELETE FROM gene_disease WHERE dbtag = ?",
 		array ("GeneTests"));
 $q = theDb()->query ("INSERT INTO gene_disease
  (gene, disease_id, dbtag)
- SELECT gene, disease_id, ? FROM gt",
+ SELECT DISTINCT IF(official is null,gene,official), disease_id, ? FROM gt
+ LEFT JOIN gene_canonical_name ON aka=gene",
 		     array ("GeneTests"));
 if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
@@ -120,6 +121,7 @@ $q = theDb()->query ("INSERT INTO gt2
 if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
+
 
 print "Copying to live genetests table...";
 theDb()->query ("LOCK TABLES genetests WRITE");
