@@ -23,8 +23,8 @@ function sqlflush (&$sql, &$sqlparam)
 
 print "Updating flat_summary...\n";
 $snap = "latest";
-$tot = theDb()->getOne ("SELECT COUNT(*) FROM snap_$snap");
-$q = theDb()->query ("SELECT variant_id FROM snap_$snap");
+$tot = theDb()->getOne ("SELECT COUNT(*) FROM variants");
+$q = theDb()->query ("SELECT DISTINCT variant_id FROM variants");
 $n = 0;
 while ($row =& $q->fetchRow()) {
     ++$n;
