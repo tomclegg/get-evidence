@@ -40,17 +40,46 @@ while (($line = fgets ($fh)) !== FALSE) {
 	$aka = trim($aka);
 	if ($aka == "")
 	    continue;
-	$g_sql .= "(?, ?), ";
-	array_push ($g_sql_param, $aka, $canonical);
-	++$out;
+	$official[$aka] = $canonical;
     }
 }
-print "$in inputs, $out outputs\n";
+print "$in inputs...";
+
+$compressed = 1;
+while ($compressed > 0) {
+    $compressed = 0;
+    foreach ($official as $aka => &$canonical) {
+	if ($canonical == $aka) {
+	    unset ($official[$aka]);
+	    $compressed++;
+	}
+	else if (isset ($official[$canonical])) {
+	    if ($official[$canonical] == $aka) {
+		print "\n$aka -> $canonical -> $aka -- deleting cycle...";
+		unset ($official[$canonical]);
+		unset ($official[$aka]);
+	    } else {
+		$canonical = $official[$canonical];
+		$compressed ++;
+	    }
+	}
+    }
+    if ($compressed > 0)
+	print "compressed $compressed...";
+}
+
+foreach ($official as $aka => $canonical) {
+    $g_sql .= "(?, ?), ";
+    array_push ($g_sql_param, $aka, $canonical);
+    ++$out;
+}
+print "$out outputs\n";
 if (!$out)
     exit;
 
 
 print "Importing to database...";
+theDb()->query ("LOCK TABLES gene_canonical_name WRITE");
 theDb()->query ("DELETE FROM gene_canonical_name");
 $q = theDb()->query ("INSERT IGNORE INTO gene_canonical_name (aka, official) VALUES "
 		     .ereg_replace(', $', '', $g_sql),
@@ -58,5 +87,7 @@ $q = theDb()->query ("INSERT IGNORE INTO gene_canonical_name (aka, official) VAL
 if (theDb()->isError($q)) die($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
+
+theDb()->query ("UNLOCK TABLES");
 
 ?>
