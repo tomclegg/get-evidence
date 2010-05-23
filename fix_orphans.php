@@ -54,3 +54,8 @@ theDb()->query ("INSERT IGNORE INTO snap_latest
  ORDER BY edit_id DESC");
 print theDb()->affectedRows();
 print " added to \"snap_latest\"\n";
+
+theDb()->query ("DELETE fs.* FROM edits_to_add eta
+ LEFT JOIN flat_summary fs ON fs.variant_id=eta.variant_id");
+print theDb()->affectedRows();
+print " deleted from \"flat_summary\"\n";
