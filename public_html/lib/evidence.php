@@ -169,7 +169,7 @@ function evidence_create_tables ()
   theDb()->query ("CREATE TABLE IF NOT EXISTS gene_canonical_name (
   aka VARCHAR(32) NOT NULL,
   official VARCHAR(32) NOT NULL,
-  UNIQUE aka_official (aka,official))");
+  UNIQUE aka_key (aka))");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS variant_disease (
   variant_id BIGINT UNSIGNED NOT NULL,
@@ -261,6 +261,10 @@ function evidence_get_variant_id ($gene,
   $aa_to = aa_long_form ($aa_to);
 
   if ($create_flag) {
+    $official_gene = theDb()->getOne ("SELECT official FROM gene_canonical_name WHERE aka=?", array ($gene));
+    if (!theDb()->isError ($official_gene) && strlen($official_gene) && !theDb()->getOne("SELECT 1 FROM variants WHERE variant_gene=? AND variant_aa_pos=? AND variant_aa_from=? AND variant_iaa_to=?", array ($gene, $aa_pos, $aa_from, $aa_to)))
+      $gene = $official_gene;
+
     $q = theDb()->query ("INSERT IGNORE INTO variants
 			SET variant_gene=?,
 			variant_aa_pos=?,

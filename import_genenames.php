@@ -24,10 +24,7 @@ print "\n";
 
 
 print "Reading input...";
-$g_sql = "";
-$g_sql_param = array();
 $in = 0;
-$out = 0;
 while (($line = fgets ($fh)) !== FALSE) {
     if (ereg ("^HGNC ID", $line)) // header
 	continue;
@@ -43,9 +40,10 @@ while (($line = fgets ($fh)) !== FALSE) {
 	$official[$aka] = $canonical;
     }
 }
-print "$in inputs...";
+print "$in inputs\n";
 
 $compressed = 1;
+print "Compressing paths...";
 while ($compressed > 0) {
     $compressed = 0;
     foreach ($official as $aka => &$canonical) {
@@ -55,9 +53,17 @@ while ($compressed > 0) {
 	}
 	else if (isset ($official[$canonical])) {
 	    if ($official[$canonical] == $aka) {
-		print "\n$aka -> $canonical -> $aka -- deleting cycle...";
+		if (strcmp($aka,$canonical) < 0) {
+		    $a = $aka;
+		    $b = $canonical;
+		} else {
+		    $a = $canonical;
+		    $b = $aka;
+		}
+		print "\n$aka -> $canonical -> $aka -- choosing $a...";
 		unset ($official[$canonical]);
 		unset ($official[$aka]);
+		$official[$b] = $a;
 	    } else {
 		$canonical = $official[$canonical];
 		$compressed ++;
@@ -65,15 +71,19 @@ while ($compressed > 0) {
 	}
     }
     if ($compressed > 0)
-	print "compressed $compressed...";
+	print "removed $compressed\nCompressing paths...";
 }
+print "done\n";
 
+$g_sql = "";
+$g_sql_param = array();
+$out = 0;
 foreach ($official as $aka => $canonical) {
     $g_sql .= "(?, ?), ";
     array_push ($g_sql_param, $aka, $canonical);
     ++$out;
 }
-print "$out outputs\n";
+print "Strung together $out outputs\n";
 if (!$out)
     exit;
 
