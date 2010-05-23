@@ -23,8 +23,15 @@ function sqlflush (&$sql, &$sqlparam)
 
 print "Updating flat_summary...\n";
 $snap = "latest";
-$tot = theDb()->getOne ("SELECT COUNT(*) FROM variants");
-$q = theDb()->query ("SELECT DISTINCT variant_id FROM variants");
+// If any are missing, just generate those
+$join = "LEFT JOIN flat_summary fs ON v.variant_id=fs.variant_id WHERE fs.variant_id IS NULL";
+$tot = theDb()->getOne ("SELECT COUNT(*) FROM variants v $join");
+if ($tot == 0) {
+    // If none are missing, refresh all
+    $join = "";
+    $tot = theDb()->getOne ("SELECT COUNT(*) FROM variants v");
+}
+$q = theDb()->query ("SELECT DISTINCT v.variant_id FROM variants v $join");
 $n = 0;
 while ($row =& $q->fetchRow()) {
     ++$n;
