@@ -30,8 +30,7 @@ theDb()->query ("delete nva.* from no_variant_add nva
 print theDb()->affectedRows();
 print " alrady have \"add\" entries\n";
 
-theDb()->query ("DROP TABLE IF EXISTS edits_to_add");
-theDb()->query ("CREATE TABLE edits_to_add LIKE edits");
+theDb()->query ("CREATE TEMPORARY TABLE edits_to_add LIKE edits");
 theDb()->query ("ALTER TABLE edits_to_add ADD UNIQUE(variant_id)");
 theDb()->query ("INSERT IGNORE INTO edits_to_add
  SELECT e.* FROM no_variant_add nva
