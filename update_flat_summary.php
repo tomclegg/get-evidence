@@ -15,7 +15,8 @@ function sqlflush (&$sql, &$sqlparam)
 	return;
     }
     $sql = ereg_replace (',$', '', $sql);
-    theDb()->query ("REPLACE INTO flat_summary (variant_id, flat_summary) VALUES $sql", $sqlparam);
+    $q = theDb()->query ("REPLACE INTO flat_summary (variant_id, flat_summary) VALUES $sql", $sqlparam);
+    if (theDb()->isError ($q)) die ($q->getMessage());
     $sql = "";
     $sqlparam = array();
 }
@@ -43,6 +44,6 @@ while ($row =& $q->fetchRow()) {
     if (count($sqlparam) > 100)
 	sqlflush (&$sql, &$sqlparam);
 }
-flush (&$sql, &$sqlparam);
+sqlflush (&$sql, &$sqlparam);
 
 print "\n";
