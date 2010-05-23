@@ -47,8 +47,8 @@ import_genomes: $(CACHEFILE)
 dump_database:
 	./dump_database.php public_html/get-evidence.sql.gz
 
-vis_data_local: latest_flat_tmp_local latest_flat vis_data
-vis_data_http: latest_flat_tmp_http latest_flat vis_data
+vis_data_local: latest_flat_tmp_local latest_flat latest_flat.gz vis_data
+vis_data_http: latest_flat_tmp_http latest_flat latest_flat.gz vis_data
 latest_flat_tmp_local:
 	mkdir -p $(CACHEDIR)
 	(cd public_html && php ./download.php latest flat) > $(CACHEDIR)/latest-flat.tsv.tmp
@@ -57,6 +57,8 @@ latest_flat_tmp_http:
 	wget -O$(CACHEDIR)/latest-flat.tsv.tmp http://$(GETEVIDENCEHOST)/latest-flat.tsv
 latest_flat:
 	mv $(CACHEDIR)/latest-flat.tsv.tmp public_html/latest-flat.tsv
+latest_flat.gz: latest_flat
+	gzip -9n <public_html/latest-flat.tsv >public_html/latest-flat.tsv.gz
 vis_data:
 	cd get_evidence_vis && ./ProcessTableForVis.pl ../public_html/latest-flat.tsv nsSNP-freq.gff >../public_html/latest_vis_data.tsv.tmp
 	cd public_html && mv latest_vis_data.tsv.tmp latest_vis_data.tsv
