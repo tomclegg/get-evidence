@@ -32,10 +32,10 @@ while (($line = fgets ($fh)) !== FALSE) {
 	continue;
     ++$in;
     $f = explode ("\t", rtrim($line, "\n"));
-    if ($f[4] == "")		// no aliases listed
-	continue;
     $canonical = $f[1];
     $donottranslate[$canonical] = 1;
+    if ($f[4] == "")		// no aliases listed
+	continue;
     foreach (explode (",", $f[4]) as $aka) {
 	$aka = trim($aka);
 	if ($aka == "")
