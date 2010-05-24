@@ -23,6 +23,8 @@ evidence_create_tables ();
 print "\n";
 
 
+$official = array();
+$donottranslate = array();
 print "Reading input...";
 $in = 0;
 while (($line = fgets ($fh)) !== FALSE) {
@@ -33,6 +35,7 @@ while (($line = fgets ($fh)) !== FALSE) {
     if ($f[4] == "")		// no aliases listed
 	continue;
     $canonical = $f[1];
+    $donottranslate[$canonical] = 1;
     foreach (explode (",", $f[4]) as $aka) {
 	$aka = trim($aka);
 	if ($aka == "")
@@ -41,6 +44,16 @@ while (($line = fgets ($fh)) !== FALSE) {
     }
 }
 print "$in inputs\n";
+
+print "Removing mappings for {official name} > {another official name}...";
+$did = 0;
+foreach ($donottranslate as $gene => $x) {
+    if (isset ($official[$gene])) {
+	unset ($official[$gene]);
+	$did++;
+    }
+}
+print "$did\n";
 
 $compressed = 1;
 print "Compressing paths...";
