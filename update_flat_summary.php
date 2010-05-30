@@ -7,6 +7,8 @@
 chdir ('public_html');
 include "lib/setup.php";
 
+evidence_create_tables();
+
 
 function sqlflush (&$sql, &$sqlparam)
 {
@@ -15,7 +17,7 @@ function sqlflush (&$sql, &$sqlparam)
 	return;
     }
     $sql = ereg_replace (',$', '', $sql);
-    $q = theDb()->query ("REPLACE INTO flat_summary (variant_id, flat_summary) VALUES $sql", $sqlparam);
+    $q = theDb()->query ("REPLACE INTO flat_summary (variant_id, flat_summary, autoscore, webscore, n_genomes) VALUES $sql", $sqlparam);
     if (theDb()->isError ($q)) die ($q->getMessage());
     $sql = "";
     $sqlparam = array();
@@ -38,9 +40,12 @@ while ($row =& $q->fetchRow()) {
     ++$n;
     print "\r$n / $tot ";
     $flat = evidence_get_assoc_flat_summary ($snap, $row["variant_id"]);
-    $sql .= "(?, ?),";
+    $sql .= "(?, ?, ?, ?, ?),";
     $sqlparam[] = $row["variant_id"];
     $sqlparam[] = json_encode ($flat);
+    $sqlparam[] = $flat["autoscore"];
+    $sqlparam[] = $flat["webscore"];
+    $sqlparam[] = $flat["n_genomes"];
     if (count($sqlparam) > 100)
 	sqlflush (&$sql, &$sqlparam);
 }

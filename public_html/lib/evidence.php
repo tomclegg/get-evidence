@@ -185,6 +185,11 @@ function evidence_create_tables ()
   updated TIMESTAMP,
   flat_summary TEXT
   )");
+  theDb()->query ("ALTER TABLE flat_summary ADD autoscore TINYINT after variant_id");
+  theDb()->query ("ALTER TABLE flat_summary ADD webscore TINYINT after autoscore");
+  theDb()->query ("ALTER TABLE flat_summary ADD n_genomes INT after webscore");
+  theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_index (webscore)");
+  theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_priority_index (genome_hits, autoscore)");
 }
 
 function evidence_get_genome_id ($global_human_id)
@@ -406,8 +411,10 @@ function evidence_submit ($edit_id)
   $v = theDb()->getOne ("SELECT variant_id FROM snap_latest WHERE edit_id=?",
 			array ($edit_id));
   if ($v) {
-    theDb()->query ("REPLACE INTO flat_summary SET variant_id=?, flat_summary=?",
-		    array ($v, json_encode (evidence_get_assoc_flat_summary ("latest", $v))));
+    $flat = evidence_get_assoc_flat_summary ("latest", $v);
+    theDb()->query ("REPLACE INTO flat_summary
+			SET variant_id=?, flat_summary=?, autoscore=?, webscore=?, n_genomes=?",
+		    array ($v, json_encode ($flat), $flat["autoscore"], $flat["webscore"], $flat["n_genomes"]));
   }
   else {
     $v = theDb()->getOne ("SELECT variant_id FROM edits WHERE edit_id=?",
@@ -650,6 +657,9 @@ function evidence_get_report ($snap, $variant_id)
 
     $row["autoscore"] = $autoscore;
     $row["autoscore_flags"] = implode(", ",$why);
+
+    // TODO: summarize relevant/not-relevant votes as one of { null, 0, 1 }
+    $row["webscore"] = null;
   }
 
   return $v;
