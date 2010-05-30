@@ -186,10 +186,39 @@ function evidence_create_tables ()
   flat_summary TEXT
   )");
   theDb()->query ("ALTER TABLE flat_summary ADD autoscore TINYINT after variant_id");
-  theDb()->query ("ALTER TABLE flat_summary ADD webscore TINYINT after autoscore");
+  theDb()->query ("ALTER TABLE flat_summary ADD webscore CHAR(1) after autoscore");
   theDb()->query ("ALTER TABLE flat_summary ADD n_genomes INT after webscore");
   theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_index (webscore)");
   theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_priority_index (genome_hits, autoscore)");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS web_vote_history (
+  vote_id SERIAL,
+  variant_id BIGINT UNSIGNED NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  vote_oid VARCHAR(255) NOT NULL,
+  vote_timestamp TIMESTAMP,
+  vote_score TINYINT,
+  INDEX (variant_id,vote_oid,vote_timestamp),
+  INDEX (vote_oid,variant_id),
+  INDEX (vote_oid,vote_timestamp)
+  )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS web_vote_latest (
+  variant_id BIGINT UNSIGNED NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  vote_oid VARCHAR(255) NOT NULL,
+  vote_timestamp TIMESTAMP,
+  vote_score TINYINT,
+  UNIQUE (variant_id,url(125),vote_oid(125))
+  )");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS web_vote (
+  variant_id BIGINT UNSIGNED NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  vote_1 INT DEFAULT 0,
+  vote_0 INT DEFAULT 0,
+  UNIQUE (variant_id,url)
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
@@ -411,10 +440,7 @@ function evidence_submit ($edit_id)
   $v = theDb()->getOne ("SELECT variant_id FROM snap_latest WHERE edit_id=?",
 			array ($edit_id));
   if ($v) {
-    $flat = evidence_get_assoc_flat_summary ("latest", $v);
-    theDb()->query ("REPLACE INTO flat_summary
-			SET variant_id=?, flat_summary=?, autoscore=?, webscore=?, n_genomes=?",
-		    array ($v, json_encode ($flat), $flat["autoscore"], $flat["webscore"], $flat["n_genomes"]));
+    evidence_update_flat_summary ($v);
   }
   else {
     $v = theDb()->getOne ("SELECT variant_id FROM edits WHERE edit_id=?",
@@ -422,6 +448,19 @@ function evidence_submit ($edit_id)
     theDb()->query ("DELETE FROM flat_summary WHERE variant_id=?",
 		    array ($v));
   }
+}
+
+function evidence_update_flat_summary ($variant_id)
+{
+  $flat = evidence_get_assoc_flat_summary ("latest", $variant_id);
+  theDb()->query ("REPLACE INTO flat_summary
+			SET variant_id=?, flat_summary=?,
+			autoscore=?, webscore=?, n_genomes=?",
+		  array ($variant_id,
+			 json_encode ($flat),
+			 $flat["autoscore"],
+			 $flat["webscore"],
+			 $flat["n_genomes"]));
 }
 
 function evidence_signoff ($edit_id)
@@ -658,8 +697,19 @@ function evidence_get_report ($snap, $variant_id)
     $row["autoscore"] = $autoscore;
     $row["autoscore_flags"] = implode(", ",$why);
 
-    // TODO: summarize relevant/not-relevant votes as one of { null, 0, 1 }
-    $row["webscore"] = null;
+    // Summarize relevant/not-relevant votes as one of { null, 0, 1 }
+    $row["webscore"] = "N";
+    $urlscores =& evidence_get_web_votes ($variant_id);
+    foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
+						     array ($variant_id, "Yahoo!"))) as $url) {
+      if ($urlscores[$url] == 1) {
+	$row["webscore"] = "Y";
+	break;
+      }
+      if (!strlen ($urlscores[$url])) {
+	$row["webscore"] = "-";
+      }
+    }
   }
 
   return $v;
@@ -670,7 +720,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb autoscore");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb autoscore webscore");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -831,6 +881,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   }
 
   $flat["autoscore"] = $nonflat["autoscore"];
+  $flat["webscore"] = $nonflat["webscore"];
   $flat["variant_evidence"] = $nonflat["variant_evidence"];
   $flat["clinical_importance"] = $nonflat["clinical_importance"];
   return $flat;
@@ -1255,6 +1306,127 @@ function evidence_qualify_impact ($scores, $impact)
   else if ($c[1] === '1') $impact = "moderate clinical importance, $impact";
   else if ($c[1] === '2') $impact = "high clinical importance, $impact";
   return ucfirst ($impact);
+}
+
+
+function evidence_get_web_votes ($variant_id)
+{
+  $results = array();
+  $votes =& theDb()->getAll ("SELECT * FROM web_vote WHERE variant_id=?",
+			     array ($variant_id));
+  foreach ($votes as &$v) {
+    if ($v["vote_0"] > $v["vote_1"]) // "no" votes win
+      $result = 0;
+    else if ($v["vote_1"] > 0)	// tie, or "yes" votes win
+      $result = 1;
+    else			// no votes yet
+      $result = null;
+    $results[$v["url"]] = $result;
+  }
+  return $results;
+}
+
+
+function evidence_get_my_web_vote ($variant_id)
+{
+  $myvotes = array();
+  if (!($oid = getCurrentUser("oid")))
+    return $myvotes;
+  $votes =& theDb()->getAll ("SELECT * FROM web_vote_history
+				WHERE variant_id=? AND vote_oid=?
+				ORDER BY vote_timestamp DESC",
+			     array ($variant_id, $oid));
+  foreach ($votes as &$v) {
+    if (!isset ($myvotes[$v["url"]]))
+      $myvotes[$v["url"]] = $v["vote_score"];
+  }
+  return $myvotes;
+}
+
+
+function evidence_set_my_web_vote ($variant_id, $url, $score)
+{
+  if (!($oid = getCurrentUser("oid")))
+    return;
+  theDb()->query ("INSERT INTO web_vote_history SET
+			variant_id=?, url=?, vote_oid=?, vote_score=?",
+		  array ($variant_id, $url, $oid, $score));
+  theDb()->query ("REPLACE INTO web_vote_latest SET
+			variant_id=?, url=?, vote_oid=?, vote_score=?",
+		  array ($variant_id, $url, $oid, $score));
+
+  $current =& theDb()->getAll ("SELECT COUNT(*) c, vote_score
+				FROM web_vote_latest
+				WHERE variant_id=? AND url=?
+				GROUP BY vote_score",
+			       array ($variant_id, $url));
+  $vote_0=0;
+  $vote_1=0;
+  foreach ($current as $c) {
+    if ($c["vote_score"] == 1)
+      $vote_1 += $c["c"];
+    else if (strlen ($c["vote_score"]))
+      $vote_0 += $c["c"];
+  }
+  theDb()->query ("REPLACE INTO web_vote SET variant_id=?, url=?, vote_0=?, vote_1=?",
+		  array ($variant_id, $url, $vote_0, $vote_1));
+  if (theDb()->affectedRows() > 0) {
+    evidence_update_flat_summary ($variant_id);
+  }
+}
+
+
+function evidence_extract_urls ($html)
+{
+  $urls = array();
+  preg_match_all ('{<LI>.*?</LI>}is', $html, $matches,
+		  PREG_PATTERN_ORDER);
+  foreach ($matches[0] as $hit) {
+    if (preg_match ('{<A href="(.*?)"}', $hit, $regs)) {
+      $urls[] = htmlspecialchars_decode ($regs[1], ENT_QUOTES);
+    }
+  }
+  return $urls;
+}
+
+
+function evidence_add_vote_tag_callback ($variant_id, $matches)
+{
+  global $evidence_current_votes;
+  if (ereg ('^http://search.yahoo.com', $matches[1]))
+    return $matches[0];
+  $html = $matches[0];
+
+  global $webvote_unique_id;
+  ++$webvote_unique_id;
+
+  $yes_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsup-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\">";
+  $no_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsdown-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\">";
+  $empty_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsup-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\" style=\"display:none;\">";
+
+  $url = htmlspecialchars_decode ($matches[1], ENT_QUOTES);
+  if ($evidence_current_votes[$url] == 1)
+    $html = $yes_image . "&nbsp;" . $html;
+  else if (strlen ($evidence_current_votes[$url]))
+    $html = $no_image . "&nbsp;" . $html;
+  else if (getCurrentUser())
+    $html = $empty_image . "&nbsp;" . $html;
+
+  if (!getCurrentUser())
+    return $html;
+
+  return $html . "&nbsp;&nbsp;&nbsp;<a class=\"webvoter\" id=\"webvoter1_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,1);\" href=\"$matches[1]\">$yes_image</a>&nbsp;<a class=\"webvoter\" id=\"webvoter0_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,0);\" href=\"$matches[1]\">$no_image</a>";
+}
+
+
+function evidence_add_vote_tags ($variant_id, $html)
+{
+  global $evidence_current_votes;
+  $evidence_current_votes = evidence_get_web_votes ($variant_id);
+  return preg_replace_callback ('{<A href="(.*?)">.*?</A>}si',
+				create_function ('$matches',
+						 "return evidence_add_vote_tag_callback($variant_id, \$matches);"),
+				$html);
 }
 
 

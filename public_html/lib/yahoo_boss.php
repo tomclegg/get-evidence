@@ -145,9 +145,9 @@ function yahoo_boss_update_external ($variant_id)
 		    . $resulttag["title"]
 		    . "</A><BR />"
 		    . $resulttag["abstract"]
-		    . "<BR /><DIV class=\"searchurl\""
+		    . "<BR /><DIV class=\"searchurl\">"
 		    . $resulttag["dispurl"]
-		    . "</DIV></LI>";
+		    . "</DIV></LI>\n";
 	    }
 	}
     }

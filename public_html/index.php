@@ -304,7 +304,7 @@ if (count($external_refs)) {
 		$html .= "</UL>\n";
 	}
 	if (ereg ("^<", $content)) {
-	    $html .= $content;
+	    $html .= evidence_add_vote_tags ($variant_id, $content);
 	    $lasttag = FALSE;
 	    continue;
 	}

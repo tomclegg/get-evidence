@@ -187,3 +187,33 @@ function object_data_equal (a, b)
 	});
     return isequal;
 }
+
+function evidence_web_vote (variant_id, voter_element, score)
+{
+    var x = {
+	    method: 'get',
+	    parameters:
+	    {
+		variant_id: variant_id,
+		url: voter_element.href,
+		score: score
+	    },
+	    onSuccess: function(transport)
+	    {
+		if (transport.responseJSON)
+		    $$('a.webvoter').each(function(e) {
+			    wuid = e.id.replace(/^.*_/,'');
+			    if(transport.responseJSON.all[e.href]==1) {
+				$('webvoter_all_' + wuid).src = '/img/thumbsup-32.png';
+				$('webvoter_all_' + wuid).style.display = 'inline';
+			    }
+			    else if(transport.responseJSON.all[e.href]==0) {
+				$('webvoter_all_' + wuid).src = '/img/thumbsdown-32.png';
+				$('webvoter_all_' + wuid).style.display = 'inline';
+			    }
+			});
+	    }
+    };
+    new Ajax.Request('webvote.php', x);
+    return false;
+}
