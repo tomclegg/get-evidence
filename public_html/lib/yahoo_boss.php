@@ -88,18 +88,34 @@ function yahoo_boss_update_external ($variant_id)
 	return;
     }
 
-    $variant = theDb()->getRow ("SELECT * FROM variants WHERE variant_id=?",
+    $variant = theDb()->getRow ("SELECT v.*, vo.rsid rsid FROM variants v
+				 LEFT JOIN variant_occurs vo
+				  ON v.variant_id=vo.variant_id
+				  AND vo.rsid IS NOT NULL
+				 WHERE v.variant_id=?
+				 GROUP BY v.variant_id",
 				array ($variant_id));
     if (!$variant || theDb()->isError ($variant)) {
 	print "No such variant\n";
 	return FALSE;
     }
-    $gene_aa = $variant["variant_gene"] . " "
-	. aa_short_form($variant["variant_aa_from"])
-	. $variant["variant_aa_pos"]
-	. aa_short_form($variant["variant_aa_to"]);
+    if ($variant["variant_gene"]) {
+	$gene_aa_long = $variant["variant_gene"] . " "
+	    . $variant["variant_aa_from"]
+	    . $variant["variant_aa_pos"]
+	    . $variant["variant_aa_to"];
+	$gene_aa_short = $variant["variant_gene"] . " "
+	    . aa_short_form($variant["variant_aa_from"])
+	    . $variant["variant_aa_pos"]
+	    . aa_short_form($variant["variant_aa_to"]);
+	$search_string = "$gene_aa_long OR $gene_aa_short";
+	if (($rsid = $variant["variant_rsid"]) ||
+	    ($rsid = $variant["rsid"]))
+	    $search_string .= " OR rs$rsid";
+    } else
+	$search_string = "rs" . $variant["variant_rsid"];
 
-    $user_url = "http://search.yahoo.com/search?p=" . urlencode ($gene_aa);
+    $user_url = "http://search.yahoo.com/search?p=" . urlencode ($search_string);
     $content = "";
     $skipped_hits = 0;
 
