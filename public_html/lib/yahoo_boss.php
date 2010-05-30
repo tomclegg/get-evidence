@@ -28,17 +28,33 @@ function yahoo_boss_lookup ($variant_id)
 	if (!getenv("APIKEY"))
 	    return FALSE;
 
-	$variant = theDb()->getRow ("SELECT * FROM variants WHERE variant_id=?",
+	$variant = theDb()->getRow ("SELECT v.*, vo.rsid rsid FROM variants v
+				 LEFT JOIN variant_occurs vo
+				  ON v.variant_id=vo.variant_id
+				  AND vo.rsid IS NOT NULL
+				 WHERE v.variant_id=?
+				 GROUP BY v.variant_id",
 				    array ($variant_id));
 	if (!$variant || theDb()->isError ($variant))
 	    return FALSE;
-	$gene_aa = $variant["variant_gene"] . " "
-	    . aa_short_form($variant["variant_aa_from"])
-	    . $variant["variant_aa_pos"]
-	    . aa_short_form($variant["variant_aa_to"]);
+	if ($variant["variant_gene"]) {
+	    $gene_aa_long = $variant["variant_gene"] . " "
+		. $variant["variant_aa_from"]
+		. $variant["variant_aa_pos"]
+		. $variant["variant_aa_to"];
+	    $gene_aa_short = $variant["variant_gene"] . " "
+		. aa_short_form($variant["variant_aa_from"])
+		. $variant["variant_aa_pos"]
+		. aa_short_form($variant["variant_aa_to"]);
+	    $search_string = "$gene_aa_long OR $gene_aa_short";
+	    if (($rsid = $variant["variant_rsid"]) ||
+		($rsid = $variant["rsid"]))
+		$search_string .= " OR rs$rsid";
+	} else
+	    $search_string = "rs" . $variant["variant_rsid"];
 	$ch = curl_init ();
 	$url = "http://boss.yahooapis.com/ysearch/web/v1/"
-	    . urlencode ($gene_aa)
+	    . urlencode ($search_string)
 	    . "?appid="
 	    . urlencode(getenv("APIKEY"))
 	    . "&format=xml";
