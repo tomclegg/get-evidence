@@ -25,6 +25,7 @@ $sql_orderby = "";
 $sql_params = array();
 $min_certainty = -1;
 $max_certainty = 2;
+$want_column = array();
 
 
 if ($want_report_type == "search") {
@@ -87,6 +88,12 @@ else if ($want_report_type == "yours") {
   $sql_params = array (getCurrentUser("oid"));
   $sql_orderby = "ORDER BY variant_gene, variant_aa_pos, variant_aa_from";
 }
+else if ($want_report_type == "need-web-review") {
+  $report_title = "Single-genome variants needing web review";
+  $sql_where = "fs.n_genomes = 1 AND y.hitcount > 0";
+  $sql_orderby = "ORDER BY fs.autoscore DESC, RAND()";
+  $want_column["autoscore"] = "Autoscore";
+}
 else {
   $gOut["title"] = "GET-Evidence: Reports";
   $textile = <<<EOF
@@ -102,6 +109,7 @@ h1. Available reports
 ** "Without OMIM entries, f<0.05":report?type=web-search&noomim=1&rare=1
 ** "Without dbSNP entries":report?type=web-search&nodbsnp=1
 * "Interactive graph":vis of allele frequency vs. odds ratio
+* "Single-genome variants needing web review":report?type=need-web-review sorted according to autoscore, and randomized within each autoscore
 
 Variants with genome hits, split by impact:
 table(report_table).
@@ -138,8 +146,9 @@ function print_content ()
   global $max_certainty;
   global $snap;
   global $gTheTextile;
+  global $want_column;
   $q = theDb()->query ($sql = "
-SELECT s.*, v.*, g.*,
+SELECT s.*, v.*, g.*, fs.*,
 -- gs.summary_short AS g_summary_short,
  MAX(o.zygosity) AS max_zygosity,
  d.dataset_id AS d_dataset_id,
@@ -148,6 +157,7 @@ SELECT s.*, v.*, g.*,
  vf.f AS variant_frequency
 FROM snap_$snap s
 $sql_right_join
+LEFT JOIN flat_summary fs ON s.variant_id=fs.variant_id
 LEFT JOIN variants v ON s.variant_id=v.variant_id
 LEFT JOIN variant_frequency vf ON vf.variant_id=v.variant_id
 LEFT JOIN variant_occurs o ON v.variant_id=o.variant_id AND $sql_occur_filter
@@ -161,16 +171,20 @@ GROUP BY v.variant_id,g.genome_id
 HAVING $sql_having
 $sql_orderby
 ", $sql_params);
+  $colcount = 5 + count($want_column);
   if (theDb()->isError($q)) die ("DB Error: ".$q->getMessage() . "<br>" . $sql);
   print "<TABLE class=\"report_table\" style=\"width: 100%\">\n";
-  print "<TR><TD colspan=\"5\" id=\"reportpage_turner_copy\" style=\"text-align: right;\">&nbsp;</TD></TR>\n";
+  print "<TR><TD colspan=\"$colcount\" id=\"reportpage_turner_copy\" style=\"text-align: right;\">&nbsp;</TD></TR>\n";
   print "<TR><TH>" . join ("</TH><TH>",
 			   array ("Variant",
 				  "Impact",
 				  "Inheritance pattern",
 				  "Summary",
 				  "Genomes"
-				  )) . "</TH></TR>\n";
+				  ));
+  foreach ($want_column as $k => $v)
+      print "</TH><TH>$v";
+  print "</TH></TR>\n";
   $output_row = 0;
   $output_page = 0;
   $output_cut_off_after = 0;
@@ -260,19 +274,22 @@ $sql_orderby
       if (++$rownum > 1) print "</TR>\n<TR$tr_attrs>";
       if (!$row["g_genome_id"]) {
 	print "<TD></TD>";
-	continue;
+      } else {
+	print "<TD width=\"15%\"><A href=\"$variant_name_link#g$id\">".htmlspecialchars($row["name"])."</A>";
+	if ($row["max_zygosity"] == 'homozygous')
+	  print " (hom)";
+	print "</TD>";
       }
-      print "<TD width=\"15%\"><A href=\"$variant_name_link#g$id\">".htmlspecialchars($row["name"])."</A>";
-      if ($row["max_zygosity"] == 'homozygous')
-	print " (hom)";
-      print "</TD>";
+      if ($rownum == 1)
+	foreach ($want_column as $k => $v)
+	    printf ("<TD $rowspan>%s</TD>", $row[$k]);
     }
     print "</TR>\n";
     $genome_rows = array();
   }
 
   if ($output_page > 1) {
-      print "<TR><TD colspan=\"5\" id=\"reportpage_turner\" style=\"text-align: right;\">Page: ";
+      print "<TR><TD colspan=\"$colcount\" id=\"reportpage_turner\" style=\"text-align: right;\">Page: ";
       for ($p=1; $p<=$output_page && $p<=MAXPAGES; $p++)
 	  print "<A class=\"reportpage_turnbutton\" href=\"#\" onclick=\"reportpage_goto($p);\">$p</A> ";
       print "<BR /><STRONG>Total results: $output_row</STRONG>";
@@ -284,7 +301,7 @@ $sql_orderby
       print "\n// -->\n</SCRIPT>";
   }
   else {
-      print "<TR><TD colspan=\"5\" style=\"text-align: right;\"><STRONG>Total results: $output_row</STRONG></TD></TR>";
+      print "<TR><TD colspan=\"$colcount\" style=\"text-align: right;\"><STRONG>Total results: $output_row</STRONG></TD></TR>";
   }
 
   print "</TABLE>\n";
