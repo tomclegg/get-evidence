@@ -2,8 +2,8 @@
 
 include "lib/setup.php";
 
-define ("ROWSPERPAGE", 10);
-define ("MAXPAGES", 40);
+$config["ROWSPERPAGE"] = 10;
+$config["MAXPAGES"] = 40;
 
 $snap = "latest";
 $sql_where = "1=1";
@@ -93,6 +93,7 @@ else if ($want_report_type == "need-web-review") {
   $sql_where = "fs.n_genomes = 1 AND y.hitcount > 0";
   $sql_orderby = "ORDER BY fs.autoscore DESC, RAND()";
   $want_column["autoscore"] = "Autoscore";
+  $config["MAXPAGES"] = 120;
 }
 else {
   $gOut["title"] = "GET-Evidence: Reports";
@@ -136,6 +137,7 @@ EOF
 $gOut["title"] = "GET-Evidence: $report_title";
 function print_content ()
 {
+  global $config;
   global $sql_where;
   global $sql_having;
   global $sql_occur_filter;
@@ -226,14 +228,14 @@ $sql_orderby
     }
 
     ++$output_row;
-    if ($output_row % ROWSPERPAGE == 1) {
+    if ($output_row % $config["ROWSPERPAGE"] == 1) {
 	++$output_page;
 	$tr_attrs = " class=\"reportpage reportpage_$output_page\"";
 	if ($output_page > 1) {
 	    $tr_attrs = " class=\"reportpage reportpage_$output_page csshide\"";
 	}
     }
-    if ($output_page > MAXPAGES) {
+    if ($output_page > $config["MAXPAGES"]) {
 	if (!$output_cut_off_after)
 	    $output_cut_off_after = $output_row - 1;
 	$genome_rows = array();
@@ -290,7 +292,7 @@ $sql_orderby
 
   if ($output_page > 1) {
       print "<TR><TD colspan=\"$colcount\" id=\"reportpage_turner\" style=\"text-align: right;\">Page: ";
-      for ($p=1; $p<=$output_page && $p<=MAXPAGES; $p++)
+      for ($p=1; $p<=$output_page && $p<=$config["MAXPAGES"]; $p++)
 	  print "<A class=\"reportpage_turnbutton\" href=\"#\" onclick=\"reportpage_goto($p);\">$p</A> ";
       print "<BR /><STRONG>Total results: $output_row</STRONG>";
       if ($output_cut_off_after)
