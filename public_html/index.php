@@ -33,7 +33,7 @@ else if (ereg ("^(rs[0-9]+)(;([0-9]+))?$", $_GET["q"], $regs)) {
   }
   $max_edit_id = $regs[3];
 }
-else if (ereg ("^([A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
+else if (ereg ("^([A-Za-z0-9_-]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
 	 aa_sane ($aa = $regs[2])) {
   $gene = strtoupper($regs[1]);
   $max_edit_id = $regs[4];
