@@ -38,12 +38,17 @@ function blosum100 ($aa1, $aa2)
   if ($aa1 == "X" && $aa2 == "X")
     return 10; // this should never happen anyway.
 
+  global $blosum100_array;
+
+  if ($blosum100_array)
+    return $blosum100_array["$aa1 $aa2"];
+
   // blosum100.txt is from 
   // ftp://ftp.ncbi.nih.gov/blast/matrices/BLOSUM100
   $blosum100_file = "lib/blosum100.txt";
   $fh = fopen($blosum100_file, 'r');
 
-  $blosum100_array;
+  $blosum100_array = array();
   $top_line;
   $line_count = 0;
   while ($line = fgets($fh)) {
