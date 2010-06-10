@@ -671,7 +671,7 @@ function evidence_get_report ($snap, $variant_id)
 
     // Computational (max of 2 points):
     if ($row["nblosum100"] > 9) { $autoscore+=2; $why[] = "nblosum100>9"; }
-    else if ($row["nblosum100"] > 2) { $autoscore++; $why[] = "nblosum100>2"; }
+    else if ($row["nblosum100"] > 3) { $autoscore++; $why[] = "nblosum100>3"; }
     // TODO: ++$autoscore if within 1 base of a splice site
     // TODO: ++$autoscore if indel in coding region
     // TODO: ++$autoscore if indel in coding region and causes frameshift
@@ -866,7 +866,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $flat["genetests_testable"] = $nonflat["genetests_testable"] ? 'Y' : '-';
   $flat["genetests_reviewed"] = $nonflat["genetests_reviewed"] ? 'Y' : '-';
   $flat["nblosum100"] = $nonflat["nblosum100"];
-  $flat["nblosum100>2"] = $nonflat["nblosum100"] > 2 ? 'Y' : '-';
+  $flat["nblosum100>3"] = $nonflat["nblosum100"] > 3 ? 'Y' : '-';
   if ($nonflat["disease_max_or"]) {
     $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
     foreach (array ("case_pos", "case_neg", "control_pos", "control_neg", "or")
