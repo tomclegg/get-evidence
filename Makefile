@@ -13,14 +13,19 @@ textile-2.0.0:
 	patch -p0 <textile-2.0.0-php-5.2.4.patch
 
 public_html/js/wz_tooltip.js:
-	wget -c http://www.walterzorn.com/scripts/wz_tooltip.zip
-	[ `md5sum wz_tooltip.zip | head -c 32` = 6b78dce5ab64ed21d278646f541fbc7a ]
+######## Walter Zorn's tooltip library seems to be homeless, so we
+######## have a copy in our repo for now
+#	wget -c http://www.walterzorn.com/scripts/wz_tooltip.zip
+#	[ `md5sum wz_tooltip.zip | head -c 32` = 6b78dce5ab64ed21d278646f541fbc7a ]
+########
 	mkdir -p wz_tooltip
 	(cd wz_tooltip && unzip ../wz_tooltip.zip)
 	cp -p wz_tooltip/wz_tooltip.js public_html/js/
 
 public_html/js/tip_balloon.js:
-	wget -c http://www.walterzorn.com/scripts/tip_balloon.zip
+######## As above
+#	wget -c http://www.walterzorn.com/scripts/tip_balloon.zip
+########
 	mkdir -p wz_tooltip
 	(cd wz_tooltip && unzip ../tip_balloon.zip)
 	mkdir -p public_html/js/tip_balloon
