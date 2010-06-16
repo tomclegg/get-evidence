@@ -4,7 +4,7 @@
   // Author: Tom Clegg
 
 ini_set ('include_path',
-	 dirname(dirname(dirname(__FILE__))) . "/openid-php-openid-782224d"
+	 dirname(dirname(dirname(__FILE__))) . "/php-openid"
 	 . PATH_SEPARATOR . ini_get('include_path'));
 
 require_once "Auth/OpenID/Consumer.php";
