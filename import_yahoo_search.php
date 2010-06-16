@@ -17,7 +17,7 @@ ini_set ("memory_limit", 67108864);
 
 
 print "Creating/updating yahoo_boss tables...";
-yahoo_boss_create_tables ();
+evidence_create_tables ();
 print "\n";
 
 
