@@ -219,6 +219,14 @@ function evidence_create_tables ()
   vote_0 INT DEFAULT 0,
   UNIQUE (variant_id,url)
   )");
+
+  theDb()->query ("
+CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
+ variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+ xml TEXT
+)");
+  theDb()->query ("ALTER TABLE yahoo_boss_cache ADD hitcount INT UNSIGNED");
+  theDb()->query ("ALTER TABLE yahoo_boss_cache ADD retrieved DATETIME");
 }
 
 function evidence_get_genome_id ($global_human_id)

@@ -6,17 +6,6 @@
 require_once ("lib/aa.php");
 
 
-function yahoo_boss_create_tables ()
-{
-    theDb()->query ("
-CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
- variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
- xml TEXT
-)");
-    theDb()->query ("ALTER TABLE yahoo_boss_cache ADD hitcount INT UNSIGNED");
-    theDb()->query ("ALTER TABLE yahoo_boss_cache ADD retrieved DATETIME");
-}
-
 function yahoo_boss_lookup ($variant_id)
 {
     $cache = theDb()->getRow ("SELECT * FROM yahoo_boss_cache WHERE variant_id=?",
