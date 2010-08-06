@@ -140,6 +140,10 @@ You can also download the database in a more complete, but less easy-to-use, MyS
 
 * "get-evidence.sql.gz":get-evidence.sql.gz is a nightly MySQL dump of the entire database _including_ edit history but _excluding_ users, sessions, dbSNP, and raw web search results.
 
+The GET-Evidence source code is available with git:
+
+* git://trac.scalablecomputingexperts.com/get-evidence.git
+
 EOF
 ;
 go();
