@@ -2,10 +2,9 @@ daily: update_genomes dump_database vis_data_local
 install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
 
 php-openid-2.2.2:
-	wget -c http://github.com/openid/php-openid/tarball/2.2.2 -O openid-php-2.2.2.tar.gz
-#	[ `md5sum openid-php-openid-2.2.2-0-ga287b2d.tar.gz | head -c 32` = f14bfe22b553936a5648dee1ca94455a ]
-	mkdir php-openid/
-	tar -C php-openid/ -xf openid-php-2.2.2.tar.gz --strip-components 1
+	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
+	cd php-openid && git fetch --tags http://github.com/openid/php-openid.git
+	cd php-openid && git checkout 2.2.2
 
 textile-2.0.0:
 	wget -c http://textile.thresholdstate.com/file_download/2/textile-2.0.0.tar.gz
