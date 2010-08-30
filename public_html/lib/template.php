@@ -85,11 +85,11 @@ header('Content-Type: text/html; charset=UTF-8');
 </div>
 
 
-			<?php } ?><form id="mainform" action="save.php" method="POST">
+			<?php } ?>
 
 			<?php frag("content"); ?>
 
-		</form></div>
+        </div>
 
 <?php if (!ereg ('^/vis', $_SERVER[REQUEST_URI])) { ?>
 		<div class="sidenav">
