@@ -152,6 +152,8 @@ header('Content-Type: text/html; charset=UTF-8');
 				<label class="label">Filename<br>
 				<input type="hidden" name="MAX_FILE_SIZE" value="300000000">
 				<input type="file" class="file" name="genotype" id="genotype"></label></p>
+                <p><label class="label">Genome name<br>
+                <input type="text" size="36" name="nickname" id=\"nickname\"></label></p>
 				<input type="submit" value="Upload" class="button" />
 				</form>
 				<br />

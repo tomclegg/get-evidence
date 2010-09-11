@@ -3,6 +3,7 @@
 include "lib/setup.php";
 $gOut["title"] = "GET-Evidence: Genome uploaded";
 
+$user = getCurrentUser();
 $page_content = "";
 
 include('xmlrpc/xmlrpc.inc');
@@ -19,7 +20,13 @@ if((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
         // Attempt to move the uploaded file to its new place
         mkdir ("/tmp/$shasum");
         if (move_uploaded_file($tempname, $permname)) {
+            $nickname = $_POST['nickname'];
+            $oid = $user['oid'];
             $page_content .= "It's done! The file has been saved as: $permname<br>"; 
+            $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
+            theDB()->query ("INSERT IGNORE INTO private_genomes SET
+                                oid=?, nickname=?, shasum=?",
+                                array ($oid,$nickname,$shasum));
         } else {
             $page_content .= "Error: A problem occurred during file upload!";
         }
