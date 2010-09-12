@@ -7,18 +7,43 @@ $page_content = "";  // all html output stored here
 
 $user = getCurrentUser();
 
-$page_content .= "<h1>Upload a genome for analysis</h1>\n";
 $page_content .= warning();
 if ($user) {
+    $page_content .= "<h2>Uploaded genomes</h2>\n";
+    $page_content .= list_uploaded_genomes($user);
+    $page_content .= "<h2>Upload a genome for analysis</h2>\n";
     $page_content .= genome_entry_form();
 } else {
-    $page_content .= "<h2> You need to be logged in using your OpenID to upload "
-                    . "genomes for analysis on GET-Evidence.</h2>\n";
+    $page_content .= "<h2>Genome analysis</h2>"
+                    . "<h3>You need to be logged in using your OpenID to use "
+                    . "GET-Evidence for private genome analysis. Because we "
+                    . "cannot guarantee the security of our system we "
+                    . "highly recommend creating a private installation of "
+                    . "GET-Evidence for genome analysis of private genomes."
+                    . "</h3>";
 }
 
 $gOut["content"] = $page_content;
 
 go();
+
+function list_uploaded_genomes($user) {
+    $returned_text = "";
+    $user_oid = $user['oid'];
+    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=?", array("$user_oid"));
+    if ($db_query) {
+        $returned_text .= "<TABLE border=1>\n";
+        $returned_text .= "<TR><TD>Nickname</TD><TD>ID</TD></TR>\n";
+        foreach ($db_query as $result) {
+            $path_to_old_report = "/tmp/" . $result['shasum'] . "-out/genome_display.html";
+            $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>" . $result['shasum'] . "</TD></TR>\n";
+        }
+        $returned_text .= "</TABLE>\n";
+    } else {
+        $returned_text .= "You have no uploaded genomes.\n";
+    }
+    return($returned_text);
+}
 
 function warning() {
     $returned_text = "<h2><font color=red>WARNING</font></h2>\n";
