@@ -65,6 +65,7 @@ header('Content-Type: text/html; charset=UTF-8');
 			<a href="/edits">Recent changes</a>
 			<a href="/editors">Contributors</a>
 			<a href="/about">About</a>
+            <a href="/genomes">Genomes</a>
 			<a href="/download">Download</a>
 			<a href="/report">Reports</a>
 			<a href="/vis">Visualization</a>
@@ -145,20 +146,6 @@ header('Content-Type: text/html; charset=UTF-8');
 			</div>
 <?php		endif; ?>
 
-<?php		if (getCurrentUser()): ?>
-			<h1>Upload a genome</h1>
-			<div>
-				<form enctype="multipart/form-data" action="/genome_upload.php" method="post">
-				<label class="label">Filename<br>
-				<input type="hidden" name="MAX_FILE_SIZE" value="300000000">
-				<input type="file" class="file" name="genotype" id="genotype"></label></p>
-                <p><label class="label">Genome name<br>
-                <input type="text" size="36" name="nickname" id=\"nickname\"></label></p>
-				<input type="submit" value="Upload" class="button" />
-				</form>
-				<br />
-			</div>
-<?php 		endif; ?>
 
 		<div class="unsubmitted_message_container"><div id="message" class="message unsubmitted_message" style="display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
 
