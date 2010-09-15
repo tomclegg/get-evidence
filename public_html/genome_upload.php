@@ -16,9 +16,9 @@ if((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
-        $permname = "/tmp/$shasum/genotype.gff";
+        $permname = "/home/trait/upload/$shasum/genotype.gff";
         // Attempt to move the uploaded file to its new place
-        mkdir ("/tmp/$shasum");
+        mkdir ("/home/trait/upload/$shasum");
         if (move_uploaded_file($tempname, $permname)) {
             $nickname = $_POST['nickname'];
             $oid = $user['oid'];

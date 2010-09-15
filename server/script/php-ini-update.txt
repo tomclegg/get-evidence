@@ -1,0 +1,17 @@
+
+
+display_errors = Off
+log_errors = On
+magic_quotes_gpc = Off
+ 
+session.bug_compat_42 = 0
+session.bug_compat_warn = 0
+ 
+max_execution_time = 30
+max_input_time = 600
+memory_limit = 128M
+post_max_size = 512M
+upload_max_filesize = 512M
+
+short_open_tag = On
+

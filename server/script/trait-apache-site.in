@@ -1,0 +1,41 @@
+NameVirtualHost *:%PORT%
+<VirtualHost _default_:%PORT%>
+	ServerAdmin webmaster@localhost
+	<IfModule mod_deflate.c>
+		AddOutputFilterByType DEFLATE text/html text/plain text/xml text/javascript text/css application/x-javascript
+	</IfModule>
+	
+	DocumentRoot %WWW%
+	<Directory />
+		Options FollowSymLinks
+		AllowOverride None
+	</Directory>
+	<Directory %WWW%/>
+		Options Indexes FollowSymLinks MultiViews
+		AllowOverride FileInfo AuthConfig
+		Order allow,deny
+		allow from all
+	</Directory>
+        <Directory %WWW%/query/>
+                <IfModule mod_php5.c>
+                        php_value upload_max_filesize 1024M
+                </IfModule>
+        </Directory>
+
+	ErrorLog %LOG%/error.log
+
+	# Possible values include: debug, info, notice, warn, error, crit,
+	# alert, emerg.
+	LogLevel warn
+
+	CustomLog %HOME%/log/access.log combined
+	ServerSignature On
+
+	Alias /trait-o-matic.git %SOURCE%/.git
+        <Location /trait-o-matic.git>
+		<LimitExcept GET HEAD PROPFIND>
+			Deny from all
+			Allow from none
+		</LimitExcept>
+        </Location>
+</VirtualHost>

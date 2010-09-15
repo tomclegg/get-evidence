@@ -1,0 +1,27 @@
+#!/usr/bin/perl -i
+
+my $settings = shift;
+
+open IN, $settings;
+
+my %changes;
+
+while (<IN>) {
+  chomp;
+  next if /^\s*$/;
+  my ($var, $value) = split(/\s*=\s*/);
+  $changes{$var} = $value;
+  print "$var->$value\n";
+}
+
+close IN;
+
+while (<>) {
+  my ($var, $value) = split(/\s*=\s*/);
+  if ($changes{$var} && $changes{$var} ne $value) {
+    print "$var = $changes{$var}\n";
+  }
+  else {
+    print $_;
+  }
+}
