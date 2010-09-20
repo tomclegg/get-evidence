@@ -169,7 +169,7 @@ def main():
             python '%(B)s' '%(1)s' > '%(dbsnp_gff)s'.tmp
             mv '%(dbsnp_gff)s'.tmp '%(dbsnp_gff)s'
 
-            python '%(C)s' '%(dbsnp_gff)s' '%(reference)s' > '%(ns_gff)s'.tmp
+            python '%(C)s' '%(dbsnp_gff)s' '%(reference)s' print-all > '%(ns_gff)s'.tmp
             mv '%(ns_gff)s'.tmp '%(ns_gff)s'
         fi
         python '%(script_dir)s'/gff2json.py '%(ns_gff)s' > ns.json.tmp
@@ -196,7 +196,7 @@ def main():
 
         for filter in get-evidence
         do
-            python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' '%(dbsnp_gff)s' > "$filter.json.tmp"
+            python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
             mv "$filter.json.tmp" "$filter.json"
             python '%(script_dir)s'/json_allele_frequency_query.py "$filter.json" --in-place
             jsons="$jsons %(output_dir)s/${filter}.json"

@@ -260,7 +260,13 @@ def main():
         
         # set the attribute if we can
         if not is_nonsynonymous:
-            continue
+            if (len(sys.argv) >= 4):
+                if (sys.argv[3] == "print-all"):
+                    print record
+                else:
+                    continue
+            else:
+                continue
         else:
             if len(inferences) > 0:
                 unique_inferences = unique(inferences)

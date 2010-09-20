@@ -73,6 +73,9 @@ def main():
         else:
             zygosity = "het"
         
+        if not "amino_acid" in record.attributes:
+            continue
+
         # examine each amino acid change
         amino_acid_changes = record.attributes["amino_acid"].strip("\"").split("/")
         for a in amino_acid_changes:

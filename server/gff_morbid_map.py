@@ -47,6 +47,8 @@ def main():
         ref_allele = record.attributes["ref_allele"].strip("\"")
         
         # examine each amino acid change (this takes care of alternative splicings)
+        if not "amino_acid" in record.attributes:
+            continue
         amino_acid_changes = record.attributes["amino_acid"].strip("\"").split("/")
         
         # make sure not to duplicate what we print because of multiple alternative
@@ -74,7 +76,8 @@ def main():
                 if ref_aa == "*" or mut_aa == "*":
                     score = 10
                 else:
-                    score = -1 * substitution_matrix.blosum_value(100, ref_aa, mut_aa)
+                    blosum_matrix = substitution_matrix.blosum100()
+                    score = -1 * blosum_matrix.value(ref_aa, mut_aa)
                     if score <= 2:
                         # right now, we don't really consider conservative changes...
                         continue

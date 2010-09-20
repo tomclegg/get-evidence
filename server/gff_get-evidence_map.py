@@ -18,45 +18,68 @@ from utils import gff
 from utils.biopython_utils import reverse_complement
 from utils.bitset import *
 from config import DB_HOST, GETEVIDENCE_USER, GETEVIDENCE_PASSWD, GETEVIDENCE_DATABASE
-
-location_query = '''
-SELECT chrom, chromStart, chromEnd FROM latest LEFT JOIN caliban.snp129 dbsnp ON dbsnp.name = concat('rs',latest.rsid) WHERE rsid>0 AND chrom IS NOT NULL LIMIT %s,10000;
-'''
+from utils.substitution_matrix import blosum100
 
 query_aa = '''
-SELECT inheritance,
- impact,
- summary_short,
- concat(gene,'-',aa_change) as variant_name,
- impact NOT IN ('unknown','none','not reviewed','benign','likely benign','uncertain benign')
-  AND 0 < LENGTH(summary_short)
-  AS worth_displaying
-FROM latest
-WHERE (gene=%s AND aa_change=%s)
+SELECT variants.variant_id,
+snap_latest.edit_id,
+snap_latest.summary_short,
+snap_latest.variant_impact,
+snap_latest.variant_dominance,
+snap_latest.variant_quality,
+variant_external.tag,
+genetests.testable,
+genetests.reviewed
+FROM variants
+LEFT JOIN snap_latest
+  ON variants.variant_id = snap_latest.variant_id
+LEFT JOIN variant_external
+  ON variants.variant_id = variant_external.variant_id
+LEFT JOIN genetests
+  ON variants.variant_gene = genetests.gene
+WHERE (
+  variants.variant_gene=%s 
+  AND variants.variant_aa_from=%s 
+  AND variants.variant_aa_pos=%s 
+  AND variants.variant_aa_to=%s
+  AND snap_latest.article_pmid="" 
+  AND snap_latest.genome_id=""
+)
+ORDER BY snap_latest.edit_id DESC
 '''
 
+query_var_external = '''
+SELECT * FROM variant_external WHERE variant_id=%s'''
+
 query_rsid = '''
-SELECT inheritance,
- impact,
- summary_short,
- concat('rs',rsid) as variant_name,
- impact NOT IN ('unknown','none','not reviewed','benign','likely benign','uncertain benign')
-  AND 0 < LENGTH(summary_short)
-  AS worth_displaying
-FROM latest
-WHERE rsid=%s
+SELECT variants.variant_id,
+snap_latest.edit_id,
+snap_latest.summary_short,
+snap_latest.variant_impact,
+snap_latest.variant_dominance,
+snap_latest.variant_quality,
+variant_external.tag,
+genetests.testable,
+genetests.reviewed
+FROM variants
+LEFT JOIN snap_latest
+  ON variants.variant_id = snap_latest.variant_id
+LEFT JOIN variant_external
+  ON variants.variant_id = variant_external.variant_id
+LEFT JOIN genetests
+  ON variants.variant_gene = genetests.gene
+WHERE (variants.variant_rsid=%s)
+ORDER BY snap_latest.edit_id DESC
 '''
 
 def main():
     # return if we don't have the correct arguments
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 2:
         raise SystemExit(__doc__.replace("%prog", sys.argv[0]))
     
     # first, try to connect to the databases
     try:
-        location_connection = MySQLdb.connect(cursorclass=MySQLdb.cursors.SSCursor, host=DB_HOST, user=GETEVIDENCE_USER, passwd=GETEVIDENCE_PASSWD, db=GETEVIDENCE_DATABASE)
-        location_cursor = location_connection.cursor()
-        connection = MySQLdb.connect(host=DB_HOST, user=GETEVIDENCE_USER, passwd=GETEVIDENCE_PASSWD, db=GETEVIDENCE_DATABASE)
+        connection = MySQLdb.connect(cursorclass=MySQLdb.cursors.DictCursor, host=DB_HOST, user=GETEVIDENCE_USER, passwd=GETEVIDENCE_PASSWD, db=GETEVIDENCE_DATABASE)
         cursor = connection.cursor()
     except MySQLdb.OperationalError, message:
         sys.stderr.write ("Error %d while connecting to database: %s" % (message[0], message[1]))
@@ -64,13 +87,13 @@ def main():
     
     # make sure the required table is really there
     try:
-        cursor.execute ('DESCRIBE latest')
+        cursor.execute ('DESCRIBE snap_latest')
     except MySQLdb.Error:
-        sys.stderr.write ("No 'latest' table => empty output")
+        sys.stderr.write ("No 'snap_latest' table => empty output")
         sys.exit()
 
-    found_aa_for_rsid = dict()
-    
+    blosum_matrix = blosum100()    
+
     gff_file = gff.input(sys.argv[1])
     for record in gff_file:
         # lightly parse to find the alleles and rs number
@@ -89,6 +112,12 @@ def main():
         if len(alleles) > 2:
             continue
 
+        # format coordinates
+        if record.start == record.end:
+            coordinates = str(record.start)
+        else:
+            coordinates = str(record.start) + "-" + str(record.end)
+
         # create the genotype string from the given alleles
         #TODO: do something about the Y chromosome
         if len(alleles) == 1:
@@ -101,195 +130,184 @@ def main():
             if x.startswith("dbsnp:rs"):
                 rs_number = int(x.replace("dbsnp:rs",""))
                 break
-
-        if "amino_acid" not in record.attributes:
-            continue
-
+            
+        # Store output here, add GET-Evidence or other findings if available
+        output = {
+                    "chromosome": record.seqname,
+                    "coordinates": coordinates,
+                    "genotype": genotype,
+                    "variant": str(record),
+                    "GET-Evidence": False
+                }
         if rs_number > 0:
-            found_aa_for_rsid[rs_number] = 1
+            output["dbSNP"] = rs_number
 
-        for gene_acid_base in record.attributes["amino_acid"].split("/"):
+        # Record found variant_id's here, if any are found
+        variants_found = list()
 
-            # get amino acid change
-            x = gene_acid_base.split(" ",1)
-            gene = x[0]
-            amino_acid_change_and_position = x[1]
+        # If there is an amino acid change, query GET-Evidence using amino acid change data
+        if "amino_acid" in record.attributes:
+            # splice variants are split by "/" in Trait-o-matic's ns.gff output
+            splice_variant_list = record.attributes["amino_acid"].split("/")
+            for splice_variant in splice_variant_list:
+                # make a local copy of output for each splice variant
+                output_splice_variant = output.copy()
 
-            # convert to long form
+                # get gene and amino acid change
+                # sometimes x[2] exists, but is almost always a duplicate of x[1] 
+                # (reflecting homozygous non-reference), so we are ignoring it
+                x = splice_variant.split(" ")
+                gene = x[0]
+                amino_acid_change_and_position = x[1]
+                # convert amino acid single-letter (short) form to three-letter (long) form
+                (aa_from_short, aa_pos, aa_to_short) = re.search(r'([A-Z\*])([0-9]*)([A-Z\*])', amino_acid_change_and_position).groups()
+                aa_from = codon_123(aa_from_short)
+                aa_to = codon_123(aa_to_short)
+                aa_to = re.sub(r'TERM', 'Stop', aa_to)
+                # store gene and amino acid change in output_splice_variant
+                output_splice_variant["gene"] = gene
+                output_splice_variant["amino_acid_change"] = amino_acid_change_and_position
 
-            acid_change = re.sub(r' .*',r'', amino_acid_change_and_position)
-            acid_change = re.sub(r'[A-Z]', lambda x: codon_123(x.group(0)), acid_change)
-            acid_change = re.sub(r'TERM', 'Stop', acid_change)
+                # query the GET-Evidence edits database for curated data
+                cursor.execute(query_aa, (gene, aa_from, aa_pos, aa_to))
+                data = cursor.fetchall()
 
-            # query the database
-            cursor.execute(query_aa, (gene, acid_change))
-            data = cursor.fetchall()
+                # If this gene/AA change caused a hit, report it
+                if cursor.rowcount > 0:
+                    for key in data[0].keys():
+                        if key != "tag":
+                            output_splice_variant[key] = data[0][key]
+                    output_splice_variant["GET-Evidence"] = output["GET-Evidence"] = True
+                    # query to see if it's found in external databases
+                    cursor.execute(query_var_external, (output_splice_variant["variant_id"]))
+                    data = cursor.fetchall()
+                    for d in data:
+                        if d["tag"] == "OMIM":
+                            output_splice_variant["in_omim"] = True
+                        if d["tag"] == "GWAS":
+                            output_splice_variant["in_gwas"] = True
+                        if d["tag"] == "PharmGKB":
+                            output_splice_variant["in_pharmgkb"] = True
 
-            # if this gene/AA change caused a hit, stop here and report it
-            if cursor.rowcount > 0:
-                break
-
-        if cursor.rowcount > 0:
-
-            for d in data:
-                inheritance = d[0]
-                impact = d[1]
-                if len(d[2]) > 0:
-                    notes = d[2] + " ("
-                    if impact == "not reviewed" or impact == "none" or impact == "unknown":
-                        notes = notes + "impact not reviewed"
-                    else:
-                        notes = notes + impact
-                    if inheritance == "dominant" or inheritance == "recessive":
-                        notes = notes + ", " + inheritance + ")"
-                    else:
-                        notes = notes + ", inheritance pattern " + inheritance + ")"
+                output_splice_variant["autoscore"] = autoscore(output_splice_variant, blosum_matrix, aa_from_short, aa_to_short)
+                if "variant_quality" in output_splice_variant:
+                    output_splice_variant["suff_eval"] = suff_eval(output_splice_variant)
                 else:
-                    notes = ""
-                variant_name = d[3]
-                display_flag = d[4]
+                    output_splice_variant["suff_eval"] = False
 
-                # format for output
-                if record.start == record.end:
-                    coordinates = str(record.start)
+                if (output_splice_variant["autoscore"] >= 2 or output_splice_variant["suff_eval"]):
+                    print json.dumps(output_splice_variant, ensure_ascii=False)
+
+            # If no splice variants had a GET-Evidence hit, analyze using first splice variant
+            if (not output["GET-Evidence"]):
+                x = splice_variant_list[0].split(" ")
+                gene = x[0]
+                amino_acid_change_and_position = x[1]
+                # Get amino acid change for first splice variant
+                (aa_from_short, aa_pos, aa_to_short) = re.search(r'([A-Z\*])([0-9]*)([A-Z\*])', amino_acid_change_and_position).groups()
+                if "dbSNP" in output:
+                    cursor.execute(query_rsid, (output["dbSNP"]))
+                    data = cursor.fetchall()
+                    if cursor.rowcount > 0:
+                        for key in data[0].keys():
+                            if key != "tag":
+                                output[key] = data[0][key]
+                        output["GET-Evidence"] = True
+                        for d in data:
+                            if d["tag"] == "OMIM":
+                                output["in_omim"] = True
+                            if d["tag"] == "GWAS":
+                                output["in_gwas"] = True
+                            if d["tag"] == "PharmGKB":
+                                output["in_pharmgkb"] = True
+                output["autoscore"] = autoscore(output, blosum_matrix, aa_from_short, aa_to_short)
+                if "variant_quality" in output:
+                    output["suff_eval"] = suff_eval(output)
                 else:
-                    coordinates = str(record.start) + "-" + str(record.end)
+                    output["suff_eval"] = False
 
-                reference = "http://evidence.personalgenomes.org/" + variant_name
-
-                output = {
-                    "chromosome": record.seqname,
-                    "coordinates": coordinates,
-                    "gene": gene,
-                    "amino_acid_change": amino_acid_change_and_position,
-                    "amino_acid": record.attributes["amino_acid"],
-                    "genotype": genotype,
-                    "variant": str(record),
-                    "phenotype": notes,
-                    "reference": reference,
-                    "display_flag": display_flag
-                }
-                print json.dumps(output)
-
-    # build a dictionary of bitsets from the database (partly based on utility code from bx-python)
-    start_record = 0
-    last_chromosome = None
-    last_bitset = None
-    bitsets = dict()
-    # do this in 10,000 chunks
-    while True:
-        location_cursor.execute(location_query, start_record)
-        previous_start_record = start_record
-        # go through what we retrieved
-        for datum in location_cursor:
-            start_record += 1
-            chromosome = datum[0]
-            if chromosome != last_chromosome:
-                if chromosome not in bitsets:
-                    bitsets[chromosome] = BinnedBitSet(MAX)
-                last_chromosome = chromosome
-                last_bitset = bitsets[chromosome]
-            start, end = datum[1], datum[2]
-            last_bitset.set_range(start, end - start)
-        # stop if we're done
-        if previous_start_record == start_record:
-            break
-    
-    gff_file = gff.input(sys.argv[2])
-    for line in gff_file.intersect(bitsets):
-        record = gff.input([line]).next()
-        # lightly parse to find the alleles and rs number
-        alleles = record.attributes["alleles"].strip("\"").split("/")
-        ref_allele = record.attributes["ref_allele"].strip("\"")
-        xrefs = ()
-        try:
-            xrefs = record.attributes["db_xref"].strip("\"").split(",")
-        except KeyError:
-            try:
-                xrefs = record.attributes["Dbxref"].strip("\"").split(",")
-            except KeyError:
-                pass
-        rs_number = 0
-        for x in xrefs:
-            if x.startswith("dbsnp:rs"):
-                rs_number = int(x.replace("dbsnp:rs",""))
-                break
-
-        # we wouldn't know what to do with this, so pass it up for now
-        if len(alleles) > 2:
-            continue
-
-        # create the genotype string from the given alleles
-        #TODO: do something about the Y chromosome
-        trait_allele = None;
-        if len(alleles) == 1:
-            zygosity = "hom"
-            trait_allele = alleles[0]
-            alleles = [alleles[0], alleles[0]]
-            genotype = alleles[0]
+                if (output["autoscore"] >= 2 or output["suff_eval"]):
+                    print json.dumps(output, ensure_ascii=False)               
+                    
         else:
-            zygosity = "het"
-            genotype = '/'.join(sorted(alleles))
+            if "dbSNP" in output:
+                cursor.execute(query_rsid, (output["dbSNP"]))
+                data = cursor.fetchall()
+                if cursor.rowcount > 0:
+                    for key in data[0].keys():
+                        if key != "tag":
+                            output[key] = data[0][key]
+                output["GET-Evidence"] = True
+                for d in data:
+                    if d["tag"] == "OMIM":
+                        output["in_omim"] = True
+                    if d["tag"] == "GWAS":
+                        output["in_gwas"] = True
+                    if d["tag"] == "PharmGKB":
+                        output["in_pharmgkb"] = True
+            output["autoscore"] = autoscore(output)
+            if "variant_quality" in output:
+                output["suff_eval"] = suff_eval(output)
+            else:
+                output["suff_eval"] = False
 
-        if not (rs_number > 0) or rs_number in found_aa_for_rsid:
-            continue
+            # Autoscore bar is lower here because you can only get points if 
+            # the dbSNP ID is in one of the variant specific databases (max 2)
+            if (output["autoscore"] >= 1 or output["suff_eval"]):
+                print json.dumps(output, ensure_ascii=False)
 
-        cursor.execute(query_rsid, rs_number)
-        data = cursor.fetchall()
-
-        if ref_allele in alleles:
-            leftover_alleles = copy(alleles)
-            leftover_alleles.remove(ref_allele)
-            genotype = ref_allele + "/" + "/".join(leftover_alleles)
-            if not trait_allele and len(leftover_alleles) == 1:
-                trait_allele = leftover_alleles[0]
-
-        if cursor.rowcount > 0:
-            for d in data:
-                inheritance = d[0]
-                impact = d[1]
-                if len(d[2]) > 0:
-                    notes = d[2] + " ("
-                    if impact == "not reviewed" or impact == "none" or impact == "unknown":
-                        notes = notes + "impact not reviewed"
-                    else:
-                        notes = notes + impact
-                    if inheritance == "dominant" or inheritance == "recessive":
-                        notes = notes + ", " + inheritance + ")"
-                    else:
-                        notes = notes + ", inheritance pattern " + inheritance + ")"
-                else:
-                    notes = ""
-                variant_name = d[3]
-                display_flag = d[4]
-
-                # format for output
-                if record.start == record.end:
-                    coordinates = str(record.start)
-                else:
-                    coordinates = str(record.start) + "-" + str(record.end)
-
-                reference = "http://evidence.personalgenomes.org/" + variant_name
-
-                output = {
-                    "chromosome": record.seqname,
-                    "coordinates": coordinates,
-                    "genotype": genotype,
-                    "variant": str(record),
-                    "phenotype": notes,
-                    "reference": reference,
-                    "ref_allele": ref_allele,
-                    "trait_allele": trait_allele,
-                    "zygosity": zygosity,
-                    "display_flag": display_flag
-                }
-                print json.dumps(output)
-    
-    # close database cursor and connection
     cursor.close()
     connection.close()
-    location_cursor.close()
-    location_connection.close()
+
+def autoscore(data, blosum=None, aa_from=None, aa_to=None):
+    score_var_database = 0;
+    score_gene_database = 0;
+    score_comp = 0;
+    if "in_omim" in data and data["in_omim"]:
+        score_var_database += 2
+    if "in_gwas" in data and data["in_gwas"]:
+        score_var_database += 1
+    if "in_pharmgkb" in data and data["in_pharmgkb"]:
+        score_var_database += 1
+    if (score_var_database > 2):
+        score_var_database = 2
+    if "testable" in data and data["testable"] == 1:
+        if "reviewed" in data and data["reviewed"] == 1:
+            score_gene_database +=2
+        else:
+            score_gene_database +=1
+    if (blosum and blosum.value(aa_from, aa_to) <= -4):
+        if aa_to == "X" or aa_to == "*":
+            score_comp = 2
+            data["nonsense"] = True
+        else:
+            score_comp = 1
+            data["disruptive"] = True
+    return score_var_database + score_gene_database + score_comp
+
+def suff_eval(variant_data):
+    quality_scores = variant_data["variant_quality"]
+    impact = variant_data["variant_impact"]
+    if (len(quality_scores) < 5):
+        return False
+    else:
+        if (quality_scores[2] == "-" and quality_scores[3] == "-"):
+            return False
+        else:
+            num_eval = 0
+            for score in quality_scores:
+                if (score != "-"):
+                    num_eval += 1
+            if ( (impact == "benign" or impact == "protective") and num_eval >= 2):
+                return True
+            else:
+                if (quality_scores[4] == "-" and quality_scores[5] == "-"):
+                    return False
+                else:
+                    if num_eval >= 4:
+                        return True
+                    else:
+                        return False
 
 if __name__ == "__main__":
     main()

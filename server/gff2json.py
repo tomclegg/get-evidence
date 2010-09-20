@@ -46,8 +46,17 @@ def main():
             if not trait_allele and len(leftover_alleles) == 1:
                 trait_allele = leftover_alleles[0]
 
+        # get dbSNP ID
+        if "db_xref" in record.attributes:
+            dbSNP_ID = record.attributes["db_xref"].lstrip("dbsnp:")
+        else:
+            dbSNP_ID = None
+
         # examine each amino acid change
-        amino_acid_changes = record.attributes["amino_acid"].strip("\"").split("/")
+        if "amino_acid_changes" in record.attributes:
+            amino_acid_changes = record.attributes["amino_acid"].strip("\"").split("/")
+        else:
+            amino_acid_changes = list()
         for a in amino_acid_changes:
             amino_acid = a.split(" ")
             gene = amino_acid.pop(0) # the first item is always the gene name
@@ -75,7 +84,31 @@ def main():
                     "zygosity": zygosity,
                     "variant": str(record),
                 }
+                if (dbSNP_ID):
+                    output["dbSNP"] = dbSNP_ID
+
                 print json.dumps(output)
+
+        # Print one json line if there were no amino acid changes
+        if (not amino_acid_changes):
+            if record.start == record.end:
+                coordinates = str(record.start)
+            else: 
+                coordinates = str(record.start) + "-" + str(record.end)
+            output = {
+                "chromosome": record.seqname,
+                "coordinates": coordinates,
+                "genotype": genotype,
+                "ref_allele": ref_allele,
+                "trait_allele": trait_allele,
+                "zygosity": zygosity,
+                "variant": str(record)
+            }
+            if (dbSNP_ID):
+                output["dbSNP"] = dbSNP_ID
+            print json.dumps(output)    
+
+
 
 if __name__ == "__main__":
     main()
