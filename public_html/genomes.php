@@ -4,20 +4,37 @@ include "lib/setup.php";
 $gOut["title"] = "GET-Evidence: Genomes";
 
 $page_content = "";  // all html output stored here
+$public_data_user = "https://www.google.com/accounts/o8/id?id=AItOawlfHi5-1h7pCWBHqryLONZJc5BdhBpJCas";
 
-$display_genome_ID = $_POST['genome_id'];  // ID corresponding to genome
+$display_genome_ID = $_POST['display_genome_id'];
+$user_request_oid = $_POST['user_request_oid'];
 
 $user = getCurrentUser();
 
-if ($user and $display_genome_ID) {
-    $page_content .= genome_display($display_genome_ID);
+if (strlen($display_genome_ID) > 0) {
+    $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?", 
+                                            array($display_genome_ID));
+    # check you should have permission
+    $permission = false;
+    foreach ($db_query as $result) {
+        if ($result['oid'] == $user['oid'] or $result['oid'] == $public_data_user) {
+            $permission = true;
+        }
+    }
+    if ($permission) {
+        $page_content .= genome_display($display_genome_ID);
+    } else {
+        $page_content .= "Sorry, for some reason you've requested a genome you don't have "
+                    . "access to. Perhaps you've been logged off?<br>\n";
+    }
 } else {
     $page_content .= "<h2>Public genomes</h2>";
     $page_content .= "Public genomes will be listed here.";
+    $page_content .= list_uploaded_genomes($public_data_user);
     $page_content .= "<hr>";
     if ($user) {
         $page_content .= "<h2>Uploaded genomes</h2>\n";
-        $page_content .= list_uploaded_genomes($user);
+        $page_content .= list_uploaded_genomes($user["oid"]);
         $page_content .= "<hr>";
         $page_content .= "<h2>Upload a genome for analysis</h2>\n";
         $page_content .= upload_warning();
@@ -39,17 +56,21 @@ go();
 
 // Functions
 
-function list_uploaded_genomes($user) {
+function list_uploaded_genomes($user_oid) {
+    global $public_data_user, $user;
     $returned_text = "";
-    $user_oid = $user['oid'];
     $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=?", array("$user_oid"));
     if ($db_query) {
         $returned_text .= "<TABLE border=1>\n";
         $returned_text .= "<TR><TD>Nickname</TD><TD>ID</TD><TD>Action</TD></TR>\n";
         foreach ($db_query as $result) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>" 
-                            . $result['shasum'] . "</TD><TD>" 
-                            . uploaded_genome_actions($result) . "</TD></TR>\n";
+                            . $result['shasum'] . "</TD><TD>";
+            if ($user_oid == $public_data_user and $user['oid'] != $public_data_user) {
+                $returned_text .= genome_display_actions($result) . "</TD></TR>\n";
+            } else {
+                $returned_text .= uploaded_genome_actions($result) . "</TD></TR>\n";
+            }
         }
         $returned_text .= "</TABLE>\n";
     } else {
@@ -58,12 +79,39 @@ function list_uploaded_genomes($user) {
     return($returned_text);
 }
 
-function uploaded_genome_actions($result) {
+function genome_display_actions($result) {
     $returned_text = "<form action=\"/genomes.php\" method=\"post\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"genome_id\" value=\"" 
+    $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
                     . $result['shasum'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Get report\" "
                         . "class=\"button\" \/></form>\n";
+    return($returned_text);
+}
+
+function uploaded_genome_actions($result) {
+    global $public_data_user, $user;
+    # Get report button
+    $returned_text = "<form action=\"/genomes.php\" method=\"post\">\n";
+    $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
+                    . $result['shasum'] . "\">\n";
+    $returned_text .= "<input type=\"submit\" value=\"Get report\" "
+                        . "class=\"button\" \/></form><br>\n";
+    # Reprocess data button
+    $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
+    $returned_text .= "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\""
+                    . $result['shasum'] . "\">\n";
+    $returned_text .= "<input type=\"submit\" value=\"Reprocess data\" "
+                        . "class=\"button\" \/></form><br>\n";
+    # Delete file button
+    $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
+    $returned_text .= "<input type=\"hidden\" name=\"delete_genome_id\" value=\""
+                    . $result['shasum'] . "\">\n";
+    $returned_text .= "<input type=\"hidden\" name=\"delete_genome_nickname\" value=\""
+                    . $result['nickname'] . "\">\n";
+    $returned_text .= "<input type=\"hidden\" name=\"user_oid\" value=\"" 
+                    . $user['oid'] . "\">\n";
+    $returned_text .= "<input type=\"submit\" value=\"Delete data\" "
+                        . "class=\"button\" \/></form><br>\n";
     return($returned_text);
 }
 
