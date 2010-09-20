@@ -74,11 +74,11 @@ def main():
                 mut_aa = aa[-1]
                 
                 if ref_aa == "*" or mut_aa == "*":
-                    score = 10
+                    score = -10
                 else:
                     blosum_matrix = substitution_matrix.blosum100()
                     score = -1 * blosum_matrix.value(ref_aa, mut_aa)
-                    if score <= 2:
+                    if score > -4:
                         # right now, we don't really consider conservative changes...
                         continue
 
