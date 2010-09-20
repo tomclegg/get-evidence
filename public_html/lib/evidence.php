@@ -65,6 +65,7 @@ function evidence_create_tables ()
   oid VARCHAR(255), 
   nickname VARCHAR(64),
   shasum VARCHAR(64),
+  upload_date DATETIME,
   notes TEXT,
   INDEX (oid), INDEX (shasum))");
 

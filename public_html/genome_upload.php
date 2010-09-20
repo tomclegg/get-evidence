@@ -25,7 +25,7 @@ if((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
             $page_content .= "It's done! The file has been saved as: $permname<br>"; 
             $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
             theDB()->query ("INSERT IGNORE INTO private_genomes SET
-                                oid=?, nickname=?, shasum=?",
+                                oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
                                 array ($oid,$nickname,$shasum));
         } else {
             $page_content .= "Error: A problem occurred during file upload!";
