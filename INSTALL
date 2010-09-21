@@ -45,6 +45,56 @@ make sure there is no leading space or anything else before "<?php")
 
 Visit http://{host}/install.php to create tables.
 
+Download and import GET-Evidence's SQL dump:
+
+ wget http://evidence.personalgenomes.org/get-evidence.sql.gz
+ mysql -u root -p evidence < get-evidence.sql
+
+NOTE (MPB 2010-09-19): Why aren't dbSNP and GeneTests data in the SQL dump?
+
+Add GeneTests data:
+ cd ~/get-evidence
+ mkdir tmp
+ wget -O./tmp/genetests-data.txt \
+      ftp://ftp.ncbi.nih.gov/pub/GeneTests/data_to_build_custom_reports.txt
+ ./import_genetests_data.php ./tmp/genetests-data.txt
+
+Add dbSNP data:
+
+ wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/b129/b129_SNPChrPosOnRef_36_3.bcp.gz    
+ gunzip tmp/dbsnp.bcp.gz
+ ./import_dbsnp.php tmp/dbsnp.bcp
+
+Make sure genome analysis server is executable:
+
+ cd ~/get-evidence/server/
+ chmod +x trait-o-matic-server.py 
+
+Run configure.sh for server:
+NOTE (MPB 2010-09-13): I've set directories to be in /home/trait/ if they're not part of the code in the git installation. E.g. $CORE is the server code in the git installation, while $UPLOAD is a directory uploaded genomes & analysis will later occur. BASE_URL should be unnecessary.
+
+ cd ~/get-evidence/server/script/
+ USER=www-data SOURCE=$HOME/get-evidence CORE=$HOME/get-evidence/server \
+ CONFIG=/home/trait/config TMP=/home/trait/tmp \
+ DATA=/home/trait/data UPLOAD=/home/trait/upload LOG=/home/trait/log \
+ BASE_URL=http://localhost/ ./configure.sh
+
+Run install.sh for server:
+ ./install.sh
+
+Start trait-o-matic server:
+ sudo /etc/init.d/trait-o-matic start
+
+Use sudo to edit /home/trait/config/config.py file to contain GET-Evidence user & password. Make sure following are set, with "shakespeare" replaced with whatever you've been using:
+ GETEVIDENCE_USER = "evidence"
+ GETEVIDENCE_PASSWD = "shakespeare"
+ GETEVIDENCE_DATABASE = "evidence"
+
+
+
+------
+The following are old instructions created prior to Trait-o-matic integration. Some of it may still be useful, so it's left here in case it may be informative. As far as we know, it is *not* required to use the current version of GET-Evidence.
+
 Run "make" to import genomes from Trait-o-matic.
 
  make

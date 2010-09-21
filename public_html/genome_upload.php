@@ -64,11 +64,11 @@ if ($reprocess_genome_ID) {
             $nickname = $_POST['nickname'];
             $oid = $user['oid'];
             send_to_server($permname);
-            $page_content .= "It's done! The file has been saved as: $permname<br>"; 
-            $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
             theDB()->query ("INSERT IGNORE INTO private_genomes SET
                                 oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
                                 array ($oid,$nickname,$shasum));
+            $page_content .= "It's done! The file has been saved as: $permname<br>";
+            $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
         } else {
             $page_content .= "Error: A problem occurred during file upload!";
         }
