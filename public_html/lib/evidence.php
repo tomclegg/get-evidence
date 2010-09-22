@@ -5,6 +5,7 @@
 
 require_once ("lib/article.php");
 require_once ("lib/hapmap.php");
+require_once ("lib/quality_eval.php");
 
 function evidence_create_tables ()
 {
@@ -1308,11 +1309,17 @@ function evidence_qualify_impact ($scores, $impact)
 {
   $c = str_split (evidence_compute_certainty ($scores, $impact));
   if ($c[0] === "-") return ucfirst ($impact);
-  if ($c[0] === '0') $impact = "uncertain $impact";
-  else if ($c[0] === '1') $impact = "likely $impact";
-  if ($c[1] === '0') $impact = "low clinical importance, $impact";
-  else if ($c[1] === '1') $impact = "moderate clinical importance, $impact";
-  else if ($c[1] === '2') $impact = "high clinical importance, $impact";
+  if ($c[0] === '0') $evidence_qual = "uncertain ";
+  else if ($c[0] === '1') $evidence_qual = "likely ";
+  else if ($c[0] === '2') $evidence_qual = "";
+  if ($c[1] === '0') $clinical_qual = "low clinical importance";
+  else if ($c[1] === '1') $clinical_qual = "moderate clinical importance";
+  else if ($c[1] === '2') $clinical_qual = "high clinical importance";
+  if (eval_suff($scores)) {
+    $impact = $clinical_qual . ", " . $evidence_qual . $impact;
+  } else {
+    $impact = "insufficiently evaluated " . $impact;
+  }
   return ucfirst ($impact);
 }
 
