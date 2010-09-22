@@ -1,6 +1,7 @@
 <?php
 
 include "lib/setup.php";
+require_once ("lib/quality_eval.php");
 
 $config["ROWSPERPAGE"] = 10;
 $config["MAXPAGES"] = 40;
@@ -254,8 +255,13 @@ $sql_orderby
       $impact = "insufficiently evaluated / uncertain $impact";
     else if ($certainty == 1)
       $impact = "likely $impact";
-    else if ($certainty <= 0)
-      $impact = "uncertain $impact";
+    else if ($certainty == 0) {
+      if (eval_suff($row["variant_quality"])) {
+        $impact = "uncertain $impact";
+      } else {
+        $impact = "insufficiently evaluated $impact";
+      }
+    }
     if (strlen($row["variant_frequency"]))
 	$impact .= sprintf (", f=%.3f", $row["variant_frequency"]);
 
