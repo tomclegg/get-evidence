@@ -2,6 +2,7 @@
 
 include "lib/setup.php";
 require_once ("lib/blosum.php");
+require_once ("lib/quality_eval.php");
 $gOut["title"] = "GET-Evidence";
 
 
@@ -157,7 +158,19 @@ $variant_name_short = evidence_get_variant_name ($row0, " ", true);
 
 $gOut["title"] = "$variant_name_short - GET-Evidence";
 
-$gOut["content"] = "<h1>$variant_name_short</h1>\n<!-- $variant_id -->\n";
+if (!eval_suff($row0["variant_quality"])) {
+    $gOut["content"] = "<CENTER><TABLE BORDER=0><TR BGCOLOR=#FFFF00><TD BORDER=10>"
+            . "<H1><CENTER><FONT COLOR=Red>Insufficiently evaluated</FONT></CENTER></H1><br>"
+            . "<p>This variant has not been sufficiently evaluated by a GET-Evidence editor.</p>"
+            . "<p>To be considered sufficiently evaluated a variant must have both <br>"
+            . "\"variant evidence\" and \"clinical importance\" scores filled in. <br>"
+            . "Please help improve GET-Evidence by evaluating evidence for this variant!</p>"
+            . "</TD></TR></TABLE></CENTER><br>\n";
+} else {
+    $gOut["content"] = "";
+}
+
+$gOut["content"] .= "<h1>$variant_name_short</h1>\n<!-- $variant_id -->\n";
 if ($variant_name_long != $variant_name_short)
     $gOut["content"] .= "<p>($variant_name_long)</p>\n";
 
