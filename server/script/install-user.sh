@@ -16,7 +16,7 @@ do
 done >$CONFIG/config.sh
 
 $SCRIPT_DIR/setup-db.sh
-# $SCRIPT_DIR/setup-external-data.sh
+$SCRIPT_DIR/setup-external-data.sh
 
 if [ ! -L $CORE/config.py ]; then
   if [ -f $CORE/config.py ]; then
