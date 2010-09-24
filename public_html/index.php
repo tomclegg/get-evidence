@@ -162,7 +162,7 @@ if (!eval_suff($row0["variant_quality"])) {
     $gOut["content"] = "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\">"
             . "<p>Note: <STRONG>This variant has not been sufficiently evaluated</STRONG> by a GET-Evidence editor.</p>"
             . "<p>To be considered sufficiently evaluated a variant must have both \"variant evidence\" and \"clinical importance\" scores filled in.</p>"
-            . "<p>Please help improve GET-Evidence by evaluating evidence for this variant!</p>"
+            . "<p>Please help improve GET-Evidence by <A href=\"guide_editing\">evaluating evidence</A> for this variant!</p>"
             . "</DIV>\n";
 } else {
     $gOut["content"] = "";
