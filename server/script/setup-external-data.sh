@@ -152,13 +152,19 @@ fi
 #[ -s snpedia.tsv.tmp ] || echo "snpedia.tsv.tmp is zero size -- something went wrong."
 #mv snpedia.tsv.tmp snpedia.tsv
 
+echo Sorting dbSNP
+if [ ! -f dbSNP_sort.stamp ]; then
+  $GUNZIP < b129_SNPChrPosOnRef_36_3.bcp.gz | sort --key=2,2 --key=3n,3 | perl -nae 'if ($#F == 3) { print; }' > b129_SNPChrPosOnRef_36_3_sorted.bcp
+  touch dbSNP_sort.stamp
+fi
+
 echo Loading morbidmap, omim, refFlat, snpedia, dbSNP data into MySQL
 cd .
 if [ ! -f load.stamp ]; then
   $GUNZIP < OmimVarLocusIdSNP.bcp.gz > OmimVarLocusIdSNP.bcp
   rm -f b129.fifo
   mkfifo b129.fifo
-  $GUNZIP < b129_SNPChrPosOnRef_36_3.bcp.gz > b129.fifo &
+  $GUNZIP < b129_SNPChrPosOnRef_36_3.bcp.gz | sort --key=2,2 --key=3n,3 > b129.fifo
   mysql -uinstaller -p$MYSQL_PASS < $DATA/load.sql
   rm -f b129.fifo
   touch load.stamp
