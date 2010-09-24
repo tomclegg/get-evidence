@@ -100,7 +100,7 @@ header('Content-Type: text/html; charset=UTF-8');
 		endif;
 ?>
 
-			<h1>Search</h1>
+			<h1>Gene search</h1>
 			<form action="/">
 			<div>
 				"GENE" or "GENE A123C":<br />
