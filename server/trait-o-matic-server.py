@@ -138,7 +138,7 @@ def main():
         # letters refer to scripts; numbers refer to outputs
         args = { 'reprocess_all': reprocess_all,
              'A': os.path.join(script_dir, "gff_twobit_query.py"),
-                 'B': os.path.join(script_dir, "gff_dbsnp_query.py"),
+                 'B': os.path.join(script_dir, "gff_dbsnp_query_from_file.py"),
                  'C': os.path.join(script_dir, "gff_nonsynonymous_filter.py"),
                  'Z': os.path.join(script_dir, "trait-o-matic-server.py"),
                  'in': genotype_file,
@@ -147,6 +147,7 @@ def main():
                  'url': trackback_url,
                  'token': request_token,
                  '1': os.path.join(output_dir, "genotype.gff"),
+                 'sorted': os.path.join(output_dir, "genotype_sorted.gff"),
                  'dbsnp_gff': os.path.join(output_dir, "genotype.dbsnp.gff"),
                  'ns_gff': os.path.join(output_dir, "ns.gff"),
              'dbsnp_filters': "snpedia hugenetgwas",
@@ -163,10 +164,11 @@ def main():
         cd '%(output_dir)s' || exit
         if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
         then
-            %(fetch)s '%(in)s' | gzip -cdf | python '%(A)s' '%(reference)s' /dev/stdin | egrep 'ref_allele [ACGTN]' > '%(1)s'.tmp
-            mv '%(1)s'.tmp '%(1)s'
+            %(fetch)s '%(in)s' | gzip -cdf | perl -ne 'if (/^#/) { print; }' > '%(sorted)s'.tmp
+            %(fetch)s '%(in)s' | gzip -cdf | sort --key=1,1 --key=4n,4 | grep -v "^#" | python '%(A)s' '%(reference)s' /dev/stdin | egrep 'ref_allele [ACGTN]' >> '%(sorted)s'.tmp
+            mv '%(sorted)s'.tmp '%(sorted)s'
 
-            python '%(B)s' '%(1)s' > '%(dbsnp_gff)s'.tmp
+            python '%(B)s' '%(sorted)s' > '%(dbsnp_gff)s'.tmp
             mv '%(dbsnp_gff)s'.tmp '%(dbsnp_gff)s'
 
             python '%(C)s' '%(dbsnp_gff)s' '%(reference)s' print-all > '%(ns_gff)s'.tmp
