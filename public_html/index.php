@@ -159,13 +159,11 @@ $variant_name_short = evidence_get_variant_name ($row0, " ", true);
 $gOut["title"] = "$variant_name_short - GET-Evidence";
 
 if (!eval_suff($row0["variant_quality"])) {
-    $gOut["content"] = "<CENTER><TABLE BORDER=0><TR BGCOLOR=#FFFF00><TD BORDER=10>"
-            . "<H1><CENTER><FONT COLOR=Red>Insufficiently evaluated</FONT></CENTER></H1><br>"
-            . "<p>This variant has not been sufficiently evaluated by a GET-Evidence editor.</p>"
-            . "<p>To be considered sufficiently evaluated a variant must have both <br>"
-            . "\"variant evidence\" and \"clinical importance\" scores filled in. <br>"
-            . "Please help improve GET-Evidence by evaluating evidence for this variant!</p>"
-            . "</TD></TR></TABLE></CENTER><br>\n";
+    $gOut["content"] = "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\">"
+            . "<p>Note: <STRONG>This variant has not been sufficiently evaluated</STRONG> by a GET-Evidence editor.</p>"
+            . "<p>To be considered sufficiently evaluated a variant must have both \"variant evidence\" and \"clinical importance\" scores filled in.</p>"
+            . "<p>Please help improve GET-Evidence by <A href=\"guide_editing\">evaluating evidence</A> for this variant!</p>"
+            . "</DIV>\n";
 } else {
     $gOut["content"] = "";
 }
