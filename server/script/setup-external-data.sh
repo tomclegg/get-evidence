@@ -154,7 +154,7 @@ fi
 
 echo Sorting refFlat
 if [! -f refFlat_sort.stamp ]; then
-  sort --key=3,3 --key=5n,5 /home/trait/data/refFlat.txt > /home/mad/temp/refFlat_sorted.txt
+  sort --key=3,3 --key=5n,5 refFlat.txt > refFlat_sorted.txt
   touch refFlat_sort.stamp
 fi
 
