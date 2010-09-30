@@ -21,7 +21,10 @@ class dbSNP:
     def up_to_position(self, position):
         while (self.data and self.comp_position(self.position, position) < 0):
             self.data = self.f.readline().split()
-            self.position = (self.data[1], int(self.data[2]))
+            if self.data:
+                self.position = (self.data[1], int(self.data[2]))
+            else:
+                self.position = None
         return self.position
 
     def comp_position(self, position1, position2):
@@ -54,8 +57,8 @@ def main():
 
         dbSNP_position = dbSNP_input.up_to_position(record_position)
         dbSNP_data = dbSNP_input.data
-    
-        if (dbSNP_input.comp_position(dbSNP_position,record_position) == 0):
+
+        if (dbSNP_position and dbSNP_input.comp_position(dbSNP_position,record_position) == 0):
             if record.version >= 3:
                 record.attributes["Dbxref"] = "dbsnp:rs%s" % dbSNP_data[0]
             else:
