@@ -161,6 +161,9 @@ def main():
         flock --nonblock --exclusive 2 || exit
         set -x
         set -e
+
+        date 1>&2
+
         cd '%(output_dir)s' || exit
         if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
         then
@@ -181,6 +184,7 @@ def main():
         do
             python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
             mv "$filter.json.tmp" "$filter.json"
+            date 1>&2
         done
 
         python '%(script_dir)s'/json_to_job_database.py --drop-tables $jsons '%(output_dir)s'/ns.json
