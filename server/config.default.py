@@ -20,7 +20,9 @@ DB_WRITE_DATABASE = "ariel"
 DBSNP_USER = "reader"
 DBSNP_PASSWD = "shakespeare"
 DBSNP_DATABASE = "dbsnp"
+
 DBSNP_SORTED = "b129_SNPChrPosOnRef_36_3_sorted.bcp"
+REFFLAT_SORTED = "refFlat_sorted.txt"
 
 HGMD_USER = "reader"
 HGMD_PASSWD = "shakespeare"

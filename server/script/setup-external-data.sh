@@ -152,6 +152,12 @@ fi
 #[ -s snpedia.tsv.tmp ] || echo "snpedia.tsv.tmp is zero size -- something went wrong."
 #mv snpedia.tsv.tmp snpedia.tsv
 
+echo Sorting refFlat
+if [! -f refFlat_sort.stamp ]; then
+  sort --key=3,3 --key=5n,5 /home/trait/data/refFlat.txt > /home/mad/temp/refFlat_sorted.txt
+  touch refFlat_sort.stamp
+fi
+
 echo Sorting dbSNP
 if [ ! -f dbSNP_sort.stamp ]; then
   $GUNZIP < b129_SNPChrPosOnRef_36_3.bcp.gz | sort --key=2,2 --key=3n,3 | perl -nae 'if ($#F == 3) { print; }' > b129_SNPChrPosOnRef_36_3_sorted.bcp

@@ -139,7 +139,7 @@ def main():
         args = { 'reprocess_all': reprocess_all,
              'A': os.path.join(script_dir, "gff_twobit_query.py"),
                  'B': os.path.join(script_dir, "gff_dbsnp_query_from_file.py"),
-                 'C': os.path.join(script_dir, "gff_nonsynonymous_filter.py"),
+                 'C': os.path.join(script_dir, "gff_nonsynonymous_filter_refflat_file.py"),
                  'Z': os.path.join(script_dir, "trait-o-matic-server.py"),
                  'in': genotype_file,
              'fetch': fetch_command,
