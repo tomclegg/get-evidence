@@ -12,9 +12,6 @@ import os, sys
 from utils import gff
 from config import DBSNP_SORTED
 
-dbSNP_file = open(os.getenv('DATA') + "/" + DBSNP_SORTED)
-dbSNP_data = dbSNP_file.readline().split()
-
 class dbSNP:
     def __init__(self, filename):
         self.f = open(filename)
@@ -33,12 +30,6 @@ class dbSNP:
             return cmp(position1[0],position2[0])
         else:
             return cmp(position1[1],position2[1])
-
-    def data(self):
-        return self.data
-
-    def position(self):
-        return self.position
             
 
 def main():
@@ -62,7 +53,8 @@ def main():
         record_position = (chromosome, record.start - 1)
 
         dbSNP_position = dbSNP_input.up_to_position(record_position)
-            
+        dbSNP_data = dbSNP_input.data
+    
         if (dbSNP_input.comp_position(dbSNP_position,record_position) == 0):
             if record.version >= 3:
                 record.attributes["Dbxref"] = "dbsnp:rs%s" % dbSNP_data[0]
