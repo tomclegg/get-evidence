@@ -174,34 +174,13 @@ def main():
             python '%(C)s' '%(dbsnp_gff)s' '%(reference)s' print-all > '%(ns_gff)s'.tmp
             mv '%(ns_gff)s'.tmp '%(ns_gff)s'
         fi
-        python '%(script_dir)s'/gff2json.py '%(ns_gff)s' > ns.json.tmp
-        mv ns.json.tmp ns.json
-        python '%(script_dir)s'/json_allele_frequency_query.py ns.json --in-place
 
         jsons=""
-
-        for filter in %(dbsnp_filters)s
-        do
-            python '%(script_dir)s'/gff_${filter}_map.py '%(dbsnp_gff)s' > ${filter}.json.tmp
-            mv ${filter}.json.tmp ${filter}.json
-            python '%(script_dir)s'/json_allele_frequency_query.py "$filter.json" --in-place
-            jsons="$jsons %(output_dir)s/${filter}.json"
-        done
-
-        for filter in %(ns_filters)s
-        do
-            python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
-            mv "$filter.json.tmp" "$filter.json"
-            python '%(script_dir)s'/json_allele_frequency_query.py "$filter.json" --in-place
-            jsons="$jsons %(output_dir)s/${filter}.json"
-        done
 
         for filter in get-evidence
         do
             python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
             mv "$filter.json.tmp" "$filter.json"
-            python '%(script_dir)s'/json_allele_frequency_query.py "$filter.json" --in-place
-            jsons="$jsons %(output_dir)s/${filter}.json"
         done
 
         python '%(script_dir)s'/json_to_job_database.py --drop-tables $jsons '%(output_dir)s'/ns.json
