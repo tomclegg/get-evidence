@@ -53,7 +53,7 @@ if ($reprocess_genome_ID) {
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
     $ext = substr($filename, strrpos($filename, '.') + 1);
-    if (($ext == "txt" || $ext == "gff") && ($_FILES["genotype"]["size"] < 300000000)) {
+    if (($ext == "txt" || $ext == "gff" || $ext == "gz") && ($_FILES["genotype"]["size"] < 300000000)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
