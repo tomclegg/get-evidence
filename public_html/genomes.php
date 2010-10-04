@@ -135,11 +135,11 @@ function genome_display($shasum) {
 
         usort($suff_eval_variants, "sort_reviewed");
         $returned_text .= "<h1>GET-Evidence evaluated variants:</h1>\n";
-        $returned_text .= "<TABLE border=1><TR><TD>Variant</TD>"
-                            . "<TD>Clinical Importance</TD>"
-                            . "<TD>Evidence</TD>"
-                            . "<TD>Impact</TD>"
-                            . "<TD>Summary</TD></TR>\n";
+        $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
+                            . "<TH>Clinical Importance</TH>"
+                            . "<TH>Evidence</TH>"
+                            . "<TH>Impact</TH>"
+                            . "<TH>Summary</TH></TR>\n";
         foreach ($suff_eval_variants as $variant) {
             $var_id = "";
             if (array_key_exists("amino_acid_change", $variant)) {
@@ -160,9 +160,9 @@ function genome_display($shasum) {
 
         usort($insuff_eval_variants, "sort_by_autoscore");
         $returned_text .= "<h1>Insufficiently reviewed variants:</h1>\n";
-        $returned_text .= "<TABLE border=1><TR><TD>Variant</TD>"
-                            . "<TD>Autoscore</TD>"
-                            . "<TD>Summary</TD></TR>\n";
+        $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
+                            . "<TH>Autoscore</TH>"
+                            . "<TH>Summary</TH></TR>\n";
         foreach ($insuff_eval_variants as $variant) {
             $var_id = "";
             if (array_key_exists("amino_acid_change", $variant)) {
