@@ -4,7 +4,7 @@ include "lib/setup.php";
 $gOut["title"] = "GET-Evidence: Genomes";
 
 $page_content = "";  // all html output stored here
-$public_data_user = "https://www.google.com/accounts/o8/id?id=AItOawlfHi5-1h7pCWBHqryLONZJc5BdhBpJCas";
+$public_data_user = "http://www.google.com/profiles/PGP.uploader";
 
 $display_genome_ID = $_POST['display_genome_id'];
 $user_request_oid = $_POST['user_request_oid'];
@@ -16,13 +16,17 @@ if (strlen($display_genome_ID) > 0) {
                                             array($display_genome_ID));
     # check you should have permission
     $permission = false;
+    $request_ID = $public_data_user;     # reset if to this user if they have permission
     foreach ($db_query as $result) {
-        if ($result['oid'] == $user['oid'] or $result['oid'] == $public_data_user) {
+        if ($result['oid'] == $user['oid']) {
+            $permission = true;
+            $request_ID = $user['oid'];
+        } elseif ($result['oid'] == $public_data_user) {
             $permission = true;
         }
     }
     if ($permission) {
-        $page_content .= genome_display($display_genome_ID);
+        $page_content .= genome_display($display_genome_ID, $request_ID);
     } else {
         $page_content .= "Sorry, for some reason you've requested a genome you don't have "
                     . "access to. Perhaps you've been logged off?<br>\n";
@@ -61,11 +65,10 @@ function list_uploaded_genomes($user_oid) {
     $returned_text = "";
     $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=?", array("$user_oid"));
     if ($db_query) {
-        $returned_text .= "<TABLE border=1>\n";
-        $returned_text .= "<TR><TD>Nickname</TD><TD>ID</TD><TD>Action</TD></TR>\n";
+        $returned_text .= "<TABLE class=\"report_table\">\n";
+        $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";
         foreach ($db_query as $result) {
-            $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>" 
-                            . $result['shasum'] . "</TD><TD>";
+            $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
             if ($user_oid == $public_data_user and $user['oid'] != $public_data_user) {
                 $returned_text .= genome_display_actions($result) . "</TD></TR>\n";
             } else {
@@ -115,8 +118,10 @@ function uploaded_genome_actions($result) {
     return($returned_text);
 }
 
-function genome_display($shasum) {
-    $returned_text = "";
+function genome_display($shasum, $oid) {
+    $db_query = theDb()->getAll ("SELECT nickname FROM private_genomes WHERE shasum=? AND oid=?",
+                                            array($shasum, $oid));
+    $returned_text = "<h1>Genome report for " . $db_query[0]['nickname'] . "</h1>\n";
 
     $results_file = "/home/trait/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
