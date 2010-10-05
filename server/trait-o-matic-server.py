@@ -140,7 +140,6 @@ def main():
              'A': os.path.join(script_dir, "gff_twobit_query.py"),
                  'B': os.path.join(script_dir, "gff_dbsnp_query_from_file.py"),
                  'C': os.path.join(script_dir, "gff_nonsynonymous_filter_refflat_file.py"),
-                 'Z': os.path.join(script_dir, "trait-o-matic-server.py"),
                  'in': genotype_file,
              'fetch': fetch_command,
                  'reference': REFERENCE_GENOME,
@@ -150,8 +149,6 @@ def main():
                  'sorted': os.path.join(output_dir, "genotype_sorted.gff"),
                  'dbsnp_gff': os.path.join(output_dir, "genotype.dbsnp.gff"),
                  'ns_gff': os.path.join(output_dir, "ns.gff"),
-             'dbsnp_filters': "snpedia hugenetgwas",
-             'ns_filters': "omim hgmd morbid pharmgkb",
              'script_dir': script_dir,
              'output_dir': output_dir,
              'lockfile': os.path.join(output_dir, "lock"),
@@ -178,8 +175,6 @@ def main():
             mv '%(ns_gff)s'.tmp '%(ns_gff)s'
         fi
 
-        jsons=""
-
         for filter in get-evidence
         do
             python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
@@ -187,13 +182,6 @@ def main():
             date 1>&2
         done
 
-        python '%(script_dir)s'/json_to_job_database.py --drop-tables $jsons '%(output_dir)s'/ns.json
-        touch README
-        for filter in get-evidence %(ns_filters)s %(dbsnp_filters)s ns
-        do
-            python '%(Z)s' -t '%(url)s' '%(output_dir)s'/$filter.json out/$filter '%(token)s'
-        done
-        python '%(Z)s' -t '%(url)s' '%(output_dir)s'/README out/readme '%(token)s'
         mv %(lockfile)s %(logfile)s
         ) 2>>%(lockfile)s &''' % args
         subprocess.call(cmd, shell=True)
