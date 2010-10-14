@@ -5,9 +5,6 @@ set -e
 . "$(echo "$0" | sed -e 's/[^\/]*$//')defaults.sh"
 echo "Done with defaults $SOURCE";
 
-sudo DEBUG="$DEBUG" $SCRIPT_DIR/prereqs-ubuntu.sh
-echo "Done with prereqs-ubuntu $SOURCE ";
-
 sudo DEBUG="$DEBUG" $SCRIPT_DIR/install-sysconfig.sh
 echo "Done with install-sysconfig.sh";
 
