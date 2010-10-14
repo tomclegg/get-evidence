@@ -133,7 +133,7 @@ function genome_entry_form() {
                     . "action=\"/genome_upload.php\" method=\"post\">\n";
     $returned_text .= "<label class=\"label\">Filename<br>\n";
     $returned_text .= "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" "
-                        . "value=\"300000000\">\n";
+                        . "value=\"500000000\">\n";
     $returned_text .= "<input type=\"file\" class=\"file\" name=\"genotype\" "
                         . "id=\"genotype\"></label><br>\n";
     $returned_text .= "<label class=\"label\">Genome name<br>\n";
