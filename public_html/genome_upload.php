@@ -53,7 +53,7 @@ if ($reprocess_genome_ID) {
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
     $ext = substr($filename, strrpos($filename, '.') + 1);
-    if (($ext == "txt" || $ext == "gff" || $ext == "gz") && ($_FILES["genotype"]["size"] < 300000000)) {
+    if (($ext == "txt" || $ext == "gff" || $ext == "gz") && ($_FILES["genotype"]["size"] < 500000000)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
@@ -76,7 +76,7 @@ if ($reprocess_genome_ID) {
         $page_content .= "Error: Only .txt or .gff files under 1MB are accepted for upload";
     }
 } else {
-    $page_content .= "Error: No file uploaded";
+    $page_content .= "Error: No file uploaded or file size exceeds limit";
 }
 
 // Send the filename to the xml-rpc server.
