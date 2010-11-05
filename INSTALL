@@ -1,7 +1,7 @@
 Install prerequisites:
 
  sudo apt-get install \
-    apache2 apache2-threaded-dev ca-certificates cron curl git git-core \
+    apache2 apache2-threaded-dev ca-certificates cron curl git-core \
     libapache2-mod-php5 libapache2-mod-python libmysqlclient15-dev \
     make mysql-client mysql-server patch \
     php5 php5-curl php5-dev php5-gd php5-mysql php-db \
