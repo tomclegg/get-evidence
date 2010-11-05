@@ -15,7 +15,11 @@ do
   eval echo $var=\$`echo $var`
 done >$CONFIG/config.sh
 
-$SCRIPT_DIR/setup-db.sh
+# 2010-11-03 Madeleine Price Ball
+# No longer using SQL for trait-o-matic processing due to speed issues and
+# redundancy with data in GET-Evidence's SQL data.
+#$SCRIPT_DIR/setup-db.sh
+
 $SCRIPT_DIR/setup-external-data.sh
 
 if [ ! -L $CORE/config.py ]; then
@@ -42,27 +46,7 @@ fi
 cp -p $SOURCE/server/config.default.py $CONFIG/config.default.py
 if [ ! -e $CONFIG/config.py -a ! -L $CONFIG/config.py ]
 then
-  dbpass=$(cat $CONFIG/dbpassword)
-  [ $? = 0 ]
-  sed -e "s/shakespeare/$dbpass/g" < $CONFIG/config.default.py > $CONFIG/config.py
-  echo >&2 "*** "
-  echo >&2 "*** Please edit $CONFIG/config.py to suit your installation."
-  echo >&2 "*** "
-else
-  echo >&2 "*** "
-  echo >&2 "*** Please ensure $CONFIG/config.py is up-to-date."
-  echo >&2 "*** Latest defaults can be found at:"
-  echo >&2 "***   $CONFIG/config.default.py"
-  echo >&2 "*** "
+  echo Copying $CONFIG/config.default.py to $CONFIG/config.py
+  cp $CONFIG/config.default.py $CONFIG/config.py
 fi
 chmod 600 $CONFIG/config.py
-
-cat >&2 <<EOF
-***
-*** If everything went well, you should see the Trait-o-matic web
-*** interface at http://`hostname`/.
-***
-*** You still need to obtain and import the reference data before any
-*** processing can occur.  See http://`hostname`/docs/install
-***
-EOF

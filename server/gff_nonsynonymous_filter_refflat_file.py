@@ -15,7 +15,7 @@ import MySQLdb
 from utils import gff, twobit
 from utils.biopython_utils import reverse_complement, translate
 from utils.codon_intersect import codon_intersect
-from config import DB_HOST, DB_READ_USER, DB_READ_PASSWD, DB_READ_DATABASE, REFFLAT_SORTED
+from config import REFFLAT_SORTED
 
 
 def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exonStarts, exonEnds):

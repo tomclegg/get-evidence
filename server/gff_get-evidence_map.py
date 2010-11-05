@@ -73,6 +73,11 @@ ORDER BY snap_latest.edit_id DESC
 '''
 
 def main():
+    print DB_HOST
+    print GETEVIDENCE_USER
+    print GETEVIDENCE_PASSWD
+    print GETEVIDENCE_DATABASE
+
     # return if we don't have the correct arguments
     if len(sys.argv) != 2:
         raise SystemExit(__doc__.replace("%prog", sys.argv[0]))

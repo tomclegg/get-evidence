@@ -5,44 +5,12 @@ import os
 UPLOAD_DIR = os.getenv('UPLOAD')
 DB_HOST = "localhost"
 
-DB_READ_USER = "reader"
-DB_READ_PASSWD = "shakespeare"
-DB_READ_DATABASE = "caliban"
-
-DB_UPDATE_USER = "updater"
-DB_UPDATE_PASSWD = "shakespeare"
-DB_UPDATE_DATABASE = "caliban"
-
-DB_WRITE_USER = "writer"
-DB_WRITE_PASSWD = "shakespeare"
-DB_WRITE_DATABASE = "ariel"
-
-DBSNP_USER = "reader"
-DBSNP_PASSWD = "shakespeare"
-DBSNP_DATABASE = "dbsnp"
-
-DBSNP_SORTED = "b129_SNPChrPosOnRef_36_3_sorted.bcp"
+DBSNP_SORTED = "b130_SNPChrPosOnRef_36_3_sorted.bcp"
 REFFLAT_SORTED = "refFlat_sorted.txt"
 
-HGMD_USER = "reader"
-HGMD_PASSWD = "shakespeare"
-HGMD_DATABASE = "hgmd_pro"
-
-PHARMGKB_USER = "reader"
-PHARMGKB_PASSWD = "shakespeare"
-PHARMGKB_DATABASE = "pharmgkb"
-
-GETEVIDENCE_USER = "updater"
+GETEVIDENCE_USER = "evidence"
 GETEVIDENCE_PASSWD = "shakespeare"
-GETEVIDENCE_DATABASE = "get_evidence"
-
-HUGENET_USER = "updater"
-HUGENET_PASSWD = "shakespeare"
-HUGENET_DATABASE = "hugenet"
-
-GENOTYPE_USER = "updater"
-GENOTYPE_PASSWD = "shakespeare"
-GENOTYPE_DATABASE = "genotypes"
+GETEVIDENCE_DATABASE = "evidence"
 
 REFERENCE_GENOME = os.getenv('DATA') + "/hg18.2bit"
 
