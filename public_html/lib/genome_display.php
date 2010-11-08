@@ -87,7 +87,7 @@ function genome_display($shasum, $oid) {
 function eval_evidence($variant_quality) {
     if (strlen($variant_quality) > 5) {
         $sum = 0;
-        $scores = preg_split('//', $variant_quality, -1);
+        $scores = preg_split('//', $variant_quality, -1, PREG_SPLIT_NO_EMPTY);
         for ($i = 0; $i <= 3; $i++) {
             if ($scores[$i] == "-") {
                 $scores[$i] = 0;
@@ -113,7 +113,7 @@ function eval_evidence($variant_quality) {
 function eval_clinical($variant_quality) {
     if (strlen($variant_quality) > 5) {
         $sum = 0;
-        $scores = preg_split('//', $variant_quality, -1);
+        $scores = preg_split('//', $variant_quality, -1, PREG_SPLIT_NO_EMPTY);
         for ($i = 4; $i <= 5; $i++) {
             if ($scores[$i] == "-") {
                 $scores[$i] = 0;
