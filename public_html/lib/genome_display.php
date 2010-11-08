@@ -13,6 +13,12 @@ function genome_display($shasum, $oid) {
             if ($variant_data["suff_eval"]) {
                 $variant_data["clinical"] = eval_clinical($variant_data["variant_quality"]);
                 $variant_data["evidence"] = eval_evidence($variant_data["variant_quality"]);
+                $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"], 
+                                                $variant_data["genotype"],
+                                                $variant_data["ref_allele"]);
+                $variant_data["expect_effect"] = $eval_zyg_out[0];
+                $variant_data["zygosity"] = $eval_zyg_out[1];
+                $variant_data["inheritance_desc"] = $eval_zyg_out[2];
                 $suff_eval_variants[] = $variant_data;
             } else {
                 $insuff_eval_variants[] = $variant_data;
@@ -25,6 +31,7 @@ function genome_display($shasum, $oid) {
         $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
                             . "<TH>Clinical Importance</TH>"
                             . "<TH>Evidence</TH>"
+                            . "<TH>Zygosity</TH>"
                             . "<TH>Impact</TH>"
                             . "<TH>Summary</TH></TR>\n";
         foreach ($suff_eval_variants as $variant) {
@@ -39,6 +46,7 @@ function genome_display($shasum, $oid) {
                     . $var_id . " TARGET=\"_blank\">" . $var_id . "</A></TD><TD>"
                     . $variant["clinical"] . "</TD><TD>"
                     . $variant["evidence"] . "</TD><TD>"
+                    . $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
                     . $variant["variant_impact"] . "</TD><TD>"
                     . $variant["summary_short"] . "</TD></TR>\n";
             }
@@ -135,6 +143,42 @@ function eval_clinical($variant_quality) {
     }
 }
 
+function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
+    // 1 = expected to have effect (het dominant or hom recessive)
+    // 0 = unclear ("other" inheritance or possible errors)
+    // -1 = no effect expected (recessive carrier) or unknown
+    $alleles = preg_split('/\//', $genotype);
+    $zygosity = "Heterozygous";
+    if ($alleles[0] == $alleles[1]) {
+        $zygosity = "Homozygous";
+    }
+    if ($variant_dominance == "dominant") {
+        if ( $ref_allele and 
+            $ref_allele != $alleles[0] or $ref_allele != $alleles[1]) {
+            return array (1, $zygosity, "Dominant"); // An effect is expected.
+        } else {
+            return array (0, $zygosity . "(matching ref??)", "Dominant"); // Error? maybe pathogenic ref? 
+                                      // Need to have "pathogenic allele" to know.
+        }
+    } elseif ($variant_dominance == "other") {
+        return array (0, $zygosity, "Complex/Other");
+    } elseif ($variant_dominance == "recessive") {
+        if ($zygosity == "Homozygous") {
+            if ($ref_allele and $ref_allele == $alleles[0]) {
+                return array (0, $zygosity . "(matching ref??)", "Recessive"); // Error or pathogenic ref? see above.
+            } else {
+                return array (1, $zygosity, "Recessive"); // Error or pathogenic ref? see above.
+            }
+        } else {
+            return array (-1, "Carrier (" . $zygosity . ")", "Recessive"); // Recessive carrier
+        }
+    } else {
+        return array (-1, $zygosity, "Unknown"); // "unknown" inheritance and other
+    }
+    return 0;
+}
+    
+
 function autoscore_evidence($variant) {
     $items = array();
     if (array_key_exists("in_omim", $variant) and $variant["in_omim"]) {
@@ -180,6 +224,8 @@ function sort_reviewed($a, $b) {
     $cmpb = array_search($b['evidence'], $evidence_sort_order);
     if ($cmpa < $cmpb) { return -1; }
     if ($cmpa > $cmpb) { return 1; }
+    if ($a['expect_effect'] > $b['expect_effect']) { return -1; }
+    if ($a['expect_effect'] < $b['expect_effect']) { return 1; }
     return 0;
 }
 
