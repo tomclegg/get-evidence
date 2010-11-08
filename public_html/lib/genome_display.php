@@ -164,23 +164,23 @@ function autoscore_evidence($variant) {
 }
 
 function sort_reviewed($a, $b) {
-   $impact_sort_order = array("pathogenic", "pharmacogenetic",
-                           "protective", "benign");
-   $clinical_sort_order = array("High", "Moderate", "Low");
-   $evidence_sort_order = array("Well-established", "Likely", "Uncertain");
-   $cmpa = array_search($a['variant_impact'], $impact_sort_order);
-   $cmpb = array_search($b['variant_impact'], $impact_sort_order);
-   if ($cmpa < $cmpb) { return -1; }
-   if ($cmpa > $cmpb) { return 1; }
-   $cmpa = array_search($a['clinical'], $clinical_sort_order);
-   $cmpb = array_search($b['clinical'], $clinical_sort_order);
-   if ($cmpa < $cmpb) { return -1; }
-   if ($cmpa > $cmpb) { return 1; }
-   $cmpa = array_search($a['evidence'], $evidence_sort_order);
-   $cmpb = array_search($b['evidence'], $evidence_sort_order);
-   if ($cmpa < $cmpb) { return -1; }
-   if ($cmpa > $cmpb) { return 1; }
-   return 0;
+    $impact_sort_order = array("pathogenic", "pharmacogenetic",
+                                "protective", "benign");
+    $clinical_sort_order = array("High", "Moderate", "Low");
+    $evidence_sort_order = array("Well-established", "Likely", "Uncertain");
+    $cmpa = array_search($a['variant_impact'], $impact_sort_order);
+    $cmpb = array_search($b['variant_impact'], $impact_sort_order);
+    if ($cmpa < $cmpb) { return -1; }
+    if ($cmpa > $cmpb) { return 1; }
+    $cmpa = array_search($a['clinical'], $clinical_sort_order);
+    $cmpb = array_search($b['clinical'], $clinical_sort_order);
+    if ($cmpa < $cmpb) { return -1; }
+    if ($cmpa > $cmpb) { return 1; }
+    $cmpa = array_search($a['evidence'], $evidence_sort_order);
+    $cmpb = array_search($b['evidence'], $evidence_sort_order);
+    if ($cmpa < $cmpb) { return -1; }
+    if ($cmpa > $cmpb) { return 1; }
+    return 0;
 }
 
 function sort_by_autoscore($a, $b) {
