@@ -141,6 +141,7 @@ def main():
                     "chromosome": record.seqname,
                     "coordinates": coordinates,
                     "genotype": genotype,
+                    "ref_allele": ref_allele,
                     "variant": str(record),
                     "GET-Evidence": False
                 }
