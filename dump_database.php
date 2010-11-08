@@ -23,13 +23,5 @@ $user = escapeshellarg($regs[1]);
 $pass = escapeshellarg($regs[2]);
 $host = escapeshellarg($regs[3]);
 $db = escapeshellarg($regs[4]);
-
-theDb()->query("CREATE TABLE eb_users_backup SELECT * FROM eb_users");
-theDb()->query("UPDATE eb_users SET email=NULL");
-passthru ("mysqldump -e -u $user -p$pass -h $host $db allele_frequency articles datasets diseases eb_users edits flat_summary gene_disease genomes snap_latest variant_disease variant_external variant_frequency variant_locations variant_occurs variants | gzip -9v >| $dumpfile.tmp && mv $dumpfile.tmp $dumpfile && ls -l $dumpfile");
-
-theDb()->query("DROP TABLE eb_users");
-theDb()->query("CREATE TABLE eb_users SELECT * FROM eb_users_backup");
-theDb()->query("DROP TABLE eb_users_backup");
-
+passthru ("mysqldump -e -u $user -p$pass -h $host $db allele_frequency articles datasets diseases edits flat_summary gene_disease genomes snap_latest variant_disease variant_external variant_frequency variant_locations variant_occurs variants | gzip -9v > $dumpfile.tmp && mv $dumpfile.tmp $dumpfile && ls -l $dumpfile");
 
