@@ -17,7 +17,7 @@ def main():
             continue
         data = line.split("\t")
         if data[2] == "all" or data[1] == "1":
-            if data[6] == "ref" or re.match("no-call",data[6]):
+            if data[6] == "ref" or data[6] == "no-ref" or re.match("no-call",data[6]):
                 continue
             else:
                 # only report single nucleotide substitutions
