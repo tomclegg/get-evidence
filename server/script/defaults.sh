@@ -17,7 +17,7 @@ EOF
   exit 1
 fi
 
-. $SCRIPT_DIR/config-local.sh
+source $SCRIPT_DIR/config-local.sh
 
 if [ -z "$CORE" ]; then export CORE=$HOME/core; fi
 if [ -z "$CONFIG" ]; then export CONFIG=$HOME/config; fi

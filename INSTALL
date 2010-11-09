@@ -105,13 +105,13 @@ environment variables for associated subdirectories, and create them:
     CONFIG=/home/trait/config TMP=/home/trait/tmp \
     DATA=/home/trait/data UPLOAD=/home/trait/upload LOG=/home/trait/log \
     BASE_URL=http://localhost/ ./configure.sh
- . ~/get-evidence/server/script/defaults.sh
+ source ~/get-evidence/server/script/defaults.sh
  sudo -u $USER mkdir -p $TMP $UPLOAD $LOG $CONFIG $DATA
 
 Log in as root, load environment variables and set up trait-o-matic server:
  cd ~/get-evidence/server/script
  sudo su
- . defaults.sh
+ source defaults.sh
  perl -p -e 's/%([A-Z]+)%/$ENV{$1}/g' < $SOURCE/server/script/trait-o-matic.in > /etc/init.d/trait-o-matic.tmp
  chmod 755 /etc/init.d/trait-o-matic.tmp
  chown 0:0 /etc/init.d/trait-o-matic.tmp
@@ -121,7 +121,7 @@ Log in as root, load environment variables and set up trait-o-matic server:
 
 Run install-user.sh as www-data (this includes some file downloads):
  cd ~/get-evidence/server/script/
- . defaults.sh
+ source defaults.sh
  sudo -u $USER ./install-user.sh
 
 Use sudo to edit /home/trait/config/config.py file to have the correct GET-Evidence password: change "shakespeare" to the password you've chosen (also stored in public_html/config.php)
@@ -131,7 +131,7 @@ Use sudo to edit /home/trait/config/config.py file to have the correct GET-Evide
 
 Create link to config.py in the core directory
  cd ~/get-evidence/server/script/
- . defaults.sh
+ source defaults.sh
  sudo ln -sn $CONFIG/config.py $CORE/config.py
 
 Build python extensions:
