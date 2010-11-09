@@ -20,7 +20,45 @@ from utils.bitset import *
 from config import DB_HOST, GETEVIDENCE_USER, GETEVIDENCE_PASSWD, GETEVIDENCE_DATABASE
 from utils.substitution_matrix import blosum100
 
-query_aa = '''
+query_aa_freq = '''
+SELECT variants.variant_id,
+snap_latest.edit_id,
+snap_latest.summary_short,
+snap_latest.variant_impact,
+snap_latest.variant_dominance,
+snap_latest.variant_quality,
+variant_external.tag,
+genetests.testable,
+genetests.reviewed,
+allele_frequency.num,
+allele_frequency.denom,
+allele_frequency.dbtag
+FROM variants
+LEFT JOIN snap_latest
+  ON variants.variant_id = snap_latest.variant_id
+LEFT JOIN variant_external
+  ON variants.variant_id = variant_external.variant_id
+LEFT JOIN genetests
+  ON variants.variant_gene = genetests.gene
+LEFT JOIN variant_occurs
+  ON variants.variant_id = variant_occurs.variant_id
+LEFT JOIN allele_frequency
+  ON variant_occurs.chr = allele_frequency.chr
+    AND variant_occurs.chr_pos = allele_frequency.chr_pos
+    AND variant_occurs.allele = allele_frequency.allele
+WHERE (
+  variants.variant_gene=%s 
+  AND variants.variant_aa_from=%s 
+  AND variants.variant_aa_pos=%s 
+  AND variants.variant_aa_to=%s
+  AND snap_latest.article_pmid="" 
+  AND snap_latest.genome_id=""
+  AND allele_frequency.dbtag=%s
+)
+ORDER BY snap_latest.edit_id DESC
+'''
+
+query_aa_nofreq = '''
 SELECT variants.variant_id,
 snap_latest.edit_id,
 snap_latest.summary_short,
@@ -51,6 +89,7 @@ ORDER BY snap_latest.edit_id DESC
 query_var_external = '''
 SELECT * FROM variant_external WHERE variant_id=%s'''
 
+# Don't bother with rsid allele freq because GET-Ev currently lacks this data
 query_rsid = '''
 SELECT variants.variant_id,
 snap_latest.edit_id,
@@ -137,7 +176,6 @@ def main():
                     "coordinates": coordinates,
                     "genotype": genotype,
                     "ref_allele": ref_allele,
-                    "variant": str(record),
                     "GET-Evidence": False
                 }
         if rs_number > 0:
@@ -170,7 +208,11 @@ def main():
                 output_splice_variant["amino_acid_change"] = amino_acid_change_and_position
 
                 # query the GET-Evidence edits database for curated data
-                cursor.execute(query_aa, (gene, aa_from, aa_pos, aa_to))
+                cursor.execute(query_aa_freq, (gene, aa_from, aa_pos, aa_to, "1000g"))
+                if cursor.rowcount == 0:
+                    cursor.execute(query_aa_freq, (gene, aa_from, aa_pos, aa_to, "HapMap"))
+                if cursor.rowcount == 0:
+                    cursor.execute(query_aa_nofreq, (gene, aa_from, aa_pos, aa_to))
                 data = cursor.fetchall()
 
                 # If this gene/AA change caused a hit, report it

@@ -10,12 +10,28 @@ function genome_display($shasum, $oid) {
         $lines = file($results_file);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
+            # Get allele frequency
+            if (array_key_exists("num",$variant_data) and array_key_exists("denom",$variant_data)) {
+                $allele_freq = 100 * ($variant_data["num"] / $variant_data["denom"]);
+                if ($allele_freq > 10) {
+                    $variant_data["allele_freq"] = sprintf("%d%%", $allele_freq);
+                } elseif ($allele_freq > 1) {
+                    $variant_data["allele_freq"] = sprintf("%.1f%%", $allele_freq);
+                } elseif ($allele_freq > 0.1) {
+                    $variant_data["allele_freq"] = sprintf("%.2f%%", $allele_freq);
+                } else {
+                    $variant_data["allele_freq"] = sprintf("%.3f%%", $allele_freq);
+                }
+            } else {
+                $variant_data["allele_freq"] = "?";
+            }
+            # Get zygosity
+            $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
+                                            $variant_data["genotype"],
+                                            $variant_data["ref_allele"]);
             if ($variant_data["suff_eval"]) {
                 $variant_data["clinical"] = eval_clinical($variant_data["variant_quality"]);
                 $variant_data["evidence"] = eval_evidence($variant_data["variant_quality"]);
-                $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"], 
-                                                $variant_data["genotype"],
-                                                $variant_data["ref_allele"]);
                 $variant_data["expect_effect"] = $eval_zyg_out[0];
                 $variant_data["zygosity"] = $eval_zyg_out[1];
                 $variant_data["inheritance_desc"] = $eval_zyg_out[2];
@@ -31,8 +47,8 @@ function genome_display($shasum, $oid) {
         $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
                             . "<TH>Clinical Importance</TH>"
                             . "<TH>Evidence</TH>"
-                            . "<TH>Zygosity</TH>"
                             . "<TH>Impact</TH>"
+                            . "<TH>Allele freq</TH>"
                             . "<TH>Summary</TH></TR>\n";
         foreach ($suff_eval_variants as $variant) {
             $var_id = "";
@@ -46,17 +62,19 @@ function genome_display($shasum, $oid) {
                     . $var_id . " TARGET=\"_blank\">" . $var_id . "</A></TD><TD>"
                     . $variant["clinical"] . "</TD><TD>"
                     . $variant["evidence"] . "</TD><TD>"
+                    . "<ul>" . ucfirst($variant["variant_impact"]) . "</ul><p>"
                     . $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
-                    . $variant["variant_impact"] . "</TD><TD>"
+                    . $variant["allele_freq"] . "</TD><TD>"
                     . $variant["summary_short"] . "</TD></TR>\n";
             }
         }
-       $returned_text .= "</TABLE>\n";
+        $returned_text .= "</TABLE>\n";
 
         usort($insuff_eval_variants, "sort_by_autoscore");
         $returned_text .= "<h1>Insufficiently reviewed variants:</h1>\n";
         $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
                             . "<TH>Autoscore</TH>"
+                            . "<TH>Allele freq</TH>"
                             . "<TH>Summary</TH></TR>\n";
         foreach ($insuff_eval_variants as $variant) {
             $var_id = "";
@@ -75,6 +93,7 @@ function genome_display($shasum, $oid) {
                             . $var_id . ">Create GET-Evidence entry</A></TD><TD>";
                 }
                 $returned_text .= $variant["autoscore"] . "</TD><TD>";
+                $returned_text .= $variant["allele_freq"] . "</TD><TD>";
                 if (array_key_exists("summary_short", $variant)
                                     and strlen($variant["summary_short"]) > 0) {
                     $returned_text .= $variant["summary_short"] . "</TD></TR>\n";
