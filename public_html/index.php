@@ -369,6 +369,8 @@ $gOut["content"] .= $html;
 // $gOut["content"] .= "<!--\n" . ereg_replace ("-->", "\\-\\-\\>", json_encode ($report)) . "-->\n";
 $gOut["content"] .= "<!--\n" . ereg_replace ("-->", "\\-\\-\\>", json_encode (evidence_get_assoc_flat_summary ("latest", $variant_id))) . "-->\n";
 
+$gOut["content"] = "<form id=\"mainform\" action=\"save.php\" method=\"POST\">" . $gOut["content"] . "</form>";
+
 go();
 
 ?>

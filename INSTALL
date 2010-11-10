@@ -1,15 +1,27 @@
 Install prerequisites:
 
  sudo apt-get install \
-   php-db wget libapache2-mod-php5 php5-mysql php5-curl ca-certificates mysql-server git git-core make patch unzip zip curl
+    apache2 apache2-threaded-dev ca-certificates cron curl git-core \
+    libapache2-mod-php5 libapache2-mod-python libmysqlclient15-dev \
+    make mysql-client mysql-server patch \
+    php5 php5-curl php5-dev php5-gd php5-mysql php-db \
+    python-biopython python-dev python-mysqldb python-pyrex \
+    rsync unzip wget zip --fix-missing
  sudo a2enmod php5
  sudo a2enmod rewrite
  sudo a2enmod expires
  sudo a2enmod negotiation
  sudo /etc/init.d/apache2 restart
 
+If apt-get python-biopython fails, ensure that you have universe in your apt source list.
+
+Clone get-evidence from github:
+
+ git clone git@github.com:madprime/get-evidence.git
+
 Download and extract php-openid-2.1.3 and textile-2.0.0 and apply patch(es):
 
+ cd ~/get-evidence
  make install
 
 Set MySQL server character set:
@@ -38,12 +50,100 @@ git repo):
    AllowOverride All
  </Directory>
 
+The latest version of Ubuntu disables php interpretation in home 
+directories. Open /etc/apache2/mods-available/php5.conf and if you see
+"To re-enable php in user directories..." then go ahead and comment out 
+the lines specified.
+
 Put real database password in public_html/config.php like this (but
 make sure there is no leading space or anything else before "<?php")
 
  <?php $gDbPassword = "shakespeare"; ?>
 
 Visit http://{host}/install.php to create tables.
+
+Download and import GET-Evidence's SQL dump:
+
+ wget http://evidence.personalgenomes.org/get-evidence.sql.gz
+ mysql -u root -p evidence < get-evidence.sql
+
+NOTE (MPB 2010-09-19): Why aren't dbSNP and GeneTests data in the SQL dump?
+
+Add GeneTests data:
+ cd ~/get-evidence
+ mkdir tmp
+ wget -O./tmp/genetests-data.txt \
+      ftp://ftp.ncbi.nih.gov/pub/GeneTests/data_to_build_custom_reports.txt
+ ./import_genetests_data.php ./tmp/genetests-data.txt
+
+Add dbSNP data:
+
+ wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/b129/b129_SNPChrPosOnRef_36_3.bcp.gz    
+ gunzip tmp/dbsnp.bcp.gz
+ ./import_dbsnp.php tmp/dbsnp.bcp
+
+Make sure genome analysis server is executable:
+
+ cd ~/get-evidence/server/
+ chmod +x trait-o-matic-server.py 
+
+Modify php.ini settings to enable genome uploads. In ubuntu the php.ini
+file is /etc/php5/apache2/php.ini  Edit so the following values are set:
+
+ magic_quotes_gpc = Off
+ max_input_time = 600
+ post_max_size = 512M
+ upload_max_filesize = 512M
+
+Create a directory where we store uploaded genomes and analysis, store
+environment variables for associated subdirectories, and create them:
+
+ sudo mkdir /home/trait
+ sudo chown www-data:www-data /home/trait
+ cd ~/get-evidence/server/script/
+ USER=www-data SOURCE=$HOME/get-evidence CORE=$HOME/get-evidence/server \
+    CONFIG=/home/trait/config TMP=/home/trait/tmp \
+    DATA=/home/trait/data UPLOAD=/home/trait/upload LOG=/home/trait/log \
+    BASE_URL=http://localhost/ ./configure.sh
+ source ~/get-evidence/server/script/defaults.sh
+ sudo -u $USER mkdir -p $TMP $UPLOAD $LOG $CONFIG $DATA
+
+Log in as root, load environment variables and set up trait-o-matic server:
+ cd ~/get-evidence/server/script
+ sudo su
+ source defaults.sh
+ perl -p -e 's/%([A-Z]+)%/$ENV{$1}/g' < $SOURCE/server/script/trait-o-matic.in > /etc/init.d/trait-o-matic.tmp
+ chmod 755 /etc/init.d/trait-o-matic.tmp
+ chown 0:0 /etc/init.d/trait-o-matic.tmp
+ mv /etc/init.d/trait-o-matic.tmp /etc/init.d/trait-o-matic
+ update-rc.d trait-o-matic start 20 2 3 4 5 . stop 80 0 1 6 .
+ exit
+
+Run install-user.sh as www-data (this includes some file downloads):
+ cd ~/get-evidence/server/script/
+ source defaults.sh
+ sudo -u $USER ./install-user.sh
+
+Use sudo to edit /home/trait/config/config.py file to have the correct GET-Evidence password: change "shakespeare" to the password you've chosen (also stored in public_html/config.php)
+ GETEVIDENCE_USER = "evidence"
+ GETEVIDENCE_PASSWD = "shakespeare"
+ GETEVIDENCE_DATABASE = "evidence"
+
+Create link to config.py in the core directory
+ cd ~/get-evidence/server/script/
+ source defaults.sh
+ sudo ln -sn $CONFIG/config.py $CORE/config.py
+
+Build python extensions:
+ cd ~/get-evidence/server
+ python setup.py build_ext --inplace
+
+Start trait-o-matic server:
+ sudo /etc/init.d/trait-o-matic start
+
+
+------
+The following are old instructions created prior to Trait-o-matic integration. Some of it may still be useful, so it's left here in case it may be informative (e.g. providing a record on how to make the tables found in the SQL dump). It is *not* required to use the current version of GET-Evidence.
 
 Run "make" to import genomes from Trait-o-matic.
 

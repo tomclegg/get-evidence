@@ -62,6 +62,14 @@ function evidence_create_tables ()
   name VARCHAR(128),
   UNIQUE(global_human_id))");
 
+  theDb()->query ("CREATE TABLE IF NOT EXISTS private_genomes (
+  oid VARCHAR(255), 
+  nickname VARCHAR(64),
+  shasum VARCHAR(64),
+  upload_date DATETIME,
+  notes TEXT,
+  INDEX (oid), INDEX (shasum))");
+
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
   dataset_id VARCHAR(16) NOT NULL,
   genome_id BIGINT UNSIGNED NOT NULL,
