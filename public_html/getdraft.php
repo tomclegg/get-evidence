@@ -8,6 +8,8 @@ foreach (array ("variant_impact", "variant_dominance",
   $fields_allowed[$k] = 1;
 }
 
+$response = array();
+
 foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
   if (!ereg ("^[0-9]+$", $edit_id))
     continue;

@@ -4,12 +4,12 @@ include "lib/setup.php";
 
 $orderby_sql = "edit_timestamp DESC, edit_id DESC";
 
-if ($_GET["oid"]) {
+if (isset($_GET["oid"])) {
   $report_title = "Edit history";
   $where_sql = "edit_oid=?";
   $where_param = array($_GET["oid"]);
 }
-else if ($_GET["variant_id"]) {
+else if (isset($_GET["variant_id"])) {
   $report_title = "Edit history";
   $where_sql = "variant_id=?";
   $where_param = array($_GET["variant_id"] + 0);
@@ -30,10 +30,10 @@ $gOut["title"] = "GET-Evidence: $report_title";
 function print_content($x)
 {
   global $report_title, $where_sql, $where_param, $orderby_sql;
-  if (!$_GET["bareli"])
+  if (!isset($_GET["bareli"]))
     print "<h1>$report_title</h1>\n\n";
 
-  $sql_limit = $_GET["all"] ? "" : "LIMIT 300";
+  $sql_limit = isset($_GET["all"]) ? "" : "LIMIT 300";
 
   $q = theDb()->query ("SELECT *, diseases.disease_name disease_name, edits.genome_id genome_id, UNIX_TIMESTAMP(edit_timestamp) t FROM edits
 	LEFT JOIN eb_users ON edit_oid=oid
@@ -52,7 +52,7 @@ function print_content($x)
   $lastrow = FALSE;
   $output_count = 0;
 
-  if (!$_GET["bareli"])
+  if (!isset($_GET["bareli"]))
     print "<UL>";
   while ($row =& $q->fetchRow()) {
     if ($lastrow &&
@@ -62,7 +62,7 @@ function print_content($x)
 
     $variant_link = evidence_get_variant_name ($row, " ", true);
     $version_link = "<A href=\"".evidence_get_variant_name(&$row,"-").";$row[edit_id]\">view</A>";
-    if (!$lastrow || $lastrow[variant_id] != $row[variant_id])
+    if (!$lastrow || $lastrow["variant_id"] != $row["variant_id"])
       $variant_link = "<A href=\"".evidence_get_variant_name(&$row,"-")."\">$variant_link</A>";
 
     $lastrow = $row;
@@ -84,6 +84,7 @@ function print_content($x)
 	   (htmlspecialchars ($row["fullname"] ? $row["fullname"] : $row["nickname"])).
 	   "</A>");
 
+    $genome_name = "";
     if ($row["genome_id"])
       if (!($genome_name = $row["name"]))
 	if (!($genome_name = $row["global_human_id"]))
@@ -104,13 +105,13 @@ function print_content($x)
     print " -- $version_link";
     print "</LI>\n";
 
-    if (!$_GET["all"] && ++$output_count >= 30) {
+    if (!isset($_GET["all"]) && ++$output_count >= 30) {
       print "<SPAN>&nbsp;<BR />\n";
       foreach (array ("", "&all=1") as $all) {
 	print "<BUTTON onclick=\"\$('busysignal').removeClassName('csshide'); this.disabled = true; new Ajax.Updater (this.parentNode, 'edits?"
 	  . htmlentities (ereg_replace ('&?(before_edit_id|bareli)=[0-9]+', '',
-					$_SERVER[QUERY_STRING]))
-	  . "&before_edit_id={$row[edit_id]}&bareli=1{$all}', { onFailure: function() { this.disabled = false; \$('busysignal').addClassName('csshide'); } }); return false;\">"
+					$_SERVER["QUERY_STRING"]))
+	  . "&before_edit_id={$row["edit_id"]}&bareli=1{$all}', { onFailure: function() { this.disabled = false; \$('busysignal').addClassName('csshide'); } }); return false;\">"
 	  . ($all == "" ? "Next page" : "Show all")
 	  . "</BUTTON> &nbsp; \n";
       }
@@ -118,11 +119,11 @@ function print_content($x)
       break;
     }
   }
-  if (!$_GET["bareli"])
+  if (!isset($_GET["bareli"]))
     print "</UL>\n";
 }
 
-if ($_GET["bareli"])
+if (isset($_GET["bareli"]))
   print_content ("");
 else
   go();

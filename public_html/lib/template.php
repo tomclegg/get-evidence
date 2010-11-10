@@ -92,7 +92,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
         </div>
 
-<?php if (!ereg ('^/vis', $_SERVER[REQUEST_URI])) { ?>
+<?php if (!ereg ('^/vis', $_SERVER["REQUEST_URI"])) { ?>
 		<div class="sidenav">
 
 <?php
@@ -147,7 +147,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <?php		endif; ?>
 
 
-		<div class="unsubmitted_message_container"><div id="message" class="message unsubmitted_message" style="display: <?php echo (0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php echo $gOut["message"]; ?></div></div>
+		<div class="unsubmitted_message_container"><div id="message" class="message unsubmitted_message" style="display: <?php echo (!isset($gOut["message"]) || 0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php if(isset($gOut["message"])) echo $gOut["message"]; ?></div></div>
 
 		</div>
 <?php } ?>

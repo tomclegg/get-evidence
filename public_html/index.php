@@ -329,10 +329,10 @@ if (count($external_refs)) {
 	    $url_abbrev = ereg_replace ("^https?://", "", $r["url"]);
 	    if (strlen ($url_abbrev) > 64)
 		$url_abbrev = ereg_replace ('\?.*', '', $url_abbrev);
-	    list ($title, $more) = explode ("\n", $content, 2);
-	    $html .= "<A href=\"" . htmlspecialchars ($r["url"]) . "\">" . $title . "</A>";
-	    if ($more)
-	      $html .= "<BR />".nl2br($more);
+	    $title_and_more = explode ("\n", $content, 2);
+	    $html .= "<A href=\"" . htmlspecialchars ($r["url"]) . "\">" . $title_and_more[0] . "</A>";
+	    if (count($title_and_more) > 1)
+	      $html .= "<BR />".nl2br($title_and_more[1]);
 	    $html .= "<BR /><SPAN class=\"searchurl\">" . htmlspecialchars ($url_abbrev) . "</SPAN>";
 	} else
 	  $html .= $content;

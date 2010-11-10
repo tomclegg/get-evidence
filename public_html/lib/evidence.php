@@ -802,9 +802,10 @@ function evidence_get_assoc ($snap, $variant_id)
     }
 
     foreach ($want_keys as $k) {
-      list ($inkey, $outkey) = explode (":", $k);
-      if (!$outkey) $outkey = $inkey;
-      $section[$outkey] = $row[$inkey];
+      $in_out = explode (":", $k);
+      if (count($in_out) < 2) $in_out[1] = $in_out[0];
+      if (isset ($row[$in_out[0]]))
+	$section[$in_out[1]] = $row[$in_out[0]];
     }
 
     unset ($section);
@@ -813,7 +814,7 @@ function evidence_get_assoc ($snap, $variant_id)
   foreach (array ("articles", "genomes") as $section) {
     $variant[$section] = array_values ($variant[$section]);
     foreach ($variant[$section] as &$x) {
-      if (is_array ($x["diseases"]))
+      if (isset ($x["diseases"]) && is_array ($x["diseases"]))
 	$x["diseases"] = array_values ($x["diseases"]);
     }
   }
@@ -826,18 +827,23 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $nonflat =& evidence_get_assoc ($snap, $variant_id);
   $flat = array ();
   foreach (array ("gene", "aa_change", "aa_change_short", "rsid", "impact", "qualified_impact", "inheritance") as $k)
+    if (isset ($nonflat[$k]))
       $flat[$k] = $nonflat[$k];
   $flat["dbsnp_id"] = "";
   foreach ($nonflat["genomes"] as &$g) {
-    if ($g["rsid"] > 0) {
+    if (isset($g["rsid"]) && $g["rsid"] > 0) {
       $flat["dbsnp_id"] = "rs".$g["rsid"];
       break;
     }
   }
-  $flat["overall_frequency_n"] = $nonflat["variant_f_num"];
-  $flat["overall_frequency_d"] = $nonflat["variant_f_denom"];
-  $flat["overall_frequency"] = $nonflat["variant_f"];
-  $flat["gwas_max_or"] = $nonflat["gwas_max_or"];
+  if (isset ($nonflat["variant_f_num"]))
+    $flat["overall_frequency_n"] = $nonflat["variant_f_num"];
+  if (isset ($nonflat["variant_f_denom"]))
+    $flat["overall_frequency_d"] = $nonflat["variant_f_denom"];
+  if (isset ($nonflat["variant_f"]))
+    $flat["overall_frequency"] = $nonflat["variant_f"];
+  if (isset ($nonflat["gwas_max_or"]))
+    $flat["gwas_max_or"] = $nonflat["gwas_max_or"];
   $flat["n_genomes"] = sizeof ($nonflat["genomes"]);
   $flat["n_genomes_annotated"] = 0;
   $flat["n_haplomes"] = 0;
@@ -880,11 +886,11 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $flat["in_omim"] = $nonflat["in_omim"];
   $flat["in_gwas"] = $nonflat["in_gwas"];
   $flat["in_pharmgkb"] = $nonflat["in_pharmgkb"];
-  $flat["genetests_testable"] = $nonflat["genetests_testable"] ? 'Y' : '-';
-  $flat["genetests_reviewed"] = $nonflat["genetests_reviewed"] ? 'Y' : '-';
+  $flat["genetests_testable"] = (isset($nonflat["genetests_testable"]) && $nonflat["genetests_testable"]) ? 'Y' : '-';
+  $flat["genetests_reviewed"] = (isset($nonflat["genetests_reviewed"]) && $nonflat["genetests_reviewed"]) ? 'Y' : '-';
   $flat["nblosum100"] = $nonflat["nblosum100"];
   $flat["nblosum100>3"] = $nonflat["nblosum100"] > 3 ? 'Y' : '-';
-  if ($nonflat["disease_max_or"]) {
+  if (isset($nonflat["disease_max_or"])) {
     $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
     foreach (array ("case_pos", "case_neg", "control_pos", "control_neg", "or")
 	     as $f)
@@ -1022,7 +1028,7 @@ class evidence_row_renderer {
 	  $html .= "<A name=\"a".htmlentities($row["article_pmid"])."\"></A>\n";
 	  $summary = article_get_summary ($row["article_pmid"]);
 	  $html .= editable ("${id_prefix}f_summary_short__70x8__textile",
-			     $row[summary_short],
+			     $row["summary_short"],
 			     $summary . "<BR />",
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
 	}
@@ -1073,7 +1079,7 @@ class evidence_row_renderer {
 
 	else {
 	  $html .= editable ("${id_prefix}f_summary_short__70x8__textile",
-			     $row[summary_short],
+			     $row["summary_short"],
 			     "Short summary",
 			     array ("tip" => "Provide a one line summary of clinical action to be undertaken given this variant (possibly modified by known phenotypes)."));
 
@@ -1099,11 +1105,11 @@ class evidence_row_renderer {
 
 	  global $gInheritanceOptions;
 	  $html .= editable ("${id_prefix}f_variant_dominance__",
-			     $row[variant_dominance],
+			     $row["variant_dominance"],
 			     "Inheritance pattern",
 			     array ("select_options" => $gInheritanceOptions));
 	  $html .= editable ("${id_prefix}f_summary_long__70x8__textile",
-			     $row[summary_long],
+			     $row["summary_long"],
 			     "Summary of published research, and additional commentary",
 			     array ("tip" => "Provide a comprehensive review of the variant including youngest age of onset, oldest age of onset and oldest asymptomatic individual."));
 	}
