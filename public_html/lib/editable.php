@@ -120,10 +120,11 @@ $gQualityAxes = array ("Computational" => "One point for each consistent predict
 <LI>GVGD</LI>
 <LI>etc.</LI>
 </UL>",
-		       "Functional" => "One point for each experiment supporting the result, and penalize one point for conflicting results from:
+		       "Functional" => "One point for each variant-specific experiment supporting the result, and penalize one point for conflicting results. Experiments must be variant-specific recombinant sequences, not merely from patient-derived cell lines (which may carry another causal variant). Ignore general data regarding gene function and importance. Examples:
 <UL class=\"tipped\">
-<LI>enzyme extracts</LI>
-<LI>cell lines</LI>
+<LI>enzyme activity</LI>
+<LI>binding affinity</LI>
+<LI>cellular localization</LI>
 <LI>animal models</LI>
 <LI>etc.</LI>
 </UL>",
@@ -144,7 +145,7 @@ $gQualityAxes = array ("Computational" => "One point for each consistent predict
 <LI>4 points for LOD &gt; 3, at least two families</LI>
 <LI>5 points for LOD &gt; 5, at least two families</LI>
 </UL>",
-		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" could only mean that the chances are increased by ~.15% and so would be called mild).
+		       "Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" could only mean that the chances are increased by ~.15% and so would be called mild).
 <UL class=\"tipped\">
 <LI>0 points for benign</LI>
 <LI>1 point for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with a 4-fold relative risk, causing an overall risk of ~.7%)</LI>
