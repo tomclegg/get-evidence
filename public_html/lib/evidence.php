@@ -664,7 +664,7 @@ function evidence_get_report ($snap, $variant_id)
 	= evidence_compute_certainty ($v[0]["variant_quality"],
 				      $v[0]["variant_impact"]);
     $v[0]["qualified_impact"]
-	= evidence_qualify_impact ($v[0]["variant_quality"],
+	= quality_eval_qualify_impact ($v[0]["variant_quality"],
 				   $v[0]["variant_impact"]);
     list ($v[0]["variant_evidence"], $v[0]["clinical_importance"])
 	= str_split ($v[0]["certainty"]);
@@ -1089,7 +1089,7 @@ class evidence_row_renderer {
 
 	  global $gImpactOptions;
 	  $opts =& $gImpactOptions;
-	  $qualified_impact = evidence_qualify_impact ($row["variant_quality"],
+	  $qualified_impact = quality_eval_qualify_impact ($row["variant_quality"],
 						       $row["variant_impact"]);
 	  $html .= editable ("${id_prefix}f_variant_impact__",
 			     $row["variant_impact"],
@@ -1316,25 +1316,6 @@ function evidence_compute_certainty ($scores, $impact)
     $certainty .= "0";
 
   return $certainty;
-}
-
-
-function evidence_qualify_impact ($scores, $impact)
-{
-  $c = str_split (evidence_compute_certainty ($scores, $impact));
-  if ($c[0] === "-") return ucfirst ($impact);
-  if ($c[0] === '0') $evidence_qual = "uncertain ";
-  else if ($c[0] === '1') $evidence_qual = "likely ";
-  else if ($c[0] === '2') $evidence_qual = "";
-  if ($c[1] === '0') $clinical_qual = "low clinical importance";
-  else if ($c[1] === '1') $clinical_qual = "moderate clinical importance";
-  else if ($c[1] === '2') $clinical_qual = "high clinical importance";
-  if (eval_suff($scores)) {
-    $impact = $clinical_qual . ", " . $evidence_qual . $impact;
-  } else {
-    $impact = "insufficiently evaluated " . $impact;
-  }
-  return ucfirst ($impact);
 }
 
 

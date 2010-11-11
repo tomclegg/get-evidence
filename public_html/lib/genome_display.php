@@ -1,5 +1,7 @@
 <?php
 
+require_once ("lib/quality_eval.php");
+
 function genome_display($shasum, $oid) {
     $db_query = theDb()->getAll ("SELECT nickname FROM private_genomes WHERE shasum=? AND oid=?",
                                             array($shasum, $oid));
@@ -30,8 +32,8 @@ function genome_display($shasum, $oid) {
                                             $variant_data["genotype"],
                                             $variant_data["ref_allele"]);
             if ($variant_data["suff_eval"]) {
-                $variant_data["clinical"] = eval_clinical($variant_data["variant_quality"]);
-                $variant_data["evidence"] = eval_evidence($variant_data["variant_quality"]);
+                $variant_data["clinical"] = quality_eval_clinical($variant_data["variant_quality"]);
+                $variant_data["evidence"] = quality_eval_evidence($variant_data["variant_quality"]);
                 $variant_data["expect_effect"] = $eval_zyg_out[0];
                 $variant_data["zygosity"] = $eval_zyg_out[1];
                 $variant_data["inheritance_desc"] = $eval_zyg_out[2];
@@ -108,58 +110,6 @@ function genome_display($shasum, $oid) {
                     . "This may be because genome data has not finished processing.";
     }
     return($returned_text);
-}
-
-
-function eval_evidence($variant_quality) {
-    if (strlen($variant_quality) > 5) {
-        $sum = 0;
-        $scores = preg_split('//', $variant_quality, -1, PREG_SPLIT_NO_EMPTY);
-        for ($i = 0; $i <= 3; $i++) {
-            if ($scores[$i] == "-") {
-                $scores[$i] = 0;
-            } else if ($scores[$i] == "!") {
-                $scores[$i] = -1;
-            }
-        }
-        $sum = $scores[0] + $scores[1] + $scores[2] + $scores[3];
-        if ( ($scores[2] >= 4 or $scores[3] >= 4)
-            and $sum >= 8 ) {
-            return "Well-established";
-        } else if ( ($scores[2] >= 3 or $scores[3] >= 3)
-                    and $sum >= 5 ) {
-            return "Likely";
-        } else {
-            return "Uncertain";
-        }
-    } else {
-        return "Uncertain";
-    }
-}
-
-function eval_clinical($variant_quality) {
-    if (strlen($variant_quality) > 5) {
-        $sum = 0;
-        $scores = preg_split('//', $variant_quality, -1, PREG_SPLIT_NO_EMPTY);
-        for ($i = 4; $i <= 5; $i++) {
-            if ($scores[$i] == "-") {
-                $scores[$i] = 0;
-            } else if ($scores[$i] == "!") {
-                $scores[$i] = -1;
-            }
-        }
-        if ($scores[4] >= 4 or
-            ($scores[4] >= 3 and $scores[5] >= 4)) {
-            return "High";
-        } elseif ($scores[4] >= 3 or
-            ($scores[4] >= 2 and $scores[5] >= 3)) {
-            return "Moderate";
-        } else {
-            return "Low";
-        }
-    } else {
-        return "Low";
-    }
 }
 
 function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
