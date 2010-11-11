@@ -76,19 +76,19 @@ Add GeneTests data:
       ftp://ftp.ncbi.nih.gov/pub/GeneTests/data_to_build_custom_reports.txt
  ./import_genetests_data.php ./tmp/genetests-data.txt
 
-Add dbSNP data:
+Add dbSNP data (newer versions of dbSNP should work just as well):
 
- wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/b129/b129_SNPChrPosOnRef_36_3.bcp.gz    
- gunzip tmp/dbsnp.bcp.gz
- ./import_dbsnp.php tmp/dbsnp.bcp
+ wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/b130_archive/b130_SNPChrPosOnRef_36_3.bcp.gz
+ ./import_dbsnp.php tmp/dbsnp.bcp.gz
 
 Make sure genome analysis server is executable:
 
  cd ~/get-evidence/server/
  chmod +x trait-o-matic-server.py 
 
-Modify php.ini settings to enable genome uploads. In ubuntu the php.ini
-file is /etc/php5/apache2/php.ini  Edit so the following values are set:
+Modify php.ini settings to enable genome uploads. In ubuntu you can
+either edit /etc/php5/apache2/php.ini or create
+/etc/php5/conf.d/get-evidence.conf with the following values:
 
  magic_quotes_gpc = Off
  max_input_time = 600
@@ -105,7 +105,7 @@ environment variables for associated subdirectories, and create them:
     CONFIG=/home/trait/config TMP=/home/trait/tmp \
     DATA=/home/trait/data UPLOAD=/home/trait/upload LOG=/home/trait/log \
     BASE_URL=http://localhost/ ./configure.sh
- source ~/get-evidence/server/script/defaults.sh
+ source ~/get-evidence/server/script/config-local.sh
  sudo -u $USER mkdir -p $TMP $UPLOAD $LOG $CONFIG $DATA
 
 Log in as root, load environment variables and set up trait-o-matic server:
@@ -121,7 +121,7 @@ Log in as root, load environment variables and set up trait-o-matic server:
 
 Run install-user.sh as www-data (this includes some file downloads):
  cd ~/get-evidence/server/script/
- source defaults.sh
+ source config-local.sh
  sudo -u $USER ./install-user.sh
 
 Use sudo to edit /home/trait/config/config.py file to have the correct GET-Evidence password: change "shakespeare" to the password you've chosen (also stored in public_html/config.php)

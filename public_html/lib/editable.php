@@ -254,7 +254,7 @@ function editable_quality ($id, $content, $title, $options)
     $html .= $empty_row;
     $html .= "</TABLE>\n";
     $html .= "<INPUT type=\"hidden\" id=\"orig_{$id}_text__\" value=\"";
-    $html .= htmlentities ($content[variant_quality_text]);
+    $html .= htmlentities ($content["variant_quality_text"]);
     $html .= "\" />";
 
     return $html;

@@ -15,7 +15,8 @@ chdir ('public_html');
 require_once 'lib/setup.php';
 
 
-ini_set ("memory_limit", 67108864);
+if (ini_get ("memory_limit") < 134217728)
+    ini_set ("memory_limit", 134217728);
 
 
 print "Creating/updating get-evidence tables...";
