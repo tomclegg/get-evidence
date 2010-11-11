@@ -781,7 +781,7 @@ function evidence_get_assoc ($snap, $variant_id)
       $row["aa_change_short"] = aa_short_form ($row["aa_change"]);
 
       // TODO: combine these into one array and add labels
-      $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 6, "-"));
+      $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 7, "-"));
       $row["quality_comments"] = $row["variant_quality_text"] ? json_decode ($row["variant_quality_text"], true) : array();
       $diseases = evidence_get_all_oddsratios ($rows);
       unset ($max_or_id);

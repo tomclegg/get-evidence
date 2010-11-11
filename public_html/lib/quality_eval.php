@@ -2,12 +2,13 @@
 
 function quality_eval_suff ($variant_quality, $impact="pathogenic")
 {
-    if (strlen($variant_quality) < 6) {
+    if (strlen($variant_quality) < 7) {
         return False;
     } else {
         if ($variant_quality[2] == "-" and $variant_quality[3] == "-") {
             return False;
         } elseif ($variant_quality[4] == "-" and $variant_quality[5] == "-"
+                    and $variant_quality[6] == "-"
                     and $impact != "benign" and $impact != "protective") {
             return False;
         } else {
@@ -26,21 +27,31 @@ function quality_eval_suff ($variant_quality, $impact="pathogenic")
 }
 
 function quality_eval_clinical($variant_quality) {
-    if (strlen($variant_quality) > 5) {
+    // ---  High clinical importance requires:
+    // * Penetrance score 3 or greater (>=5% attributable risk)
+    // AND
+    // * Severity >= 4 OR Severity >= 3 and Treatability >= 4
+    // ---  Moderate clinical importance requires:
+    // * Penetrance score 2 or greater (>=1% attributable risk)
+    // AND
+    // * Severity >= 3 OR Severity >= 2 and Treatability >= 3
+    // ---  Low clinical importance
+    // All variants who fail to meet above criteria.
+    if (strlen($variant_quality) > 6) {
         $sum = 0;
         $scores = preg_split('//', $variant_quality, -1, PREG_SPLIT_NO_EMPTY);
-        for ($i = 4; $i <= 5; $i++) {
+        for ($i = 4; $i <= 6; $i++) {
             if ($scores[$i] == "-") {
                 $scores[$i] = 0;
             } else if ($scores[$i] == "!") {
                 $scores[$i] = -1;
             }
         }
-        if ($scores[4] >= 4 or
-            ($scores[4] >= 3 and $scores[5] >= 4)) {
+        if ($scores[6] >= 3 and ($scores[4] >= 4 or
+            ($scores[4] >= 3 and $scores[5] >= 4))) {
             return "High";
-        } elseif ($scores[4] >= 3 or
-            ($scores[4] >= 2 and $scores[5] >= 3)) {
+        } elseif ($scores[6] >= 2 and ($scores[4] >= 3 or
+            ($scores[4] >= 2 and $scores[5] >= 3))) {
             return "Moderate";
         } else {
             return "Low";
@@ -51,7 +62,7 @@ function quality_eval_clinical($variant_quality) {
 }
 
 function quality_eval_evidence($variant_quality) {
-    if (strlen($variant_quality) > 5) {
+    if (strlen($variant_quality) > 6) {
         $sum = 0;
         $scores = preg_split('//', $variant_quality, -1, PREG_SPLIT_NO_EMPTY);
         for ($i = 0; $i <= 3; $i++) {
