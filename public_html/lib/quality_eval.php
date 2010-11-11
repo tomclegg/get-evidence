@@ -83,7 +83,7 @@ function quality_eval_qualify_impact ($scores, $impact)
         if ($qualify_evidence = "Well-established") {
             $qualify_evidence = "";
         }
-        $impact = $qualify_clinical . ", " . $qualify_evidence . " " . $impact;
+        $impact = $qualify_clinical . " clinical importance, " . $qualify_evidence . " " . $impact;
     } else {
         $impact = "insufficiently evaluated " . $impact;
     }
