@@ -1,13 +1,14 @@
 <?php
 
-function quality_eval_suff ($variant_quality)
+function quality_eval_suff ($variant_quality, $impact="pathogenic")
 {
     if (strlen($variant_quality) < 6) {
         return False;
     } else {
         if ($variant_quality[2] == "-" and $variant_quality[3] == "-") {
             return False;
-        } elseif ($variant_quality[4] == "-" and $variant_quality[5] == "-") {
+        } elseif ($variant_quality[4] == "-" and $variant_quality[5] == "-"
+                    and $impact != "benign" and $impact != "protective") {
             return False;
         } else {
             for ($i=0; $i<6; $i++) {
@@ -77,7 +78,7 @@ function quality_eval_evidence($variant_quality) {
 
 function quality_eval_qualify_impact ($scores, $impact)
 {
-    if (quality_eval_suff($scores)) {
+    if (quality_eval_suff($scores, $impact)) {
         $qualify_clinical = strtolower(quality_eval_clinical($scores));
         $qualify_evidence = quality_eval_evidence($scores);
         if ($qualify_evidence = "Well-established") {
