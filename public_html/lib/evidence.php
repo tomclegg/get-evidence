@@ -1290,30 +1290,26 @@ function evidence_compute_certainty ($scores, $impact)
   // (uncertain/unimportant), 1 (likely/important), 2 (well
   // established/very important), or "-" (not applicable).
 
-  if ($impact == "not reviewed" || $impact == "unknown" || $impact == "none")
+  if ($impact == "not reviewed" || $impact == "unknown" || $impact == "none"
+        || !quality_eval_suff($scores, $impact))
     return "--";
 
-  $scores = str_split (str_pad ($scores, 6, "-"));
-  foreach ($scores as $i => &$score)
-      if ($score === "-") $score = 0;
-      else if ($score === "!") $score = -1;
-
-  $score_evidence = $scores[0]+$scores[1]+$scores[2]+$scores[3];
-  if (($scores[2] >= 4 || $scores[3] >= 4) && $score_evidence >= 8)
+  $clinical_qualifier = strtolower(quality_eval_clinical($scores));
+  $evidence_qualifier = strtolower(quality_eval_evidence($scores));
+  if ($clinical_qualifier == "high") {
     $certainty = "2";
-  else if (($scores[2] >= 3 || $scores[3] >= 3) && $score_evidence >= 5)
+  } elseif ($clinical_qualifier == "moderate") {
     $certainty = "1";
-  else
+  } else {
     $certainty = "0";
-
-  if ($impact == "benign" || $impact == "protective")
-    $certainty .= "-";
-  else if ($scores[4] >= 4 || ($scores[4] >= 3 && $scores[5] >= 4))
+  }
+  if ($evidence_qualifier == "well-established") {
     $certainty .= "2";
-  else if ($scores[4] >= 3 || ($scores[4] >= 2 && $scores[5] >= 3))
+  } elseif ($evidence_qualifier == "likely") {
     $certainty .= "1";
-  else
+  } else {
     $certainty .= "0";
+  }
 
   return $certainty;
 }
