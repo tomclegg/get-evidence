@@ -131,7 +131,7 @@ Use sudo to edit /home/trait/config/config.py file to have the correct GET-Evide
 
 Create link to config.py in the core directory
  cd ~/get-evidence/server/script/
- source defaults.sh
+ source config-local.sh
  sudo ln -sn $CONFIG/config.py $CORE/config.py
 
 Build python extensions:
