@@ -7,8 +7,8 @@ $gOut["title"] = "GET-Evidence: Genomes";
 $page_content = "";  // all html output stored here
 $public_data_user = "http://www.google.com/profiles/PGP.uploader";
 
-$display_genome_ID = $_POST['display_genome_id'];
-$user_request_oid = $_POST['user_request_oid'];
+$display_genome_ID = $_REQUEST['display_genome_id'];
+$user_request_oid = $_REQUEST['user_request_oid'];
 
 $user = getCurrentUser();
 
@@ -83,7 +83,7 @@ function list_uploaded_genomes($user_oid) {
 }
 
 function public_genome_actions($result) {
-    $returned_text = "<form action=\"/genomes.php\" method=\"post\">\n";
+    $returned_text = "<form action=\"/genomes.php\" method=\"get\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
                     . $result['shasum'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Get report\" "
@@ -94,7 +94,7 @@ function public_genome_actions($result) {
 function uploaded_genome_actions($result) {
     global $public_data_user, $user;
     # Get report button
-    $returned_text = "<form action=\"/genomes.php\" method=\"post\">\n";
+    $returned_text = "<form action=\"/genomes\" method=\"get\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
                     . $result['shasum'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Get report\" "

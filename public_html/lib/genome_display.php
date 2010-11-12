@@ -58,8 +58,8 @@ function genome_display($shasum, $oid) {
                 $var_id = "rs" . $variant["dbSNP"];
             }
             if (strlen($var_id) > 0) {
-                $returned_text .= "<TR><TD><A HREF=http://evidence.personalgenomes.org/"
-                    . $var_id . " TARGET=\"_blank\">" . $var_id . "</A></TD><TD>"
+                $returned_text .= "<TR><TD><A HREF=\"http://evidence.personalgenomes.org/"
+                    . $var_id . "\">" . $var_id . "</A></TD><TD>"
                     . $variant["clinical"] . "</TD><TD>"
                     . $variant["evidence"] . "</TD><TD>"
                     . "<ul>" . ucfirst($variant["variant_impact"]) . "</ul><p>"
@@ -85,8 +85,8 @@ function genome_display($shasum, $oid) {
             }
             if (strlen($var_id) > 0) {
                 if ($variant["GET-Evidence"]) {
-                    $returned_text .= "<TR><TD><A HREF=http://evidence.personalgenomes.org/"
-                            . $var_id . " TARGET=\"_blank\">" . $var_id . "</A></TD><TD>";
+                    $returned_text .= "<TR><TD><A HREF=\"http://evidence.personalgenomes.org/"
+                            . $var_id . "\">" . $var_id . "</A></TD><TD>";
                 } else {
                     $returned_text .= "<TR><TD>" . $var_id
                             . "<BR><A HREF=http://evidence.personalgenomes.org/"
