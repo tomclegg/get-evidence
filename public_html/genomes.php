@@ -10,6 +10,12 @@ $public_data_user = "http://www.google.com/profiles/PGP.uploader";
 $display_genome_ID = $_REQUEST['display_genome_id'];
 $user_request_oid = $_REQUEST['user_request_oid'];
 
+if (preg_match ('{^\d+$}', $_SERVER['QUERY_STRING'], $matches)) {
+    $display_genome_ID = theDb()->getOne
+	("SELECT shasum FROM private_genomes WHERE private_genome_id=?",
+	 array ($matches[0]));
+}
+
 $user = getCurrentUser();
 
 if (strlen($display_genome_ID) > 0) {

@@ -63,6 +63,7 @@ function evidence_create_tables ()
   UNIQUE(global_human_id))");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS private_genomes (
+  private_genome_id SERIAL,
   oid VARCHAR(255), 
   nickname VARCHAR(64),
   shasum VARCHAR(64),
@@ -1044,6 +1045,11 @@ class evidence_row_renderer {
 	  $name = htmlspecialchars ($name);
 
 	  // Link to the full genome(s)
+	  if (isset ($row["dataset_url_2"]) && substr($row["dataset_url_2"],0,9) == "/genomes?") {
+	      $tmp = $row["dataset_url_2"];
+	      $row["dataset_url_2"] = $row["dataset_url"];
+	      $row["dataset_url"] = $tmp;
+	  }
 	  if ($row["dataset_count"] > 0)
 	    $name = "<A href=\"$row[dataset_url]\">$name</A>";
 	  if ($row["dataset_count"] > 1) {
