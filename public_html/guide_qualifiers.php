@@ -16,19 +16,24 @@ h3. Other guides
 
 * "Guide to editing":guide_editing: Explains how to edit variant evaluations.
 * "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
-* "Preliminary variant impact score":guide_preliminary_score: Explains how automatic preliminary scores are assigned, these should be overwritten by later evaluation.
+
+h2. Insufficiently evaluated qualifier
+
+A variant is considered insufficiently evaluated if not enough scoring fields have been filled in. To be considered sufficiently evaluated a variant must have:
+# At least one of either "case/control" or "familial" evidence categories filled in
+# The "severity" and "penetrance" categories in clinical importance categories filled in. (Not necessary for benign or protective variants.)
 
 h2. Variant evidence qualifier
 
 The variant evidence qualifier is determined according to the following:
 
 * "high evidence":
-## least 4 stars in either "Case/control evidence" or "Familial evidence"
-## *and* at least eight stars total
+## least 4 points in either "Case/control evidence" or "Familial evidence"
+## *and* at least eight points total in evidence categories
 
 * "moderate evidence":
-## at least 3 stars in either "Case/control evidence" or "Familial evidence"
-## *and* at least five stars total
+## at least 3 points in either "Case/control evidence" or "Familial evidence"
+## *and* at least five stars total in evidence categories
 
 * "low evidence": Any variants which do not meet the above requirements
 
@@ -37,12 +42,16 @@ h2. Clinical importance qualifier
 Clinical importance is determined according to the following rules:
 
 * "high clinical importance": 
-## At least 3 stars in severity and at least 4 stars in treatability
-## *or* at least 4 stars in severity
+## At least 3 points in penetrance (>= 5% attributable risk)
+## and either:
+### At least 3 stars in severity and at least 4 stars in treatability
+### *or* at least 4 stars in severity
 
 * moderate clinical importance": 
-## At least 2 stars in severity and at least 3 stars in treatability
-## *or* at least 3 stars in severity
+## At least 2 points in penetrance (>= 1% attributable risk)
+## and either:
+### At least 2 stars in severity and at least 3 stars in treatability
+### *or* at least 3 stars in severity
 
 * "low clinical importance": Any variants which do not meet the above requirements
 EOF
