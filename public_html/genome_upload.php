@@ -59,7 +59,7 @@ if ($reprocess_genome_ID) {
         $page_content .= "shasum is $shasum<br>";
         $permname = "/home/trait/upload/$shasum/genotype.gff";
         // Attempt to move the uploaded file to its new place
-        mkdir ("/home/trait/upload/$shasum");
+        @mkdir ("/home/trait/upload/$shasum");
         if (move_uploaded_file($tempname, $permname)) {
             $nickname = $_POST['nickname'];
             $oid = $user['oid'];
@@ -85,9 +85,9 @@ function send_to_server($permname) {
     $client->return_type = 'phpvals';
     $message = new xmlrpcmsg("submit_local", array(new xmlrpcval($permname, "string")));
     $resp = $client->send($message);
-    if ($resp->faultCode()) { echo "Error: $resp->faultString();"; }
-    echo $resp->value();
-
+    if ($resp->faultCode()) { error_log ("xmlrpc send Error: ".$resp->faultString()); }
+    error_log ("xmlrpc send success: ".$resp->value());
+    return true;
 }
 
 // Delete all files in a directory recursively, then delete directory
