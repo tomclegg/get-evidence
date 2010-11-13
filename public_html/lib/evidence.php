@@ -1142,7 +1142,7 @@ class evidence_row_renderer {
 	}
 
 	if ($row["is_delete"])
-	  $html .= "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\"><P>Deleted in this revision:</P>$html</DIV>";
+	  $html .= "<DIV class=\"redalert\"><DIV><P>Deleted in this revision:</P></DIV>$html</DIV>";
 	else if ($row["flag_edited_id"]) {
 	  if ($row["previous_edit_id"])
 	    $edited = "Edited";
