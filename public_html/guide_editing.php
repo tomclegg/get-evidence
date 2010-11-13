@@ -10,7 +10,6 @@ GET-evidence variant evaluations can be edited by anyone&mdash;our only requirem
 h3. Other guides
 
 * "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
-* "Preliminary variant impact score":guide_preliminary_score: Explains how automatic preliminary scores are assigned, these should be overwritten by later evaluation.
 * "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 
 h2. Logging in with OpenID
@@ -27,21 +26,21 @@ h2. Where to start?
 
 h3. Which variants need editing?
 
-Two good places to start are the "visualization":vis page and the "reports":report page. 
+A great place to start is the "public genomes":genomes that we have uploaded -- if you scroll down you'll find a list of "Insufficiently reviewed variants". These are variants which do not have enough scores and impact information filled in to allow us to automatically sort them. We sort these using "autoscore", which prioritizes variants based on their presence in variant-specific lists (indicating there is published literature available), gene-specific lists (indicating potential for that gene to cause disease), and computational evidence (reflecting automatic prediction whether a variant may cause disease).
 
-The "visualization":vis is interactive: you can find variants that appear to lack evaluations in this graph (they should lack summaries) and then open up and edit that variant's page. 
-
-On the "reports":report page you can find various lists of GET-evidence entries. "Summaries needed" lists variants that have been marked pathogenic but lack summaries. "Variants with genome evidence and web search results" lists variants that have been found in one of the published genomes and have web search results (indicating that someone somewhere said something about that variant). These are good starting points for looking for variants that need more evaluation.
+Two other places to try are the "visualization":vis page and the "reports":report page. The "visualization":vis is interactive: you can find variants that appear to lack evaluations in this graph (they should lack summaries) and then open up and edit that variant's page. On the "reports":report page you can find various lists of GET-evidence entries. "Summaries needed" lists variants that have been marked pathogenic but lack summaries. "Variants with genome evidence and web search results" lists variants that have been found in one of the published genomes and have web search results (indicating that someone somewhere said something about that variant). These are good starting points for looking for variants that need more evaluation.
 
 h3. What sort of information is relevant?
 
+First find some papers that might help you understand the variant. You can enter the Pubmed ID in a box at the bottom of the page to enter that publication into our system. There will be a field there for you to summarize data from that paper relevant to this variant. Read that paper looking for evidence that would contribute to scoring.
+
 You should go read our description of "variant impact scores":guide_impact_score if you haven't already. Relevant information will be anything that contributes to scoring: Case/control numbers, familial inheritance, biochemical studies, etc.
 
-You should also note other details that may be relevant to interpreting the variant. For example, if a variant is linked to another putatively pathogenic variant&mdash;this isn't captured in the scoring but is relevant to interpreting the variant.
+Don't limit yourself to scoring, though -- you should also note other details that may be relevant to interpreting the variant. For example, if a variant is linked to another putatively pathogenic variant&mdash;this isn't captured in the scoring but is relevant to interpreting the variant.
 
 h3. Where to find information?
 
-Once editing a variant, you'll need to start reading publications that reported observations relevant to that variant. The "other external references" section at the bottom of a variant page contains useful starting points: OMIM, GeneTests, and web search results. Once you find publications, you should add entries for them to GET-evidence and record the relevant information.
+The "other external references" section at the bottom of a variant page contains useful starting points: OMIM, GeneTests, and web search results. Once you find publications, you should add entries for them to GET-evidence and record the relevant information.
 
 * *Web search*: You should always search for a variant using a search engine (internet search or journal search), if you're lucky you'll find a recent review article that summarizes research relevant to the variant. You can then follow those citations.
 * *GeneTests*: If a gene is in GeneTests, you can try clicking on the GeneTests link in the "other external references" section. Sometimes you will find an associated GeneReviews link that summarizes the disease and treatment. This is especially useful for evaluating clinical importance categories (disease severity and disease treatability). If the review mentions this variant, it is a good starting point for finding relevant literature.
@@ -52,7 +51,7 @@ Keep in mind that reviews like GeneReviews and OMIM may not be up-to-date and mi
 
 h2. Things to edit
 
-There are many fields in a GET-evidence variant summary&mdash;the order you'll want to fill these in is probably different from the order they appear on the page. 
+There are many fields in a GET-evidence variant summary&mdash;of course, the order you'll want to fill these in may be different from the order they appear on the page. 
 
 This is the order they appear on the page:
 

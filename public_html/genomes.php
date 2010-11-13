@@ -120,11 +120,14 @@ function uploaded_genome_actions($result) {
 
 function upload_warning() {
     $returned_text = "<h2><font color=red>WARNING</font></h2>\n";
-    $returned_text .= "<h2><font color=red>You may upload genomes for analysis if logged in, "
-                    . "but we cannot guarantee the security of our database.\n"
-                    . "Please install a private version of GET-Evidence to "
-                    . "ensure privacy and security of your genome data."
-                    . "</font></h2></p>\n";
+    $returned_text .= "<h3><font color=red>You may upload genomes for analysis if "
+                    . "logged in, but we cannot guarantee the security of our database.\n"
+                    . "By using our system you agree to our "
+                    . "<A HREF=\"tos\">Terms of Service</A>.\n"
+                    . "We strongly encourage you to instead install a private version "
+                    . "of GET-Evidence to ensure privacy and security of your genome data, "
+                    . "or to contact us for other options."
+                    . "</font></h3></p>\n";
     return($returned_text);
 }
 
