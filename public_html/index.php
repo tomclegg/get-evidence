@@ -118,8 +118,8 @@ if ($max_edit_id) {
 					WHERE edit_id=?",
 				   array ($max_edit_id));
     $history_box .= "
-<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\">
-<P style=\"margin: 0; padding: 0;\">You are viewing ";
+<DIV class=\"redalert\">
+<P>You are viewing ";
     if ($next_version)
 	$history_box .= "an <STRONG>old version</STRONG> of this page that was saved on <STRONG>$version_date</STRONG>";
     else
@@ -159,7 +159,7 @@ $variant_name_short = evidence_get_variant_name ($row0, " ", true);
 $gOut["title"] = "$variant_name_short - GET-Evidence";
 
 if (!eval_suff($row0["variant_quality"])) {
-    $gOut["content"] = "<DIV style=\"outline: 1px dashed #300; background-color: #fdd; color: #300; padding: 20px 20px 0 20px; margin: 0 0 10px 0;\">"
+    $gOut["content"] = "<DIV class=\"redalert\">"
             . "<p>Note: <STRONG>This variant has not been sufficiently evaluated</STRONG> by a GET-Evidence editor.</p>"
             . "<p>To be considered sufficiently evaluated a variant must have both \"variant evidence\" and \"clinical importance\" scores filled in.</p>"
             . "<p>Please help improve GET-Evidence by <A href=\"guide_editing\">evaluating evidence</A> for this variant!</p>"

@@ -42,21 +42,17 @@ if (strlen($display_genome_ID) > 0) {
     $page_content .= "<h2>Public genomes</h2>";
     $page_content .= list_uploaded_genomes($public_data_user);
     $page_content .= "<hr>";
+    $page_content .= "<h2>Your uploads</h2>\n";
     if ($user) {
-        $page_content .= "<h2>Uploaded genomes</h2>\n";
         $page_content .= list_uploaded_genomes($user["oid"]);
         $page_content .= "<hr>";
         $page_content .= "<h2>Upload a genome for analysis</h2>\n";
-        $page_content .= upload_warning();
+	$page_content .= upload_warning();
         $page_content .= genome_entry_form();
     } else {
-        $page_content .= "<h2>Genome analysis</h2>"
-                    . "<h3>You need to be logged in using your OpenID to use "
-                    . "GET-Evidence for private genome analysis. Because we "
-                    . "cannot guarantee the security of our system we "
-                    . "highly recommend creating a private installation of "
-                    . "GET-Evidence for genome analysis of private genomes."
-                    . "</h3>";
+        $page_content .= "<P>If you log in with your OpenID, you can process "
+		    . "your own data by uploading it here.</P>";
+	$page_content .= upload_warning();
     }
 }
 
@@ -83,7 +79,7 @@ function list_uploaded_genomes($user_oid) {
         }
         $returned_text .= "</TABLE>\n";
     } else {
-        $returned_text .= "You have no uploaded genomes.\n";
+        $returned_text .= "<P>You have no uploaded genomes.</P>\n";
     }
     return($returned_text);
 }
@@ -125,16 +121,27 @@ function uploaded_genome_actions($result) {
 }
 
 function upload_warning() {
-    $returned_text = "<h2><font color=red>WARNING</font></h2>\n";
-    $returned_text .= "<h3><font color=red>You may upload genomes for analysis if "
-                    . "logged in, but we cannot guarantee the security of our database.\n"
-                    . "By using our system you agree to our "
-                    . "<A HREF=\"tos\">Terms of Service</A>.\n"
-                    . "We strongly encourage you to instead install a private version "
-                    . "of GET-Evidence to ensure privacy and security of your genome data, "
-                    . "or to contact us for other options."
-                    . "</font></h3></p>\n";
-    return($returned_text);
+    return <<<EOT
+
+<DIV class="redalert">
+
+<P><BIG><STRONG>IMPORTANT:</STRONG></BIG> By uploading data our system
+you agree to our <A HREF="tos">terms of service</A>.</P>
+
+<P>&nbsp;</P>
+
+<P>In particular, we do <STRONG>not</STRONG> guarantee the privacy of any
+data you upload.</P>
+
+<P>&nbsp;</P>
+
+<P>If you want to process private data, we encourage you to install
+your own GET-Evidence, or to contact us for other
+options.</P>
+</DIV>
+
+EOT
+;
 }
 
 function genome_entry_form() {
@@ -150,6 +157,7 @@ function genome_entry_form() {
                         . "id=\"nickname\"></label>\n";
     $returned_text .= "<input type=\"submit\" value=\"Upload\" class=\"button\" />\n";
     $returned_text .= "</form>\n</div>\n";
+    $returned_text .= "<P>&nbsp;</P>\n";
 
     return($returned_text);
 }

@@ -364,6 +364,19 @@ ul.tipped {
 	visibility: hidden;
 }
 
+/* inline alert */
+
+.redalert {
+	outline: 1px dashed #300;
+	background-color: #fdd;
+	color: #300;
+	padding: 20px;
+	margin: 0 0 10px 0;
+}
+.redalert>p {
+	margin: 0;
+	padding: 0;
+}
 
 /* Speech bubble code adapted from
    http://nicolasgallagher.com/progressive-enhancement-pure-css-speech-bubbles/ */
