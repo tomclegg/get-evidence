@@ -64,10 +64,9 @@ go();
 
 function list_uploaded_genomes($user_oid) {
     global $public_data_user, $user;
-    $returned_text = "";
     $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY upload_date", array("$user_oid"));
     if ($db_query) {
-        $returned_text .= "<TABLE class=\"report_table\">\n";
+        $returned_text = "<TABLE class=\"report_table\">\n";
         $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";
         foreach ($db_query as $result) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
@@ -78,10 +77,11 @@ function list_uploaded_genomes($user_oid) {
             }
         }
         $returned_text .= "</TABLE>\n";
-    } else {
-        $returned_text .= "<P>You have no uploaded genomes.</P>\n";
+	return $returned_text;
     }
-    return($returned_text);
+    if ($user_oid == $public_data_user)
+	return "<P>No public genomes are available yet.</P>";
+    return "<P>You have not uploaded any genomes.</P>\n";
 }
 
 function public_genome_actions($result) {
