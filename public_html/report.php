@@ -256,7 +256,7 @@ $sql_orderby
     else if ($certainty == 1)
       $impact = "likely $impact";
     else if ($certainty == 0) {
-      if (eval_suff($row["variant_quality"])) {
+      if (quality_eval_suff($row["variant_quality"],$row["variant_impact"])) {
         $impact = "uncertain $impact";
       } else {
         $impact = "insufficiently evaluated $impact";

@@ -120,32 +120,32 @@ $gQualityAxes = array ("Computational" => "One point for each consistent predict
 <LI>GVGD</LI>
 <LI>etc.</LI>
 </UL>",
-		       "Functional" => "One point for each experiment supporting the result, and penalize one point for conflicting results from:
+		       "Functional" => "One point for each variant-specific experiment supporting the result, and penalize one point for conflicting results. Experiments must be variant-specific recombinant sequences, not merely from patient-derived cell lines (which may carry another causal variant). Ignore general data regarding gene function and importance. Examples:
 <UL class=\"tipped\">
-<LI>enzyme extracts</LI>
-<LI>cell lines</LI>
+<LI>enzyme activity</LI>
+<LI>binding affinity</LI>
+<LI>cellular localization</LI>
 <LI>animal models</LI>
 <LI>etc.</LI>
 </UL>",
-		       "Case/Control" => "A combination of odds ratio and significance test (currently using Fisher&rsquo;s Exact Test). For protective alleles, use inverse&nbsp;OR&nbsp;=&nbsp;1&divide;OR. Do not count related individuals, count probands -- i.e., one per family.
+		       "Case/Control" => "Currently using Fisher&rsquo;s Exact Test. Do not count related individuals, count probands -- i.e., one per family.
 <UL class=\"tipped\">
 <LI>0 points if no higher ranking is allowed</LI>
-<LI>1 point if OR &gt; 1 and significance &lt;= 0.1</LI>
-<LI>2 points if OR &gt;= 1.5 and significance &lt;= 0.05</LI>
-<LI>3 points if OR &gt;= 2 and significance &lt;= 0.025</LI>
-<LI>4 points if OR &gt;= 3 and significance &lt;= 0.01</LI>
-<LI>5 points if OR &gt;= 5 and significance &lt;= 0.0001</LI>
+<LI>1 point if significance &lt;= 0.1</LI>
+<LI>2 points if significance &lt;= 0.05</LI>
+<LI>3 points if significance &lt;= 0.025</LI>
+<LI>4 points if significance &lt;= 0.01</LI>
+<LI>5 points if significance &lt;= 0.0001</LI>
 </UL>",
 		       "Familial" => "<UL class=\"tipped\">
-<LI>0 points for no familial information</LI>
-<LI>1 point for LOD &gt;= 0.5</LI>
-<LI>2 points for LOD &gt;= 1</LI>
-<LI>3 points for LOD &gt;= 1.5, at least two families</LI>
-<LI>4 points for LOD &gt; 3, at least two families</LI>
-<LI>5 points for LOD &gt; 5, at least two families</LI>
+<LI>0 points if no familial information</LI>
+<LI>1 point if LOD &gt;= 0.5</LI>
+<LI>2 points if LOD &gt;= 1</LI>
+<LI>3 points if LOD &gt;= 1.5, at least two families</LI>
+<LI>4 points if LOD &gt; 3, at least two families</LI>
+<LI>5 points if LOD &gt; 5, at least two families</LI>
 </UL>",
-		       "Disease Severity" => "Downgraded according to disease penetrance (e.g., Crohn&rsquo;s disease would be moderate or severe, but \"increased susceptibility\" could only mean that the chances are increased by ~.15% and so would be called mild).
-<UL class=\"tipped\">
+		       "Severity" => "<UL class=\"tipped\">
 <LI>0 points for benign</LI>
 <LI>1 point for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with a 4-fold relative risk, causing an overall risk of ~.7%)</LI>
 <LI>2 points for mild effect on quality of life or unlikely to be symptomatic (Cystinuria)</LI>
@@ -160,7 +160,14 @@ $gQualityAxes = array ("Computational" => "One point for each consistent predict
 <LI>3 points for treatable but a significant fraction do not require treatment (Cystinuria)</LI>
 <LI>4 points for treatable: Standard treatment reduces the amount of mortality/morbidity but does not eliminate it (e.g., sickle-cell disease)</LI>
 <LI>5 points for extremely treatable: Well-established treatment essentially eliminates the effect of the disease (e.g., PKU)</LI>
-</UL>");
+</UL>",
+                "Penetrance" => "<UL class=\"tipped\">
+<LI>0 points if &lt; 0.1% attributable risk (extremely low penetrance)</LI>
+<LI>1 point if &ge; 0.1% attributable risk (very low penetrance)</LI>
+<LI>2 points if &ge; 1% attributable risk (low penetrance)</LI>
+<LI>3 points if &ge; 5% attributable risk (moderate penetrance)</LI>
+<LI>4 points if &ge; 20% attributable risk (moderately high penetrance)</LI>
+<LI>5 points if &ge; 50% attributable risk (complete or highly penetrant)</LI>");
 
 function editable_quality ($id, $content, $title, $options)
 {

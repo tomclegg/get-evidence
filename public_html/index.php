@@ -158,7 +158,7 @@ $variant_name_short = evidence_get_variant_name ($row0, " ", true);
 
 $gOut["title"] = "$variant_name_short - GET-Evidence";
 
-if (!eval_suff($row0["variant_quality"])) {
+if (!quality_eval_suff($row0["variant_quality"],$row0["variant_impact"])) {
     $gOut["content"] = "<DIV class=\"redalert\">"
             . "<p>Note: <STRONG>This variant has not been sufficiently evaluated</STRONG> by a GET-Evidence editor.</p>"
             . "<p>To be considered sufficiently evaluated a variant must have both \"variant evidence\" and \"clinical importance\" scores filled in.</p>"
