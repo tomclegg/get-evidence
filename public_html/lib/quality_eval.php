@@ -2,28 +2,15 @@
 
 function quality_eval_suff ($variant_quality, $impact="pathogenic")
 {
-    if (strlen($variant_quality) < 7) {
+    if (strlen($variant_quality) < 7)
         return False;
-    } else {
-        if ($variant_quality[2] == "-" and $variant_quality[3] == "-") {
-            return False;
-        } elseif ($variant_quality[4] == "-" and $variant_quality[5] == "-"
-                    and $variant_quality[6] == "-"
-                    and $impact != "benign" and $impact != "protective") {
-            return False;
-        } else {
-            for ($i=0; $i<7; $i++) {
-                if ($variant_quality[$i] != "-") {
-                    $num_eval++;
-                }
-            }
-            if ($num_eval >= 4) {
-                return True;
-            } else {
-                return False;
-            }
-        }
-    }
+    if ($variant_quality[2] == "-" && $variant_quality[3] == "-")
+	return False;
+    if (($variant_quality[4] == "-" || $variant_quality[6] == "-")
+	&& $impact != "benign"
+	&& $impact != "protective")
+	return False;
+    return True;
 }
 
 function quality_eval_clinical($variant_quality) {
