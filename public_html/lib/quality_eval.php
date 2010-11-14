@@ -12,7 +12,7 @@ function quality_eval_suff ($variant_quality, $impact="pathogenic")
                     and $impact != "benign" and $impact != "protective") {
             return False;
         } else {
-            for ($i=0; $i<6; $i++) {
+            for ($i=0; $i<7; $i++) {
                 if ($variant_quality[$i] != "-") {
                     $num_eval++;
                 }
