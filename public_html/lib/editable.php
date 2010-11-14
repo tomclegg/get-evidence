@@ -175,6 +175,14 @@ function editable_quality ($id, $content, $title, $options)
     $editable = !$gDisableEditing && getCurrentUser();
 
     $rationale = json_decode ($content["variant_quality_text"], true);
+    while (count($rationale) < 7) {
+	// Pad the rationale json so the auto-save code can
+	// distinguish "edited rationale" from "filled out incomplete
+	// rationale json"
+	$rationale[] = array ("text" => "", "seealso" => array());
+	if (count($rationale) == 7)
+	    $content["variant_quality_text"] = json_encode ($rationale);
+    }
 
     $html = "<TABLE class=\"quality_table\">\n";
     $header_row = "<TR><TH class=\"rowlabel\" width=\"120\">Variant evidence</TH><TH width=\"1\"></TH><TH width=\"16\"></TH><TH width=\"1\"></TH><TH width=\"*\"></TH></TR>\n";
