@@ -79,7 +79,7 @@ function quality_eval_qualify_impact ($scores, $impact)
     if (quality_eval_suff($scores, $impact)) {
         $qualify_clinical = strtolower(quality_eval_clinical($scores));
         $qualify_evidence = quality_eval_evidence($scores);
-        if ($qualify_evidence = "Well-established") {
+        if ($qualify_evidence == "Well-established") {
             $qualify_evidence = "";
         }
         $impact = $qualify_clinical . " clinical importance, " . $qualify_evidence . " " . $impact;
