@@ -147,8 +147,8 @@ $gQualityAxes = array ("Computational" => "One point for each consistent predict
 </UL>",
 		       "Severity" => "<UL class=\"tipped\">
 <LI>0 points for benign</LI>
-<LI>1 point for very low expectation of having symptoms for this genotype, very low penetrance (e.g., susceptibility to Crohn&rsquo;s with a 4-fold relative risk, causing an overall risk of ~.7%)</LI>
-<LI>2 points for mild effect on quality of life or unlikely to be symptomatic (Cystinuria)</LI>
+<LI>1 point for rarely having any effect on health (e.g. small increased susceptibility to infections -- either choose this or a low penetrance score, not both)</LI>
+<LI>2 points for mild effect on quality of life and/or usually not symptomatic (Cystinuria)</LI>
 <LI>3 points for moderate effect on quality of life (e.g., Familial Mediterranean Fever)</LI>
 <LI>4 points for severe effect: causes serious disability or reduces life expectancy (e.g., Sickle-cell, Stargardt&rsquo;s disease)</LI>
 <LI>5 points for very severe effect, lethal by early adulthood (e.g., Lethal junctional epidermolysis bullosa, Adrenoleukodystrophy)</LI>
@@ -157,8 +157,8 @@ $gQualityAxes = array ("Computational" => "One point for each consistent predict
 <LI>0 points for no clinical evidence supporting intervention (e.g., PAF acetylhydrolase deficiency)</LI>
 <LI>1 point for incurable: treatment only to alleviate symptoms</LI>
 <LI>2 points for potentially treatable: Treatment is in development or controversial</LI>
-<LI>3 points for treatable but a significant fraction do not require treatment (Cystinuria)</LI>
-<LI>4 points for treatable: Standard treatment reduces the amount of mortality/morbidity but does not eliminate it (e.g., sickle-cell disease)</LI>
+<LI>3 points for somewhat treatable: Standard treatment, but only a small or moderate improvement of mortality/morbidity</LI>
+<LI>4 points for treatable: Standard treatment significantly reduces the amount of mortality/morbidity but does not eliminate it</LI>
 <LI>5 points for extremely treatable: Well-established treatment essentially eliminates the effect of the disease (e.g., PKU)</LI>
 </UL>",
                 "Penetrance" => "<UL class=\"tipped\">

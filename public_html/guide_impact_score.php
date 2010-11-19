@@ -83,8 +83,8 @@ This category measures how severely the disease/phenotype associated with this v
 * 5 points for very severe effect: early lethal (e.g. Familial adenomatous polypopsis, adrenoleukodystrophy)
 * 4 points for severe effect: causes serious disability or reduces life expectancy (e.g. Sickle-cell disease, Stargardt's disease)
 * 3 points for moderate effect on quality of life (e.g. Familial mediterranean fever)
-* 2 points for mild effect on quality of life or unlikely to be symptomatic (e.g. Cystinuria)
-* 1 point for very low expectation of having symptoms for this genotype, very low penetrance (e.g. Susceptibility to Crohn's disease with a 4-fold relative risk&mdash;this is an overall risk of ~.7%)
+* 2 points for mild effect on quality of life and/or usually not symptomatic (e.g. Cystinuria)
+* 1 point for rarely having any effect on health (e.g. small increased susceptibility to infections -- either choose this or a low penetrance score, not both)
 * 0 points if benign 
 
 h2. Disease treatability
@@ -92,8 +92,8 @@ h2. Disease treatability
 This category measures how treatable the effects of the disease/phenotype are.
 
 * 5 points for extremely treatable: Well-established treatment essentially eliminates the effect of the disease (e.g. PKU)
-* 4 points for treatable: Standard treatment reduces the amount of mortality/morbidity but does not eliminate it (e.g. Sickle-cell disease)
-* 3 points for treatable but a significant fraction do not require treatment (e.g. Cystinuria)
+* 4 points for treatable: Standard treatment significantly reduces the amount of mortality/morbidity but does not eliminate it
+* 3 points for somewhat treatable: Standard treatment, but only a small or moderate improvement of mortality/morbidity
 * 2 points for potentially treatable: Treatment is in development or controversial
 * 1 point for uncurable: treatment only to alleviate symptoms (e.g. adrenoleukodystrophy)
 * 0 points for no clinical evidence supporting intervention (e.g. PAF acetylhydrolase deficiency) 
