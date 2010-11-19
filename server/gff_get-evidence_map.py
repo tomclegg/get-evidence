@@ -233,12 +233,8 @@ def main():
                             output_splice_variant["in_pharmgkb"] = True
 
                 output_splice_variant["autoscore"] = autoscore(output_splice_variant, blosum_matrix, aa_from_short, aa_to_short)
-                if "variant_quality" in output_splice_variant:
-                    output_splice_variant["suff_eval"] = suff_eval(output_splice_variant)
-                else:
-                    output_splice_variant["suff_eval"] = False
 
-                if (output_splice_variant["autoscore"] >= 2 or output_splice_variant["suff_eval"]):
+                if (output_splice_variant["autoscore"] >= 2 or suff_eval(output_splice_variant)):
                     print json.dumps(output_splice_variant, ensure_ascii=False)
 
             # If no splice variants had a GET-Evidence hit, analyze using first splice variant
@@ -264,12 +260,8 @@ def main():
                             if d["tag"] == "PharmGKB":
                                 output["in_pharmgkb"] = True
                 output["autoscore"] = autoscore(output, blosum_matrix, aa_from_short, aa_to_short)
-                if "variant_quality" in output:
-                    output["suff_eval"] = suff_eval(output)
-                else:
-                    output["suff_eval"] = False
 
-                if (output["autoscore"] >= 2 or output["suff_eval"]):
+                if (output["autoscore"] >= 2 or suff_eval(output)):
                     print json.dumps(output, ensure_ascii=False)               
                     
         else:
@@ -289,14 +281,10 @@ def main():
                     if d["tag"] == "PharmGKB":
                         output["in_pharmgkb"] = True
             output["autoscore"] = autoscore(output)
-            if "variant_quality" in output:
-                output["suff_eval"] = suff_eval(output)
-            else:
-                output["suff_eval"] = False
 
             # Autoscore bar is lower here because you can only get points if 
             # the dbSNP ID is in one of the variant specific databases (max 2)
-            if (output["autoscore"] >= 1 or output["suff_eval"]):
+            if (output["autoscore"] >= 1 or suff_eval(output)):
                 print json.dumps(output, ensure_ascii=False)
 
     cursor.close()
@@ -329,28 +317,25 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
     return score_var_database + score_gene_database + score_comp
 
 def suff_eval(variant_data):
-    quality_scores = variant_data["variant_quality"]
+    quality_scores = ""
+    if "variant_quality" in variant_data:
+        quality_scores = variant_data["variant_quality"]
+    else:
+        return False
     impact = variant_data["variant_impact"]
-    if (len(quality_scores) < 5):
+    if (len(quality_scores) < 7):
         return False
     else:
         if (quality_scores[2] == "-" and quality_scores[3] == "-"):
             return False
         else:
-            num_eval = 0
-            for score in quality_scores:
-                if (score != "-"):
-                    num_eval += 1
             if ( (impact == "benign" or impact == "protective") and num_eval >= 2):
                 return True
             else:
-                if (quality_scores[4] == "-" and quality_scores[5] == "-"):
+                if (quality_scores[4] == "-" or quality_scores[6] == "-"):
                     return False
                 else:
-                    if num_eval >= 4:
-                        return True
-                    else:
-                        return False
+                    return True
 
 if __name__ == "__main__":
     main()

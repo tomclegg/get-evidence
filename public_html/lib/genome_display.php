@@ -31,6 +31,7 @@ function genome_display($shasum, $oid) {
             $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
                                             $variant_data["genotype"],
                                             $variant_data["ref_allele"]);
+            $variant_data["suff_eval"] = quality_eval_suff($variant_data["variant_quality"]);
             if ($variant_data["suff_eval"]) {
                 $variant_data["clinical"] = quality_eval_clinical($variant_data["variant_quality"]);
                 $variant_data["evidence"] = quality_eval_evidence($variant_data["variant_quality"]);
