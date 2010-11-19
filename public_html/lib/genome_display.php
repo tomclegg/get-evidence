@@ -12,6 +12,7 @@ function genome_display($shasum, $oid) {
         $lines = file($results_file);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
+	    if (!$variant_data) continue; // sometimes we can't read python's json??
             # Get allele frequency
             if (array_key_exists("num",$variant_data) and array_key_exists("denom",$variant_data)) {
                 $allele_freq = 100 * ($variant_data["num"] / $variant_data["denom"]);
