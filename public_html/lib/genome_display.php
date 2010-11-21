@@ -5,7 +5,7 @@ require_once ("lib/quality_eval.php");
 function genome_display($shasum, $oid) {
     $db_query = theDb()->getAll ("SELECT nickname FROM private_genomes WHERE shasum=? AND oid=?",
                                             array($shasum, $oid));
-    $returned_text = "<h1>Genome report for " . "</h1>\n";
+    $returned_text = "<h1>Genome report for " . $db_query[0]['nickname'] . "</h1>\n";
 
     $results_file = "/home/trait/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
