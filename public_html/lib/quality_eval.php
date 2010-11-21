@@ -2,14 +2,15 @@
 
 function quality_eval_suff ($variant_quality, $impact="pathogenic")
 {
-    if (strlen($variant_quality) < 7)
+    if (strlen($variant_quality) < 4)
         return False;
     if ($variant_quality[2] == "-" && $variant_quality[3] == "-")
-	return False;
-    if (($variant_quality[4] == "-" || $variant_quality[6] == "-")
-	&& $impact != "benign"
-	&& $impact != "protective")
-	return False;
+	    return False;
+    if ($impact == "benign" || $impact == "protective") 
+        return True;
+    if (strlen($variant_quality) < 7 && 
+        ($variant_quality[4] == "-" || $variant_quality[6] == "-"))
+	    return False;
     return True;
 }
 
