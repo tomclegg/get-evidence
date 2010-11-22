@@ -95,6 +95,10 @@ function list_uploaded_genomes($user_oid) {
         $returned_text .= "</TABLE>\n";
         return $returned_text;
     }
+    if ($user_oid == $pgp_data_user)
+	return "<P>No PGP genomes are available yet.</P>";
+    if ($user_oid == $public_data_user)
+	return "<P>No public genomes are available yet.</P>";
     return "<P>You have not uploaded any genomes.</P>\n";
 }
 
