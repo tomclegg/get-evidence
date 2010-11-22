@@ -7,6 +7,14 @@ function genome_display($shasum, $oid) {
                                             array($shasum, $oid));
     $returned_text = "<h1>Genome report for " . $db_query[0]['nickname'] . "</h1>\n";
 
+    $returned_text .= "<form action=\"/genome_download.php\" method=\"post\">\n"
+                    . "<input type=\"hidden\" name=\"download_genome_id\" value=\""
+                    . $shasum . "\">\n"
+                    . "<input type=\"hidden\" name=\"download_nickname\" value=\""
+                    . $db_query[0]['nickname'] . "\">\n"
+                    . "<input type=\"submit\" value=\"Download source data\" "
+                    . "class=\"button\" \/>";
+
     $results_file = "/home/trait/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
         $lines = file($results_file);
