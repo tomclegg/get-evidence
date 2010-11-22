@@ -5,7 +5,8 @@ include "lib/genome_display.php";
 $gOut["title"] = "GET-Evidence: Genomes";
 
 $page_content = "";  // all html output stored here
-$public_data_user = "http://www.google.com/profiles/PGP.uploader";
+$pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
+$public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 
 $display_genome_ID = $_REQUEST['display_genome_id'];
 $user_request_oid = $_REQUEST['user_request_oid'];
@@ -23,13 +24,24 @@ if (strlen($display_genome_ID) > 0) {
                                             array($display_genome_ID));
     # check you should have permission
     $permission = false;
-    $request_ID = $public_data_user;     # reset if to this user if they have permission
+    $request_ID = "";
+    # First check if logged in use has access
     foreach ($db_query as $result) {
         if ($result['oid'] == $user['oid']) {
             $permission = true;
             $request_ID = $user['oid'];
-        } elseif ($result['oid'] == $public_data_user) {
-            $permission = true;
+        }
+    }
+    # Check if PGP or Public data, display as that if that user
+    if (!$permission) {
+        foreach ($db_query as $result) {
+            if ($result['oid'] == $pgp_data_user) {
+                $permission = true;
+                $request_ID = $pgp_data_user;
+            } elseif ($result['oid'] == $public_data_user) {
+                $permission = true;
+                $request_ID = $public_data_user;
+            }
         }
     }
     if ($permission) {
@@ -39,6 +51,8 @@ if (strlen($display_genome_ID) > 0) {
                     . "access to. Perhaps you've been logged off?<br>\n";
     }
 } else {
+    $page_content .= "<h2>PGP genomes</h2>";
+    $page_content .= list_uploaded_genomes($pgp_data_user);
     $page_content .= "<h2>Public genomes</h2>";
     $page_content .= list_uploaded_genomes($public_data_user);
     $page_content .= "<hr>";
@@ -63,7 +77,7 @@ go();
 // Functions
 
 function list_uploaded_genomes($user_oid) {
-    global $public_data_user, $user;
+    global $pgp_data_user, $public_data_user, $user;
     $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY upload_date", array("$user_oid"));
     if ($db_query) {
         $returned_text = "<TABLE class=\"report_table\">\n";
@@ -72,15 +86,15 @@ function list_uploaded_genomes($user_oid) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
             if ($user_oid == $public_data_user and $user['oid'] != $public_data_user) {
                 $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
+            } elseif ($user_oid == $pgp_data_user and $user['oid'] != $pgp_data_user) {
+                $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
             } else {
                 $returned_text .= uploaded_genome_actions($result) . "</TD></TR>\n";
             }
         }
         $returned_text .= "</TABLE>\n";
-	return $returned_text;
+        return $returned_text;
     }
-    if ($user_oid == $public_data_user)
-	return "<P>No public genomes are available yet.</P>";
     return "<P>You have not uploaded any genomes.</P>\n";
 }
 
@@ -94,7 +108,7 @@ function public_genome_actions($result) {
 }
 
 function uploaded_genome_actions($result) {
-    global $public_data_user, $user;
+    global $user;
     # Get report button
     $returned_text = "<form action=\"/genomes\" method=\"get\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
