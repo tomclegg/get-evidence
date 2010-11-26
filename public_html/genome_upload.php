@@ -73,7 +73,7 @@ if ($reprocess_genome_ID) {
             $page_content .= "Error: A problem occurred during file upload!";
         }
     } else {
-        $page_content .= "Error: Only .txt or .gff files under 1MB are accepted for upload";
+        $page_content .= "Error: Only .txt or .gff files under 500MB are accepted for upload";
     }
 } else {
     $page_content .= "Error: No file uploaded or file size exceeds limit";
