@@ -16,6 +16,7 @@ from utils import gff, twobit
 from utils.biopython_utils import reverse_complement, translate
 from utils.codon_intersect import codon_intersect
 from config import REFFLAT_SORTED
+from codon import codon_123
 
 
 def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exonStarts, exonEnds):
@@ -30,9 +31,16 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
     acid residue (1-based numeric type, if applicable) or change (1-based
     string, if applicable).
     """
-    # we're done if it's not intronic or exonic
-    if (record.strand == "+" and record.start <= cdsStart) or \
-      (record.strand == "-" and record.end > cdsEnd):
+    # Check chromosome name
+    if record.seqname.startswith("chr"):
+        chr = record.seqname
+    else:
+        chr = "chr" + record.seqname
+
+
+    # Check if it falls entirely outside the gene region
+    if (record.strand == "+" and record.end <= cdsStart) or \
+      (record.strand == "-" and record.start > cdsEnd):
         return ("5'-UTR",)
     
     if (record.strand == "+" and record.end > cdsEnd) or \
@@ -60,154 +68,260 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
         exonStarts.reverse()
         exonEnds.reverse()
 
+    # Get coordinates of coding sequence
+    exonWCodeStarts = []
+    exonWCodeEnds = []
+    exonCodingRanges = []
+    for j in range(len(exonStarts)):
+        if (exonEnds[j] <= cdsStart or exonStarts[j] > cdsEnd):
+            continue
+        else:
+            start = exonStarts[j]
+            end = exonEnds[j]
+            if start < cdsStart:
+                start = long(cdsStart)
+            if end > cdsEnd:
+                end = long(cdsEnd)
+            exonWCodeStarts.append(exonStarts[j])
+            exonWCodeEnds.append(exonEnds[j])
+            exonCodingRanges.append( (start, end) )
+
     # parse out exons
     exons = []
+    exon_seqs = []
     running_intron_count = running_exon_count = running_cds_bases_count = 0 # 1-based
     trimmed_bases = 0
 
-    for j in range(0, len(exonStarts)):
-        # discard any non-coding portions with this if statement
-        if exonEnds[j] > cdsStart and exonStarts[j] <= cdsEnd:
+    for j in range(0, len(exonWCodeStarts)):
+        # skip exons we know are noncoding (we reported UTR already earlier)
+        if exonWCodeEnds[j] > cdsStart and exonWCodeStarts[j] <= cdsEnd:
             
+            # check if it is spanning or within 2bp of the splice junction
+            overlap_start = (record.start <= exonWCodeStarts[j] and record.end > exonWCodeStarts[j] - 2) \
+                            and exonWCodeStarts[j] >= cdsStart
+            overlap_end = (record.start <= exonWCodeEnds[j] + 2 and record.end > exonWCodeEnds[j]) \
+                            and exonWCodeEnds[j] <= cdsEnd
+            before_seq = after_seq = ""
+            if overlap_start:
+                # print str(record.start) + " " + str(record.end)
+                # print str(exonWCodeStarts[j]) + " " + str(exonWCodeEnds[j])
+                # print exonCodingRanges[j]
+                # print str(cdsStart) + " " + str(cdsEnd)
+                if strand == "-":
+                    before_seq = reverse_complement("".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges[0:j+1])]))
+                    after_seq = reverse_complement(twobit_file[chr][exonCodingRanges[j+1][0]:exonCodingRanges[j+1][1]])
+                else:
+                    before_seq = "".join([twobit_file[chr][e[0]:e[1]] for e in exonCodingRanges[0:j]])
+                    after_seq = twobit_file[chr][exonCodingRanges[j][0]:exonCodingRanges[j][1]]
+            elif overlap_end:
+                # print str(record.start) + " " + str(record.end)
+                # print str(exonWCodeStarts[j]) + " " + str(exonWCodeEnds[j])
+                # print exonCodingRanges[j]
+                # print str(cdsStart) + " " + str(cdsEnd)
+                if strand == "-":
+                    before_seq = reverse_complement("".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges[0:j])]))
+                    after_seq = reverse_complement(twobit_file[chr][exonCodingRanges[j][0]:exonCodingRanges[j][1]])
+                else:
+                    before_seq = "".join([twobit_file[chr][e[0]:e[1]] for e in exonCodingRanges[0:j+1]])
+                    after_seq = twobit_file[chr][exonCodingRanges[j+1][0]:exonCodingRanges[j+1][1]]
+            if (overlap_start or overlap_end):
+                desc = ""
+                if len(before_seq) % 3 == 0:
+                    var1 = codon_1to3(translate(before_seq[-3:]))
+                    var2 = codon_1to3(translate(after_seq[:3]))
+                    pos = len(before_seq) / 3
+                    desc = var1 + "-" + var2 + str(pos) + "-" + str(pos+1) + "Splice"
+                    # print "Predicting splice start -, seq_ref: " + seq_ref + " next_exon: " + next_exon + " vars: " + var1 + " " + var2 + " desc: " + desc
+                else:
+                    aa = translate(before_seq + after_seq)
+                    var = codon_1to3(aa[(len(before_seq)/3)])
+                    pos = 1 + len(before_seq) / 3
+                    desc = var + str(pos) + "Splice"
+                    # print "Predicting splice start -, seq_ref: " + seq_ref + " next_exon: " + next_exon + " var: " + var + " desc: " + desc
+                return ("splice site",1,desc)
+
             # trim the start and end to the coding region
-            if exonStarts[j] < cdsStart:
-                trimmed_bases = cdsStart - exonStarts[j]
-                exonStarts[j] = cdsStart
-            if exonEnds[j] > cdsEnd:
-                trimmed_bases = exonEnds[j] - cdsEnd
-                exonEnds[j] = cdsEnd
-            
-            # increment the count
-            running_exon_count += 1
-            
-            # look at the intron, if applicable
+            if exonWCodeStarts[j] < cdsStart:
+                trimmed_bases = cdsStart - exonWCodeStarts[j]
+                exonWCodeStarts[j] = cdsStart
+            if exonWCodeEnds[j] > cdsEnd:
+                trimmed_bases = exonWCodeEnds[j] - cdsEnd
+                exonWCodeEnds[j] = cdsEnd
+
+            # check if it's in intron
             if len(exons) > 0:
                 if strand == "+":
                     intron_start = exons[-1][1]
-#                    intron_start = exons[-1][1] - 1 # the end of the last exon considered
-                    intron_end = exonStarts[j]
+                    intron_end = exonWCodeStarts[j]
                 else:
-                    intron_start = exonEnds[j]
+                    intron_start = exonWCodeEnds[j]
                     intron_end = exons[-1][0]
-                
+
                 running_intron_count += 1
-                
-                # test if is in intron (remember, start and end are 1-based)
-                # (this only works if record.start = record.end (i.e. SNPs);
-                # otherwise, this will need to be adapted by taking strand
-                # into account)
+
+                # test if is in within intron 
+                # (variants spanning exon/introns should've been caught earlier)
                 if (record.start > intron_start and record.end <= intron_end):
                     return ("intron", running_intron_count)
-            
-            # look at exon (again, this only works if record.start = record.end
-            # and assumes both are 1-based)
-            if (record.start > exonStarts[j] and record.end <= exonEnds[j]):
-                # figure out number of bases, amino acid residues, frame
-                if strand == "+":
-                    running_cds_bases_count += record.start - exonStarts[j]
-                    frame_offset = running_cds_bases_count % 3
-                    if frame_offset == 0:
-                        frame_offset = 3
-                        # chr direction =>
-                        # translation direction =>
-                        # -------------
-                        # | 1 | 2 | 3 |
-                        # -------------
-                        #   ^ first base of codon
-                        #
-                        # note that this convention corresponds to frames 0, 2, 1
-                        # respectively in GTF notation
-                else:
-                    running_cds_bases_count += exonEnds[j] + 1 - record.end
-                    frame_offset = -1 * (running_cds_bases_count % 3)
-                    if frame_offset == 0:
-                        frame_offset = -3
-                        # chr direction =>
-                        # <= translation direction
-                        # -------------
-                        # |-3 |-2 |-1 |
-                        # -------------
-                        #           ^ first base of codon
-                        #
-                        # note that this convention corresponds to frames 1, 2, 0
-                        # respectively in GTF notation
+
+            # look in exon
+            #if (not ( (record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
+            #    or (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j]))):
+            #    print "WARNING: Isn't this suppose to be in the exon??"
+            #    print "record start: " + str(record.start) + " end: " + str(record.end)
+            #    print "exon start: " + str(exonWCodeStarts[j]) + " end: " + str(exonWCodeEnds[j])
+
+            if ( (record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
+                or (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
+            #else:
                 
-                # ugly, but that's the way it is, we want to divide by 3, then take the ceiling
-                # as a (long) integer; so, we convert to float, divide, take the ceiling, then
-                # convert back...
-                amino_acid_residue = long(math.ceil(float(running_cds_bases_count) / 3))
-                
-                # figure out what we need, and prepare to look it up
-                start_exon, end_exon, intervals = \
-                  codon_intersect(record.start - 1, record.end, all_exons, frame_offset)
-                
-                # calculate the chromosome name we want to use
-                if record.seqname.startswith("chr"):
-                    chr = record.seqname
-                else:
-                    chr = "chr" + record.seqname
-                
-                # look it up
-                ref_seq = "".join([twobit_file[chr][k[0]:k[1]] for k in intervals])
-                
-                # within each set of intervals, the same codons could have
-                # different positions for alternative splicings, etc.
-                replacement_coord = (frame_offset + 3) % 4
-                
-                # figure out which allele is not the mutant
+                # get alleles and length is reference genome
                 alleles = record.attributes["alleles"].strip("\"").split("/")
+                for i in range(len(alleles)):
+                    if alleles[i] == "-":
+                        alleles[i] = ""
+                ref_allele = record.attributes["ref_allele"]
+                if ref_allele == "-":
+                    ref_allele = ""
+                if (len(ref_allele) != record.end + 1 - record.start):
+                    sys.exit("Reference allele length doesn't match GFF positions! ref_allele: \""  \
+                        + record.attributes["ref_allele"] + "\", start: " + record.start + " end: " \
+                        + record.end)
                 try:
-                    alleles.remove(record.attributes["ref_allele"])
+                    alleles.remove(ref_allele)
                 except ValueError:
                     pass
 
-                if strand == "+":
-                    alleles_relative_to_gene = alleles;
-                    ref_relative_to_gene = record.attributes["ref_allele"]
+
+                #if not ((record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
+                #    and (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
+                    # print "WARNING: Doesn't this cover a splice junction?"
+                    # print "record start: " + str(record.start) + " end: " + str(record.end)
+                    # print "exon start: " + str(exonWCodeStarts[j]) + " end: " + str(exonWCodeEnds[j])
+
+                # Generate reference and variant coding region DNA sequences
+                seq_var = [ ]
+                seq_ref = seq_ref_pre = seq_ref_post = ""
+                if strand == "-":
+                    seq_ref = "".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges)])
+                    seq_ref = reverse_complement(seq_ref)
+                    seq_ref_pre = "".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges[:j])])
+                    seq_ref_post = "".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges[j+1:])])
                 else:
-                    alleles_relative_to_gene = map(reverse_complement,alleles)
-                    ref_relative_to_gene = reverse_complement(record.attributes["ref_allele"])
-                
-                # now work through each mutant allele
+                    seq_ref = "".join([twobit_file[chr][e[0]:e[1]] for e in exonCodingRanges])
+                    seq_ref_pre = "".join([twobit_file[chr][e[0]:e[1]] for e in exonCodingRanges[:j]])
+                    seq_ref_post = "".join([twobit_file[chr][e[0]:e[1]] for e in exonCodingRanges[j+1:]])
+                for allele in alleles:
+                    seq = ""
+                    if strand == "-":
+                        seq = seq_ref_post + twobit_file[chr][exonCodingRanges[j][0]:(record.start - 1)] \
+                            + allele + twobit_file[chr][record.end:exonCodingRanges[j][1]] + seq_ref_pre
+                        seq = reverse_complement(seq)
+                    else: 
+                        seq = seq_ref_pre + twobit_file[chr][exonCodingRanges[j][0]:(record.start - 1)] \
+                            + allele + twobit_file[chr][record.end:exonCodingRanges[j][1]] + seq_ref_post
+                    seq_var.append(seq)
+                ref_aa = list(translate(seq_ref))
+
+                # Get variants
                 amino_acid_changes = []
-                is_synonymous = True
-                for mut_allele in alleles:                
-                    mut_seq_list = list(ref_seq)
-                    mut_seq_list[replacement_coord] = mut_allele
-                    mut_seq = "".join(mut_seq_list)
-                    
-                    if frame_offset > 0 and not chr.startswith("chrM"):
-                        ref_residue = translate(ref_seq)
-                        mut_residue = translate(mut_seq)
-                    elif frame_offset < 0 and not chr.startswith("chrM"):
-                        ref_residue = translate(reverse_complement(ref_seq))
-                        mut_residue = translate(reverse_complement(mut_seq))
-                    elif frame_offset > 0:
-                        ref_residue = translate(ref_seq, "Vertebrate Mitochondrial")
-                        mut_residue = translate(mut_seq, "Vertebrate Mitochondrial")
-                    else:
-                        ref_residue = translate(reverse_complement(ref_seq),
-                          "Vertebrate Mitochondrial")
-                        mut_residue = translate(reverse_complement(mut_seq),
-                          "Vertebrate Mitochondrial")
-                    
-                    if ref_residue != mut_residue:
-                        amino_acid_changes.append(ref_residue + str(amino_acid_residue) + mut_residue)
-                        is_synonymous = False
-                
-                # return info
-                if not is_synonymous:
-                    return ("nonsynonymous coding", running_exon_count, " ".join(amino_acid_changes))
+                for i in range(len(alleles)):
+                    variant_descriptions = []
+                    try: variant_descriptions = desc_variants(seq_ref, seq_var[i])
+                    except AssertionError as problem:
+                        #print "Malformed coding sequence for " + geneName + " " + str(exonStarts) \
+                        #    + " " + str(exonEnds) + "  " + str(problem)
+                        next
+                    if (variant_descriptions):
+                        amino_acid_changes.append(variant_descriptions)
+                if amino_acid_changes:
+                    return("nonsynonymous coding", 1, " ".join(amino_acid_changes))
                 else:
-                    return ("synonymous coding", running_exon_count, amino_acid_residue)
+                    return("synonymous coding",)
             
-            # otherwise, continue the bookkeeping
-            running_cds_bases_count += exonEnds[j] - exonStarts[j]                    
-            exons.append([exonStarts[j], exonEnds[j]])
+            exons.append([exonWCodeStarts[j], exonWCodeEnds[j]])
 
 # based on <http://www.peterbe.com/plog/uniqifiers-benchmark>
 def unique(seq): # not order preserving, but that's OK; we can sort it later
     return {}.fromkeys(seq).keys()
+
+def desc_variants (coding_seq1, coding_seq2):
+    # print "coding seq: " + coding_seq1
+    var_description = ""
+    assert len(coding_seq1) % 3 == 0, "Reference coding sequence malformed: " \
+            + "should have a length that is a multiple of 3! " \
+            + "DNA sequence is: " + coding_seq1
+    aa1 = list(translate(coding_seq1))
+    # print "amino acid seq: "  + "".join(aa1)
+    for i in range(len(aa1)-1):
+        assert aa1[i] != "*", "Reference coding sequence malformed: only " \
+            + "last codon should be stop codon! AA sequence is: " + "".join(aa1) \
+            + " DNA sequence is: " + coding_seq1
+    assert aa1[-1] == "*", "Reference coding sequence malformed: last " \
+            + "codon should be a stop codon! AA sequence is: " + "".join(aa1) \
+            + " DNA sequence is: " + coding_seq1
+    if (len(coding_seq2) % 3 != 0):
+        # Frameshift. Find first amino acid that is changed.
+        coding_seq2_trimmed = coding_seq2[0:3 * (len(coding_seq2)/3)]
+        aa2 = list(translate(coding_seq2))
+        # print "var aa seq: " + "".join(aa2)
+        pos = 1
+        # print "ref_coding_seq: " + "".join(aa1) + " var_coding_seq: " + "".join(aa2)
+        while (pos <= len(aa1) and pos <= len(aa2) and aa1[pos-1] == aa2[pos-1]):
+            pos += 1
+        if (pos <= len(aa1)):
+            var_description = aa1[pos-1] + str(pos) + "Shift"
+    else:
+        aa2 = list(translate(coding_seq2))
+        # print "var aa seq: " + "".join(aa2)
+        position = 1
+        last_ref_aa = ""
+        while (len(aa1) > 0 and len(aa2) > 0 and aa1[0] == aa2[0]):
+            last_ref_aa = aa1.pop(0)
+            aa2.pop(0)
+            position += 1
+        while (len(aa1) > 0 and len(aa2) > 0 and aa1[-1] == aa2[-1]):
+            aa1.pop(-1)
+            aa2.pop(-1)
+        if len(aa1) == 0 and len(aa2) == 0:  # no change
+            pass
+        elif len(aa1) == 0: # pure insertion
+            if position > 1:   # ignore if before 1st AA, shouldn't get translated
+                # search for stop in aa2 -- don't want to report beyond this
+                if any(["*" in aa for aa in aa2]):
+                    report_aa2 = []
+                    for i in range(len(aa2)):
+                        report_aa2.append(aa2[i])
+                        if aa2[i] == "*":
+                            break
+                    var_description = last_ref_aa + str(position-1) + "".join([last_ref_aa] + report_aa2)
+                # report aa just before insert, pos of that aa, repeat that aa and add the insert
+                else:
+                    var_description = last_ref_aa + str(position-1) + "".join([last_ref_aa] + aa2)
+        elif len(aa2) == 0: # pure deletion, report all of aa1, first pos of aa1, "Del"
+            var_description = "".join(aa1) + str(position) + "Del"
+        else:
+            # search for stop -- don't want to report beyond this
+            if any(["*" in aa for aa in aa2]):
+                report_aa1 = []
+                report_aa2 = []
+                for i in range(len(aa2)):
+                    report_aa2.append(aa2[i])
+                    if len(aa1) >= i + 1:
+                            report_aa1.append(aa1[i])
+                    if aa2[i] == "*":
+                        break
+                var_description = "".join(report_aa1) + str(position) + "".join(report_aa2)
+            # No stop -- report all of aa1, first pos of aa1, all of aa2
+            else:
+                var_description = "".join(aa1) + str(position) + "".join(aa2)
+    return var_description
+
+def codon_1to3 (aa):
+    threeletter = codon_123(aa)
+    if (threeletter == "TERM"):
+        threeletter = "Stop"
+    return threeletter
 
 class refFlat:
     def __init__(self, filename):
@@ -288,10 +402,12 @@ def main():
             continue
 
         # otherwise, cycle through
-        inferences = []
-        is_nonsynonymous = False
+        nonsyn_inferences = []
+        splice_inferences = []
+        is_nonsynonymous = is_splice = False
         
         for data in transcripts:
+            # print data
             # need to make "d" match up with refFlat's order
             # d : geneName, strand, cdsStart, cdsEnd, exonStarts, exonEnds
             #     0, 3, 6, 7, 9, 10
@@ -299,12 +415,16 @@ def main():
             #print record_position
             #print d
             i = infer_function(twobit_file, record, *d)
+            #print i
             if i[0] == "nonsynonymous coding":
-                inferences.append("%s %s" % (d[0], i[2]))
+                nonsyn_inferences.append("%s %s" % (d[0], i[2]))
                 is_nonsynonymous = True
+            elif i[0] == "splice site":
+                splice_inferences.append("%s %s " % (d[0], i[2]))
+                is_splice = True
         
         # set the attribute if we can
-        if not is_nonsynonymous:
+        if (not is_nonsynonymous) and (not is_splice):
             if (len(sys.argv) >= 4):
                 if (sys.argv[3] == "print-all"):
                     print record
@@ -313,10 +433,17 @@ def main():
             else:
                 continue
         else:
-            if len(inferences) > 0:
-                unique_inferences = unique(inferences)
+            if len(nonsyn_inferences) > 0:
+                unique_inferences = unique(nonsyn_inferences)
                 unique_inferences.sort(key=str.lower)
                 record.attributes["amino_acid"] = "/".join(unique_inferences)
+            if len(splice_inferences) > 0:
+                # Not going to report splice sites for now, but leaving the
+                # code here because we hope to later. - Madeleine 2010/11/29
+                pass
+                # unique_inferences = unique(splice_inferences)
+                # unique_inferences.sort(key=str.lower)
+                # record.attributes["splice"] = "/".join(unique_inferences)
             print record
         
 
