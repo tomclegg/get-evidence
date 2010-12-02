@@ -76,10 +76,11 @@ if ($reprocess_genome_ID) {
     } else {
         $page_content .= "Error: Only .txt or .gff files under 500MB are accepted for upload";
     }
-} elseif (!empty($location)) {
+} elseif (!empty($location) and $user) {
+  $location = preg_replace('/\.\./','',$location); # No shenanigans
   if (preg_match('/file:\/\/\//',$location)) {
-    preg_replace('/file:\/\/','',$location);
-    if (file_exists($location)) {
+    preg_replace('/file:\/\//','',$location);
+    if (file_exists($location) && strstr($location,$GLOBALS['data_path']) == 0) {
       $shasum = sha1_file($location);
       $permname = "$GLOBALS[data_path]/upload/$shasum/genotype.gff";
       // Attempt to move the uploaded file to its new place
