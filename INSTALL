@@ -56,10 +56,14 @@ directories. Open /etc/apache2/mods-available/php5.conf and if you see
 "To re-enable php in user directories..." then go ahead and comment out 
 the lines specified.
 
-Put real database password in public_html/config.php like this (but
-make sure there is no leading space or anything else before "<?php")
+Put real database password and data directory path (see below) in
+public_html/config.php like this (but make sure there is no leading space or
+anything else before "<?php")
 
- <?php $gDbPassword = "shakespeare"; ?>
+ <?php 
+   $gDbPassword = "shakespeare"; 
+   $data_path = "/home/trait";
+ ?>
 
 Visit http://{host}/install.php to create tables.
 

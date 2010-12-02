@@ -17,7 +17,7 @@ include('xmlrpc/xmlrpc.inc');
 if ($reprocess_genome_ID) {
     $page_content .= "Starting reprocessing of " . $reprocess_genome_ID . "<br>\n";
     $page_content .= "Old data will remain available until new analysis is complete.<br>\n";
-    $permname = "/home/trait/upload/" . $reprocess_genome_ID . "/genotype.gff";
+    $permname = "{$GLOBALS[data_path]}/upload/" . $reprocess_genome_ID . "/genotype.gff";
     send_to_server($permname);
 } elseif ($delete_genome_ID) {
     if ($user['oid'] == $user_oid) {
@@ -33,9 +33,9 @@ if ($reprocess_genome_ID) {
                             . "another user has uploaded a duplicate, or you have a duplicate "
                             . "of this genome under a different nickname.";
         } else {
-            $dir1 = "/home/trait/upload/" . $delete_genome_ID;
-            $dir2 = "/home/trait/upload/" . $delete_genome_ID . "-out";
-            if ($dir1 != "/home/trait/upload/" and delete_directory($dir1) and delete_directory($dir2)) {
+            $dir1 = "{$GLOBALS[data_path]}/upload/" . $delete_genome_ID;
+            $dir2 = "{$GLOBALS[data_path]}/upload/" . $delete_genome_ID . "-out";
+            if ($dir1 != "{$GLOBALS[data_path]}/upload/" and delete_directory($dir1) and delete_directory($dir2)) {
                 $page_content .= "All original data for this genome has been removed."
                     . " Genome ID: " . $delete_genome_ID . "<br>\n";
             } else {
@@ -57,9 +57,9 @@ if ($reprocess_genome_ID) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
-        $permname = "/home/trait/upload/$shasum/genotype.gff";
+        $permname = "{$GLOBALS[data_path]}/upload/$shasum/genotype.gff";
         // Attempt to move the uploaded file to its new place
-        @mkdir ("/home/trait/upload/$shasum");
+        @mkdir ("{$GLOBALS[data_path]}/upload/$shasum");
         if (move_uploaded_file($tempname, $permname)) {
             $nickname = $_POST['nickname'];
             $oid = $user['oid'];
