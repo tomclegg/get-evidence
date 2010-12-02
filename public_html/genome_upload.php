@@ -10,6 +10,7 @@ $reprocess_genome_ID = $_POST['reprocess_genome_id'];
 $delete_genome_ID = $_POST['delete_genome_id'];
 $delete_genome_nickname = $_POST['delete_genome_nickname'];
 $user_oid = $_POST['user_oid'];
+$location = $_POST['location'];
 
 include('xmlrpc/xmlrpc.inc');
 
@@ -75,6 +76,32 @@ if ($reprocess_genome_ID) {
     } else {
         $page_content .= "Error: Only .txt or .gff files under 500MB are accepted for upload";
     }
+} elseif (!empty($location)) {
+  if (preg_match('/file:\/\/\//',$location)) {
+    preg_replace('/file:\/\/','',$location);
+    if (file_exists($location)) {
+      $shasum = sha1_file($location);
+      $permname = "$GLOBALS[data_path]/upload/$shasum/genotype.gff";
+      // Attempt to move the uploaded file to its new place
+      @mkdir ("$GLOBALS[data_path]/upload/$shasum");
+      if (copy($location,$permname)) {
+        $nickname = $_POST['nickname'];
+        $oid = $user['oid'];
+        send_to_server($permname);
+        theDB()->query ("INSERT IGNORE INTO private_genomes SET
+                            oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
+                            array ($oid,$nickname,$shasum));
+        $page_content .= "It's done! The file has been saved as: $permname<br>";
+        $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
+      } else {
+        $page_content .= "Error: A problem occurred during file upload!";
+      }
+    } else {
+      $page_content .= "Error: file not found on local filesystem!";
+    }
+  } else {
+    $page_content .= "Error: Please use the file:/// syntax to refer to a local file!";
+  }
 } else {
     $page_content .= "Error: No file uploaded or file size exceeds limit";
 }
