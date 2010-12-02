@@ -42,13 +42,23 @@ note that it will be used later in scripts):
  grant all privileges on evidence.* to evidence@localhost;
  exit
 
-Point apache DocumentRoot to public_html and turn on .htaccess support
-(replace /path/to/get-evidence here with the real path to your local
-git repo):
+Create a directory where we store uploaded genomes and analysis, store
+environment variables for associated subdirectories, and create them:
+
+ sudo mkdir /home/trait
+ sudo chown www-data:www-data /home/trait
+
+Point apache DocumentRoot to public_html and turn on .htaccess support (replace
+/path/to/get-evidence here with the real path to your local git repo, and
+/path/to/your/trait/data/directory with the path to the directory where you
+will store uploaded data and analysis data - /home/trait in the example above):
 
  DocumentRoot /path/to/get-evidence/public_html
  <Directory /path/to/get-evidence/public_html>
    AllowOverride All
+   # Restrict PHP access to the html directory of this user!
+   php_admin_value open_basedir "/path/to/get-evidence:/path/to/your/trait/data/directory:/usr/share/php:/tmp:/dev/urandom"
+   php_value include_path ".:/path/to/get-evidence/public_html:/usr/share/php"
  </Directory>
 
 The latest version of Ubuntu disables php interpretation in home 
@@ -56,10 +66,14 @@ directories. Open /etc/apache2/mods-available/php5.conf and if you see
 "To re-enable php in user directories..." then go ahead and comment out 
 the lines specified.
 
-Put real database password in public_html/config.php like this (but
-make sure there is no leading space or anything else before "<?php")
+Put real database password and data directory path (see below) in
+public_html/config.php like this (but make sure there is no leading space or
+anything else before "<?php")
 
- <?php $gDbPassword = "shakespeare"; ?>
+ <?php 
+   $gDbPassword = "shakespeare"; 
+   $data_path = "/home/trait";
+ ?>
 
 Visit http://{host}/install.php to create tables.
 
@@ -96,11 +110,8 @@ either edit /etc/php5/apache2/php.ini or create
  post_max_size = 512M
  upload_max_filesize = 512M
 
-Create a directory where we store uploaded genomes and analysis, store
-environment variables for associated subdirectories, and create them:
+Populate the upload directory with its initial directory structure:
 
- sudo mkdir /home/trait
- sudo chown www-data:www-data /home/trait
  cd ~/get-evidence/server/script/
  USER=www-data SOURCE=$HOME/get-evidence CORE=$HOME/get-evidence/server \
     CONFIG=/home/trait/config TMP=/home/trait/tmp \

@@ -9,7 +9,6 @@ $pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
 $public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 
 $display_genome_ID = $_REQUEST['display_genome_id'];
-$user_request_oid = $_REQUEST['user_request_oid'];
 
 if (preg_match ('{^\d+$}', $_SERVER['QUERY_STRING'], $matches)) {
     $display_genome_ID = theDb()->getOne
@@ -165,15 +164,22 @@ EOT
 function genome_entry_form() {
     $returned_text = "<div>\n<form enctype=\"multipart/form-data\" "
                     . "action=\"/genome_upload.php\" method=\"post\">\n";
-    $returned_text .= "<label class=\"label\">Filename<br>\n";
+    $returned_text .= "<table><tr>\n";
+    $returned_text .= "<td><label class=\"label\">Filename<br>\n";
     $returned_text .= "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" "
                         . "value=\"500000000\">\n";
     $returned_text .= "<input type=\"file\" class=\"file\" name=\"genotype\" "
-                        . "id=\"genotype\"></label><br>\n";
-    $returned_text .= "<label class=\"label\">Genome name<br>\n";
+                        . "id=\"genotype\"></label></td>\n";
+    $returned_text .= "<td>OR</td>\n";
+    $returned_text .= "<td><label class=\"label\">File location on server (use file:/// syntax)<br>\n";
+    $returned_text .= "<input type=\"text\" size=\"64\" name=\"location\" "
+                        . "id=\"path\"></label></td>\n";
+    $returned_text .= "</tr><tr>\n";
+    $returned_text .= "<td colspan=\"10\"><label class=\"label\">Genome name<br>\n";
     $returned_text .= "<input type=\"text\" size=\"64\" name=\"nickname\" "
                         . "id=\"nickname\"></label>\n";
-    $returned_text .= "<input type=\"submit\" value=\"Upload\" class=\"button\" />\n";
+    $returned_text .= "<input type=\"submit\" value=\"Upload\" class=\"button\" /></td>\n";
+    $returned_text .= "</tr></table>\n";
     $returned_text .= "</form>\n</div>\n";
     $returned_text .= "<P>&nbsp;</P>\n";
 

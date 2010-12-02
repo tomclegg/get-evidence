@@ -3,7 +3,7 @@
 include "lib/setup.php";
 
 $genome_id = $_REQUEST['download_genome_id'];
-$fullPath = "/home/trait/upload/" . $genome_id . "/genotype.gff";
+$fullPath = "{$GLOBALS[data_path]}/upload/" . $genome_id . "/genotype.gff";
 $nickname = $_REQUEST['download_nickname'];
 $nickname = preg_replace('/ +/', '_', $nickname) . ".gff";
 
