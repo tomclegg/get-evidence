@@ -67,7 +67,7 @@ else if (preg_match ("{^([-A-Za-z0-9_]+)[- \t\n]+([A-Z]+)([0-9]+)([A-Za-z\\*]+)(
 
 if (!$variant_id && $aa) {
   header ("HTTP/1.1 404 Not found");
-  $gOut["title"] = "$gene $aa_short";
+  $gOut["title"] = "$gene $aa_short - GET-Evidence";
   $gOut["content"] = <<<EOF
 <H1>$gene $aa_short</H1>
 
