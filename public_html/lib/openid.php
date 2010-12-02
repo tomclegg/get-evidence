@@ -1,7 +1,8 @@
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 ini_set ('include_path',
 	 dirname(dirname(dirname(__FILE__))) . "/php-openid"

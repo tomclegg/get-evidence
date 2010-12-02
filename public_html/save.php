@@ -1,4 +1,8 @@
-<?php;
+<?php
+    ;
+
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 include "lib/setup.php";
 

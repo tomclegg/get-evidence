@@ -1,7 +1,8 @@
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2009, 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 require_once ("lib/article.php");
 require_once ("lib/hapmap.php");
@@ -19,6 +20,7 @@ function evidence_create_tables ()
   UNIQUE (variant_gene, variant_aa_pos, variant_aa_from, variant_aa_to)
 )");
   theDb()->query ("ALTER TABLE variants ADD variant_rsid BIGINT UNSIGNED, ADD UNIQUE (variant_rsid)");
+  theDb()->query ("ALTER TABLE variants ADD variant_aa_del VARCHAR(16), ADD variant_aa_ins VARCHAR(16), ADD UNIQUE (variant_gene, variant_aa_pos, variant_aa_del, variant_aa_ins)");
   theDb()->query ("
   CREATE TABLE IF NOT EXISTS edits (
   edit_id SERIAL,
@@ -304,25 +306,34 @@ function evidence_get_variant_id ($gene,
     else
       return null;
   }
-  else if (!aa_sane("$aa_from$aa_pos$aa_to"))
+  if (!aa_sane("$aa_from$aa_pos$aa_to") && !aa_indel_sane($aa_pos, $aa_from, $aa_to))
     return null;
 
   $gene = strtoupper ($gene);
 
   $aa_from = aa_long_form ($aa_from);
   $aa_to = aa_long_form ($aa_to);
+  $from = "from";
+  $to = "to";
+  if (strlen($aa_from) != 3 || (strlen($aa_to) != 3 && strlen($aa_to) != 4)) {
+      $aa_from = aa_short_form($aa_from);
+      $aa_to = aa_short_form($aa_to);
+      $from = "del";
+      $to = "ins";
+  }
 
   if ($create_flag) {
     $official_gene = theDb()->getOne ("SELECT official FROM gene_canonical_name WHERE aka=?", array ($gene));
-    if (!theDb()->isError ($official_gene) && strlen($official_gene) && !theDb()->getOne("SELECT 1 FROM variants WHERE variant_gene=? AND variant_aa_pos=? AND variant_aa_from=? AND variant_iaa_to=?", array ($gene, $aa_pos, $aa_from, $aa_to)))
+    if (!theDb()->isError ($official_gene) && strlen($official_gene) &&
+	!theDb()->getOne("SELECT 1 FROM variants WHERE variant_gene=? AND variant_aa_pos=? AND variant_aa_$from=? AND variant_aa_$to=?", array ($gene, $aa_pos, $aa_from, $aa_to)))
       $gene = $official_gene;
 
     $q = theDb()->query ("INSERT IGNORE INTO variants
 			SET variant_gene=?,
 			variant_aa_pos=?,
-			variant_aa_from=?,
-			variant_aa_to=?",
-		    array ($gene, $aa_pos, $aa_from, $aa_to));
+			variant_aa_$from=?,
+			variant_aa_$to=?",
+			 array ($gene, $aa_pos, $aa_from, $aa_to));
     if (!theDb()->isError($q) &&
 	theDb()->affectedRows())
       return theDb()->getOne ("SELECT LAST_INSERT_ID()");
@@ -330,8 +341,8 @@ function evidence_get_variant_id ($gene,
   return theDb()->getOne ("SELECT variant_id FROM variants
 				WHERE variant_gene=?
 				AND variant_aa_pos=?
-				AND variant_aa_from=?
-				AND variant_aa_to=?",
+				AND variant_aa_$from=?
+				AND variant_aa_$to=?",
 			  array ($gene, $aa_pos, $aa_from, $aa_to));
 }
 
@@ -675,7 +686,10 @@ function evidence_get_report ($snap, $variant_id)
     $row =& $v[0];
 
     $row["variant_quality"] = str_pad (str_replace (" ", "-", $row["variant_quality"]), 7, "-");
-    $row["nblosum100"] = 0-blosum100($row["variant_aa_from"], $row["variant_aa_to"]);
+    if ($row["variant_aa_from"])
+      $row["nblosum100"] = 0-blosum100($row["variant_aa_from"], $row["variant_aa_to"]);
+    else if ($row["variant_aa_del"])
+      $row["nblosum100"] = 0-blosum100($row["variant_aa_del"], $row["variant_aa_ins"]);
 
     $tags = array();
     foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($variant_id)) as $tagrow) {
@@ -874,6 +888,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
     else
       $flat["qualityscore_".$scoreaxis] = "-";
     if (sizeof ($nonflat["quality_scores"]) >= $i+1 &&
+	sizeof ($nonflat["quality_comments"]) >= $i+1 &&
 	strlen ($nonflat["quality_comments"][$i]["text"]) > 0) {
       $flat["qualitycomment_".$scoreaxis] = "Y";
     }
@@ -1136,7 +1151,7 @@ class evidence_row_renderer {
 	  $show_label = 0 < strlen ($row["talk_text"]) ? "<B>show discussion</B>" : "start discussion";
 	  $html .= "<DIV class=\"rectangle-speech-border-hidden\"><DIV>$show_label</DIV>";
 	  $html .= editable ("${id_prefix}f_talk_text__70x8__textile",
-			     $row[talk_text],
+			     $row["talk_text"],
 			     "Discussion<BR />",
 			     array ("tip" => "Comments about this section"));
 	  $html .= "</DIV>";
@@ -1235,10 +1250,21 @@ function evidence_get_variant_name (&$variant, $separator=" ", $shortp=false)
 
   if ($row["variant_rsid"])
     return "rs".$row["variant_rsid"];
-  else if ($shortp)
-    return $row["variant_gene"].$separator.aa_short_form ($row["variant_aa_from"].$row["variant_aa_pos"].$row["variant_aa_to"]);
+
+  if ($row["variant_aa_del"]) {
+    $from = $row["variant_aa_del"];
+    $to = $row["variant_aa_ins"];
+  } else {
+    $from = $row["variant_aa_from"];
+    $to = $row["variant_aa_to"];
+  }
+
+  if ($shortp)
+    return $row["variant_gene"].$separator.aa_short_form ($from.$row["variant_aa_pos"].$to);
+  else if (!$row["variant_aa_from"])
+    return $row["variant_gene"].$separator.aa_indel_long_form ($row["variant_aa_pos"], $from, $to);
   else
-    return $row["variant_gene"].$separator.$row["variant_aa_from"].$row["variant_aa_pos"].$row["variant_aa_to"];
+    return $row["variant_gene"].$separator.aa_long_form ($from.$row["variant_aa_pos"].$to);
 }
 
 
