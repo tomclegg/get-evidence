@@ -33,14 +33,14 @@ function blosum100 ($aa1, $aa2)
   if (strstr ($aa2, "fs"))
     return -10; // frame shift
 
-  $aa1 = substr (aa_short_form ($aa1), 0, 1);
-  $aa2 = substr (aa_short_form ($aa2), 0, 1);
+  $aa1 = aa_short_form ($aa1);
+  $aa2 = aa_short_form ($aa2);
 
-  if ($aa1 != "X" && $aa2 == "X")
+  if (!strstr($aa1, "X") && strstr($aa2, "X"))
     return -10; // nonsense mutation
-  if ($aa1 == "X" && $aa2 != "X")
+  if (strstr($aa1, "X") && !strstr($aa2, "X"))
     return -4; // stop to read-through is not as bad
-  if ($aa1 == "X" && $aa2 == "X")
+  if (strstr($aa1, "X") && strstr($aa2, "X"))
     return 10; // this should never happen anyway.
 
   if (strlen($aa1) != strlen($aa2))
@@ -51,7 +51,7 @@ function blosum100 ($aa1, $aa2)
       $x = blosum100 ($aa1[$i], $aa2[$i]);
       if ($x < $min) $min = $x;
     }
-    return $x;
+    return $min;
   }
 
   global $blosum100_array;
