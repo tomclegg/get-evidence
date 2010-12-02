@@ -1,7 +1,8 @@
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 require_once (dirname(dirname(dirname(__FILE__)))."/textile-2.0.0/classTextile.php");
 require_once ("lib/oddsratio.php");
@@ -51,7 +52,7 @@ function editable($id, $content, $title="", $options=false)
     return "<SPAN id=\"$id\" class=\"uneditable\">$html</SPAN>";
 
   $selector = "";
-  if ($options && is_array($options["select_options"])) {
+  if ($options && isset($options["select_options"]) && is_array($options["select_options"])) {
     $selector = "<P style=\"display:none;\"><SELECT id=\"edited_$id\" name=\"edited_$id\" onchange=\"editable_check_unsaved(this); editable_save();\">\n";
     foreach ($options["select_options"] as $k => $v) {
       $selected = ($content == $k) ? " selected" : "";

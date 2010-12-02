@@ -1,7 +1,8 @@
 <?php
+  ;
 
-  // Copyright 2010 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 require_once ("lib/aa.php");
 
@@ -29,14 +30,29 @@ $gBLOSUM62 = Array
 
 function blosum100 ($aa1, $aa2)
 {
+  if (strstr ($aa2, "fs"))
+    return -10; // frame shift
+
   $aa1 = aa_short_form ($aa1);
   $aa2 = aa_short_form ($aa2);
-  if ($aa1 != "X" && $aa2 == "X")
- 	  return -10; // nonsense mutation
-  if ($aa1 == "X" && $aa2 != "X")
+
+  if (!strstr($aa1, "X") && strstr($aa2, "X"))
+    return -10; // nonsense mutation
+  if (strstr($aa1, "X") && !strstr($aa2, "X"))
     return -4; // stop to read-through is not as bad
-  if ($aa1 == "X" && $aa2 == "X")
+  if (strstr($aa1, "X") && strstr($aa2, "X"))
     return 10; // this should never happen anyway.
+
+  if (strlen($aa1) != strlen($aa2))
+    return -4;
+  if (strlen($aa1) > 1) {
+    $min = 10;
+    for ($i=0; $i<strlen($aa1); $i++) {
+      $x = blosum100 ($aa1[$i], $aa2[$i]);
+      if ($x < $min) $min = $x;
+    }
+    return $min;
+  }
 
   global $blosum100_array;
 

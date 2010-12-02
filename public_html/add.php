@@ -1,4 +1,8 @@
 <?php
+  ;
+
+// Copyright 2009, 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 include "lib/setup.php";
 
@@ -6,19 +10,25 @@ $response = array();
 
 if (getCurrentUser()) {
 
-  if (ereg ("^[0-9]+$", $_POST["article_pmid"], $regs)) $article_pmid = $regs[0];
+  if (isset($_POST["article_pmid"]) &&
+      ereg ("^[0-9]+$", $_POST["article_pmid"], $regs)) $article_pmid = $regs[0];
   else $article_pmid = 0;
 
-  if (ereg ("^[0-9]+$", $_POST["genome_id"], $regs)) $genome_id = $regs[0];
+  if (isset($_POST["genome_id"]) &&
+      ereg ("^[0-9]+$", $_POST["genome_id"], $regs)) $genome_id = $regs[0];
   else $genome_id = 0;
 
-  if (ereg ("^[0-9]+$", $_POST["disease_id"], $regs)) $disease_id = $regs[0];
+  if (isset($_POST["disease_id"]) &&
+      ereg ("^[0-9]+$", $_POST["disease_id"], $regs)) $disease_id = $regs[0];
   else $disease_id = 0;
 
-  if (ereg ("^[0-9]+$", $_POST["variant_id"], $regs)) $variant_id = $regs[0];
-  else if (aa_sane($_POST["variant_aa_change"])) {
+  if (isset($_POST["variant_id"]) &&
+      ereg ("^[0-9]+$", $_POST["variant_id"], $regs)) $variant_id = $regs[0];
+  else if (aa_sane($_POST["variant_aa_change"]) ||
+	   (preg_match ('{^(.*?)(\d+)(.*)$}', $_POST["variant_aa_change"], $regs) &&
+	    aa_indel_sane ($regs[2], $regs[1], $regs[3]))) {
     if (ereg ("^([^0-9]+)([0-9]+)([^0-9]+)$",
-	      aa_long_form ($_POST["variant_aa_change"]),
+	      aa_short_form ($_POST["variant_aa_change"]),
 	      $regs)) {
       $aa_from = $regs[1];
       $aa_pos = $regs[2];
@@ -36,6 +46,7 @@ if (getCurrentUser()) {
     $response["variant_key"] = "$gene ".aa_short_form("$aa_from$aa_pos$aa_to");
   }
   else {
+    error_log ("Invalid variant specified, ".json_encode($regs));
     die ("Invalid variant specified");
   }
 

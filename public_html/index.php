@@ -1,4 +1,8 @@
 <?php
+  ;
+
+// Copyright 2009, 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 include "lib/setup.php";
 require_once ("lib/blosum.php");
@@ -8,13 +12,14 @@ $gOut["title"] = "GET-Evidence";
 
 function seealso_related ($gene, $aa_pos, $skip_variant_id)
 {
-    $related_variants = theDb()->getAll ("SELECT v.variant_gene gene, CONCAT(v.variant_aa_from,v.variant_aa_pos,v.variant_aa_to) aa_long FROM variants v WHERE v.variant_gene=? AND v.variant_aa_pos=? AND v.variant_id <> ?", array ($gene, $aa_pos, $skip_variant_id));
+    $related_variants = theDb()->getAll ("SELECT v.variant_gene gene, CONCAT(v.variant_aa_from,v.variant_aa_pos,v.variant_aa_to) aa_long, CONCAT(v.variant_aa_del,v.variant_aa_pos,v.variant_aa_ins) aa_indel_short FROM variants v WHERE v.variant_gene=? AND v.variant_aa_pos=? AND v.variant_id <> ?", array ($gene, $aa_pos, $skip_variant_id));
     $seealso = "";
-    foreach ($related_variants as $x)
-	{
-	    $x["aa_short"] = aa_short_form ($x["aa_long"]);
-	    $seealso .= "<LI>See also: <A href=\"".$x["gene"]."-".$x["aa_short"]."\">".$x["gene"]." ".$x["aa_short"]."</A></LI>\n";
-	}
+    foreach ($related_variants as $x) {
+      if (!($aa_long = $x["aa_long"]))
+	$aa_long = aa_long_form ($x["aa_indel_short"]);
+      $aa_short = aa_short_form ($aa_long);
+      $seealso .= "<LI>See also: <A href=\"".$x["gene"]."-".$aa_short."\">".$x["gene"]." ".$aa_short."</A></LI>\n";
+    }
     if ($seealso)
 	$seealso = "<DIV id=\"seealso\"><UL>$seealso</UL></DIV>\n";
     return $seealso;
@@ -22,6 +27,9 @@ function seealso_related ($gene, $aa_pos, $skip_variant_id)
 
 
 $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
+
+if ($x = preg_replace ('{\b(\d+)(?:_(\d+))?del([A-Z]+)ins([A-Z]+[a-z]*)$}', '$3$1$4', $_GET["q"]))
+  $_GET["q"] = $x;
 
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
@@ -34,17 +42,30 @@ else if (ereg ("^(rs[0-9]+)(;([0-9]+))?$", $_GET["q"], $regs)) {
   }
   $max_edit_id = $regs[3];
 }
-else if (ereg ("^([A-Za-z0-9_-]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?$", $_GET["q"], $regs) &&
-	 aa_sane ($aa = $regs[2])) {
+else if (preg_match ("{^([-A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?\$}", $_GET["q"], $regs) &&
+	 aa_sane ($regs[2])) {
+  $aa = $regs[2];
+  $aa_long = aa_long_form ($aa);
+  $aa_short = aa_short_form ($aa_long);
   $gene = strtoupper($regs[1]);
-  $max_edit_id = $regs[4];
+  $max_edit_id = count($regs) >= 4 ? $regs[4] : false;
   $variant_id = evidence_get_variant_id ($variant_name = "$gene $aa");
+}
+else if (preg_match ("{^([-A-Za-z0-9_]+)[- \t\n]+([A-Z]+)([0-9]+)([A-Za-z\\*]+)(;([0-9]+))?\$}", $_GET["q"], $regs) &&
+	 aa_indel_sane (($aa_pos = $regs[3]),
+			($aa_del = $regs[2]),
+			($aa_ins = $regs[4]))) {
+  $aa = "$aa_del$aa_pos$aa_ins";
+  $aa_short = aa_short_form ($aa);
+  $aa_long = aa_indel_long_form ($aa_pos, $aa_del, $aa_ins);
+  $gene = strtoupper($regs[1]);
+  $max_edit_id = $regs[6];
+  $variant_name = "$gene $aa_short";
+  $variant_id = evidence_get_variant_id ($gene, $aa_pos, $aa_del, $aa_ins);
 }
 
 
 if (!$variant_id && $aa) {
-  $aa_long = aa_long_form ($aa);
-  $aa_short = aa_short_form ($aa_long);
   header ("HTTP/1.1 404 Not found");
   $gOut["title"] = "$gene $aa_short";
   $gOut["content"] = <<<EOF
@@ -62,7 +83,7 @@ EOF
       $gOut["content"] .= <<<EOF
 &nbsp;
 
-<BUTTON onclick="return evidence_add_variant('$gene','$aa_long');">Create new entry</BUTTON>
+<BUTTON onclick="return evidence_add_variant('$gene','$aa_short');">Create new entry</BUTTON>
 EOF
 ;
   go();
@@ -348,7 +369,7 @@ $html .= "<H2>Other <I>in silico</I> analyses<BR />&nbsp;</H2>\n<DIV id=\"in_sil
 if ($aa) {
   $html .= "<LI>NBLOSUM100 score = <STRONG>"
       .ereg_replace ("-", "&ndash;",
-		     0-blosum100 ($row0["variant_aa_from"], $row0["variant_aa_to"]))
+		     $row0["nblosum100"])
       ."</STRONG></LI>\n";
 }
 $autoscore_html = $row0["autoscore"];

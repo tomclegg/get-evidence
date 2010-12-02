@@ -1,8 +1,9 @@
 #!/usr/bin/php
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 if (!getenv ("APIKEY"))
     die ("Please set environment variable APIKEY to your Yahoo BOSS API key.\n");

@@ -1,8 +1,9 @@
 #!/usr/bin/php
 <?php
+    ;
 
-  // Copyright 2010 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 if ($_SERVER["argc"] != 2 || !ereg ('\.gz$', $_SERVER["argv"][1]))
     {
