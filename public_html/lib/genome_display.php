@@ -128,7 +128,7 @@ function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
     // -1 = no effect expected (recessive carrier) or unknown
     $alleles = preg_split('/\//', $genotype);
     $zygosity = "Heterozygous";
-    if ($alleles[0] == $alleles[1]) {
+    if (array_key_exists(1,$alleles) && ($alleles[0] == $alleles[1])) {
         $zygosity = "Homozygous";
     }
     if ($variant_dominance == "dominant") {
@@ -210,6 +210,10 @@ function sort_reviewed($a, $b) {
 
 function sort_by_autoscore($a, $b) {
     if ($a['autoscore'] == $b['autoscore']) {
+        if (!array_key_exists('gene',$a)) $a['gene'] = 0;
+        if (!array_key_exists('gene',$b)) $b['gene'] = 0;
+        if (!array_key_exists('amino_acid_change',$a)) $a['amino_acid_change'] = 0;
+        if (!array_key_exists('amino_acid_change',$b)) $b['amino_acid_change'] = 0;
         return strnatcmp($a['gene']."-".$a['amino_acid_change'],
                         $b['gene']."-".$a['amino_acid_change']);
     } else {
