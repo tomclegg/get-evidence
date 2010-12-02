@@ -9,7 +9,6 @@ $pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
 $public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 
 $display_genome_ID = $_REQUEST['display_genome_id'];
-$user_request_oid = $_REQUEST['user_request_oid'];
 
 if (preg_match ('{^\d+$}', $_SERVER['QUERY_STRING'], $matches)) {
     $display_genome_ID = theDb()->getOne
