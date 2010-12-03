@@ -72,6 +72,7 @@ function evidence_create_tables ()
   upload_date DATETIME,
   notes TEXT,
   INDEX (oid), INDEX (shasum))");
+  theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64), ADD UNIQUE (global_human_id)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
   dataset_id VARCHAR(16) NOT NULL,
@@ -243,6 +244,7 @@ CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
 
 function evidence_get_genome_id ($global_human_id)
 {
+  $global_human_id = substr($global_human_id, 0, 16);
   $genome_id = theDb()->getOne ("SELECT genome_id FROM genomes WHERE global_human_id=?",
 				array ($global_human_id));
   if ($genome_id > 0)
@@ -703,7 +705,8 @@ function evidence_get_report ($snap, $variant_id)
     $why = array();
 
     // Computational (max of 2 points):
-    if ($row["nblosum100"] > 9) { $autoscore+=2; $why[] = "nblosum100>9"; }
+    if (!isset ($row["nblosum100"])) { } // e.g., rsID but no nsSNP
+    else if ($row["nblosum100"] > 9) { $autoscore+=2; $why[] = "nblosum100>9"; }
     else if ($row["nblosum100"] > 3) { $autoscore++; $why[] = "nblosum100>3"; }
     // TODO: ++$autoscore if within 1 base of a splice site
     // TODO: ++$autoscore if indel in coding region

@@ -7,8 +7,6 @@ $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/genotype.g
 $nickname = $_REQUEST['download_nickname'];
 $nickname = preg_replace('/ +/', '_', $nickname) . ".gff";
 
-$pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
-$public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 $user = getCurrentUser();
 $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?",
                                     array($genome_id));
