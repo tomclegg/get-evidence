@@ -72,7 +72,7 @@ function evidence_create_tables ()
   upload_date DATETIME,
   notes TEXT,
   INDEX (oid), INDEX (shasum))");
-  theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64), ADD UNIQUE (global_human_id)");
+  theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
   dataset_id VARCHAR(16) NOT NULL,
