@@ -15,7 +15,7 @@ function genome_display($shasum, $oid) {
                     . "<input type=\"submit\" value=\"Download source data\" "
                     . "class=\"button\" \/>";
 
-    $results_file = "{$GLOBALS[data_path]}/upload/" . $shasum . "-out/get-evidence.json";
+    $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
         $lines = file($results_file);
         foreach ($lines as $line) {
