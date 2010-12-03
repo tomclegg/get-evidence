@@ -3,12 +3,10 @@
 include "lib/setup.php";
 
 $genome_id = $_REQUEST['download_genome_id'];
-$fullPath = "/home/trait/upload/" . $genome_id . "/genotype.gff";
+$fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/genotype.gff";
 $nickname = $_REQUEST['download_nickname'];
 $nickname = preg_replace('/ +/', '_', $nickname) . ".gff";
 
-$pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
-$public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 $user = getCurrentUser();
 $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?",
                                     array($genome_id));

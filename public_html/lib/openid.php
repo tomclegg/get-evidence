@@ -1,7 +1,8 @@
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 ini_set ('include_path',
 	 dirname(dirname(dirname(__FILE__))) . "/php-openid"
@@ -127,7 +128,7 @@ function openid_verify() {
       function ax_get ($obj, $url) {
 	if (!$obj) return "";
 	$x = $obj->get ($url);
-	if (is_array ($x) && is_string($x[0])) return $x[0];
+	if (is_array ($x) && (count($x) > 0) && is_string($x[0])) return $x[0];
 	return "";
       }
       if ($x = ax_get($obj, 'http://axschema.org/contact/email')) $sreg["email"] = $x;

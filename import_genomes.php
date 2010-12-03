@@ -1,13 +1,9 @@
 #!/usr/bin/php
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
-
-if ($_SERVER["argc"] > 2)
-    {
-	die ("Usage: ".$_SERVER["argv"][0]." [allsnps.tsv]\n");
-    }
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 $fh = 0;			// stdin
 if ($_SERVER["argc"] == 2)
@@ -25,7 +21,6 @@ require_once 'lib/openid.php';
 require_once 'lib/bp.php';
 
 ini_set ("output_buffering", FALSE);
-ini_set ("memory_limit", 67108864);
 
 genomes_create_tables ();
 openid_login_as_robot ("Genome Importing Robot");
@@ -36,7 +31,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  chr CHAR(6) NOT NULL,
  chr_pos INT UNSIGNED NOT NULL,
  trait_allele CHAR(1),
- taf TEXT,
+ taf FLOAT,
  rsid BIGINT UNSIGNED,
  dataset_id VARCHAR(16) NOT NULL,
  zygosity ENUM('heterozygous','homozygous') NOT NULL DEFAULT 'heterozygous',
@@ -49,57 +44,67 @@ theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
 
 // Dump current list of variants into import_genomes_tmp table
 
-print "Importing ";
-$ops = 0;
-$job2genome = array();
-$zygosity = array ('hom' => 'homozygous',
-		   'het' => 'heterozygous');
-while (($line = fgets ($fh)) !== FALSE)
-    {
+$public_genomes = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid IN (?,?)",
+				   array ($pgp_data_user, $public_data_user));
+
+foreach ($public_genomes as $g) {
+    $datadir = "$gBackendBaseDir/upload/{$g['shasum']}-out";
+    print "Importing genome {$g['private_genome_id']} sha {$g['shasum']} nick \"{$g['nickname']}\" uploaded by {$g['oid']}\n";
+
+    // FIXME: add global_human_id column to the private_genomes table
+    if (isset ($g['global_human_id']) && 0 < strlen($g['global_human_id']))
+	$global_human_id = $g['global_human_id'];
+    else {
+	print "No global_human_id.  Skipping.\n";
+	continue;
+    }
+
+    $fh = fopen ("$datadir/get-evidence.json", "r");
+    if (!$fh) { print "open($datadir/get-evidence.json) failed.\n"; continue; }
+    if (file_exists ("$datadir/lock")) { print "Skipping because backend is still processing.\n"; continue; }
+
+    $genome_id = evidence_get_genome_id ($global_human_id);
+    $dataset_id = substr($g['shasum'], 0, 16);
+    $sex = '';			// TODO: store this somewhere? figure it out from chrX/Y?
+
+    theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
+		    array ($g['nickname'], $genome_id));
+    theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, sex=?, dataset_url=?",
+		    array ("GET-E/{$g['private_genome_id']}", $genome_id, $sex,
+			   "/genomes?{$g['private_genome_id']}"));
+    theDb()->query ("INSERT INTO imported_datasets SET dataset_id=?",
+		    array ("GET-E/{$g['private_genome_id']}"));
+
+    $ops = 0;
+    $count_existing_variants = 0;
+    $count_new_variants = 0;
+    while (($line = fgets ($fh)) !== false) {
 	++$ops;
 	if ($ops % 10000 == 0)
 	    print $ops;
-	if ($ops % 1000 == 0)
+	else if ($ops % 1000 == 0)
 	    print ".";
-
-	list ($gene, $aa_change,
-	      $chr, $chr_pos, $rsid,
-	      $ref_allele, $alleles, $hom_or_het,
-	      $job_id, $global_human_id, $human_name, $sex, $taf)
-	    = explode ("\t", ereg_replace ("\r?\n$", "", $line));
-
-	if (!$global_human_id)
-	  continue;
-
-	if (!ereg ("^{.+}$", $taf)) {
-	  $taf = NULL;
+	$jvariant = json_decode($line, true);
+	if (!$jvariant) {
+	    print "(skipping unparseable JSON at line $ops)\n";
+	    continue;
 	}
-	$trait_allele = ereg_replace("$ref_allele|[^ACGT]", "", $alleles);
-	if (strlen($trait_allele) != 1) {
-	  // TODO: get trait-o-matic to specify which of these alleles
-	  // (if not both) caused the stated AA change, and store
-	  // evidence accordingly.  If ref A->C/G and C and G both
-	  // result in the same AA change then maybe record it as a
-	  // hom?  Maybe even if C/G result in different AA changes
-	  // but both are nonsynonymous?  For now, just store C/G as
-	  // "S" and let the users figure it out.
-	  $trait_allele = bp_flatten ($trait_allele);
-
-	  // TODO: figure out what taf means when given with compound
-	  // het (ref A -> C/G)
-	  $taf = NULL;
+	if (isset($jvariant["gene"]) && isset($jvariant["amino_acid_change"]))
+	  $variant_name = $jvariant["gene"] . " " . $jvariant["amino_acid_change"];
+	else if (isset($jvariant["dbSNP"]))
+	  $variant_name = "rs" . $jvariant["dbSNP"];
+	else {
+	    if ($jvariant["GET-Evidence"])
+		print "(Why is this here?) $line";
+	    continue;
 	}
-
-	if ($gene && $aa_change)
-	  $variant_name = "$gene $aa_change";
-	else if ($rsid)
-	  $variant_name = $rsid;
-	else
-	  continue;
 	$variant_id = evidence_get_variant_id ($variant_name);
+	if ($variant_id)
+	    ++$count_existing_variants;
+	else {
+	    ++$count_new_variants;
 
-	if (!$variant_id) {
-	    // create the variant, and an "initial edit/add" row in edits table
+	    // Create the variant, and an "initial edit/add" row in edits table
 	    $variant_id = evidence_get_variant_id ($variant_name,
 						   false, false, false,
 						   true);
@@ -107,46 +112,41 @@ while (($line = fgets ($fh)) !== FALSE)
 						 0, 0, 0,
 						 true);
 	}
-	if (ereg("^(rs?)([0-9]+)$", $rsid, $regs)) $rsid=$regs[2];
-	else $rsid=null;
 
-	if (isset($job2genome[$job_id]))
-	  $genome_id = $job2genome[$job_id];
-	else
-	  $genome_id = evidence_get_genome_id ($global_human_id);
+	$taf = null;
+	if (isset($jvariant["num"]) && $jvariant["denom"]>0)
+	    // FIXME: taf is no longer in JSON so downstream needs to be updated before it can be used
+	    $taf = $jvariant["num"] / $jvariant["denom"];
 
-	theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity='$zygosity[$hom_or_het]'",
-			array ($variant_id, $genome_id, $chr, $chr_pos, $trait_allele, $taf, $rsid, "T/snp/$job_id"));
-	if (!isset($job2genome[$job_id])) {
-	    theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
-			    array ($human_name, $genome_id));
-	    theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, sex=?, dataset_url=?",
-			    array ("T/snp/$job_id", $genome_id, $sex,
-				   "http://snp.med.harvard.edu/results/job/$job_id"));
-	    theDb()->query ("INSERT INTO imported_datasets SET dataset_id=?",
-			    array ("T/snp/$job_id"));
-	    $job2genome[$job_id] = $genome_id;
+	$allele = $jvariant["genotype"];
+	$zygosity = preg_match ('{^[ACGT]$}', $allele) ? "homozygous" : "heterozygous";
+	$trait_allele = preg_replace ('{[^ACGT]|'.$jvariant["ref_allele"].'}', '', $jvariant["genotype"]);
+	if (strlen($trait_allele) > 1) {
+	    $trait_allele = bp_flatten ($trait_allele); // compound het
+	    $taf = null;
 	}
 
-	// quick mode for testing
-	if (getenv("MAX") && $ops >= getenv("MAX"))
-	  break;
-
+	$ok = theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
+			      array ($variant_id,
+				     $genome_id,
+				     $jvariant["chromosome"],
+				     $jvariant["coordinates"],
+				     $trait_allele,
+				     $taf,
+				     isset($jvariant["dbsnp"]) ? $jvariant["dbsnp"] : null,
+				     $dataset_id,
+				     $zygosity));
+	if (theDb()->isError($ok)) die ($ok->getMessage());
     }
-print "$ops\n";
-
-
-print "Adding new/updated rows to taf table...";
-theDb()->query ("REPLACE INTO taf (chr, chr_pos, allele, taf) SELECT chr, chr_pos, trait_allele, taf FROM import_genomes_tmp WHERE taf IS NOT NULL GROUP BY chr, chr_pos, trait_allele");
-print theDb()->affectedRows();
-print "\n";
-
+    print "$count_existing_variants existing and $count_new_variants new variants.";
+    print "\n";
+    fclose ($fh);
+}
 
 print "Adding {dataset,variant} associations to variant_occurs table...";
 theDb()->query ("REPLACE INTO variant_occurs (variant_id, rsid, dataset_id, zygosity, chr, chr_pos, allele) SELECT variant_id, rsid, dataset_id, zygosity, chr, chr_pos, trait_allele FROM import_genomes_tmp");
 print theDb()->affectedRows();
 print "\n";
-
 
 // Look for new variants in import_genomes_tmp that aren't in
 // snap_latest, and add suitable edits
@@ -246,16 +246,3 @@ WHERE edit_id IN (SELECT previous_edit_id FROM edits WHERE edit_oid=? AND edit_t
   print theDb()->affectedRows();
   print "\n";
 }
-
-// Clean up
-
-if (getenv("DEBUG")) {
-  theDb()->query ("DROP TABLE IF EXISTS import_genomes_last");
-  theDb()->query ("CREATE TABLE import_genomes_last LIKE import_genomes_tmp");
-  theDb()->query ("INSERT INTO import_genomes_last SELECT * FROM import_genomes_tmp");
-}
-
-theDb()->query ("DROP TEMPORARY TABLE variant_occurs_not");
-theDb()->query ("DROP TEMPORARY TABLE import_genomes_tmp");
-
-?>

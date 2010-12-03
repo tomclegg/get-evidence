@@ -1,5 +1,5 @@
-// Copyright 2009 Scalable Computing Experts
-// Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 var editable_currently_highlighted = false;
 var editable_have_unsaved = false;

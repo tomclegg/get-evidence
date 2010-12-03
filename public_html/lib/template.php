@@ -1,7 +1,8 @@
 <?php
+    ;
 
-  // Copyright 2009 Scalable Computing Experts, Inc.
-  // Author: Tom Clegg
+// Copyright 2010 Clinical Future, Inc.
+// Authors: see git-blame(1)
 
 global $gOut;
 if (!array_key_exists ("title", $gOut)) $gOut["title"] = $gOut["site_title"];
@@ -158,7 +159,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 </div>
 
-<div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2010 Scalable Computing Experts.</div>
+<div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2010 Clinical Future, Inc.</div>
 <!--
 Template from <a href="http://arcsin.se">Arcsin</a>
 -->
