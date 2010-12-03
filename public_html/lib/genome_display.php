@@ -49,6 +49,7 @@ function genome_display($shasum, $oid) {
                 $variant_data["inheritance_desc"] = $eval_zyg_out[2];
                 $suff_eval_variants[] = $variant_data;
             } else {
+                $variant_data["zygosity"] = substr($eval_zyg_out[1],0,3);
                 $insuff_eval_variants[] = $variant_data;
             }
             #$returned_text .= $line . "<br>\n";
@@ -70,8 +71,11 @@ function genome_display($shasum, $oid) {
                 $var_id = "rs" . $variant["dbSNP"];
             }
             if (strlen($var_id) > 0) {
-                $returned_text .= "<TR><TD><A HREF=\"http://evidence.personalgenomes.org/"
-                    . $var_id . "\">" . $var_id . "</A></TD><TD>"
+                $returned_text .= "<TR><TD><p><A HREF=\"http://evidence.personalgenomes.org/"
+                    . $var_id . "\">" . $var_id . "</A></p>" . $variant["chromosome"]
+                    . ":" . $variant["coordinates"];
+                if ($variant["dbsnp"]) $returned_text .= "<br>" . $variant["dbsnp"];
+                $returned_text .= "</TD><TD>"
                     . $variant["clinical"] . "</TD><TD>"
                     . $variant["evidence"] . "</TD><TD>"
                     . "<ul>" . ucfirst($variant["variant_impact"]) . "</ul><p>"
@@ -87,6 +91,7 @@ function genome_display($shasum, $oid) {
         $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
                             . "<TH>Autoscore</TH>"
                             . "<TH>Allele freq</TH>"
+                            . "<TH>Zygosity</TH>"
                             . "<TH>Summary</TH></TR>\n";
         foreach ($insuff_eval_variants as $variant) {
             $var_id = "";
@@ -97,15 +102,22 @@ function genome_display($shasum, $oid) {
             }
             if (strlen($var_id) > 0) {
                 if ($variant["GET-Evidence"]) {
-                    $returned_text .= "<TR><TD><A HREF=\"http://evidence.personalgenomes.org/"
-                            . $var_id . "\">" . $var_id . "</A></TD><TD>";
+                    $returned_text .= "<TR><TD><p><A HREF=\"http://evidence.personalgenomes.org/"
+                            . $var_id . "\">" . $var_id . "</A></p>" . $variant["chromosome"] 
+                            . ":" . $variant["coordinates"];
+                    if ($variant["dbsnp"]) $returned_text .= "<br>" . $variant["dbsnp"];
+                    $returned_text .= "</TD><TD>";
                 } else {
-                    $returned_text .= "<TR><TD>" . $var_id
-                            . "<BR><A HREF=http://evidence.personalgenomes.org/"
-                            . $var_id . ">Create GET-Evidence entry</A></TD><TD>";
+                    $returned_text .= "<TR><TD><p>" . $var_id . "<br>"
+                            . "<A HREF=http://evidence.personalgenomes.org/"
+                            . $var_id . ">Create GET-Evidence entry</A></p>"
+                            . $variant["chromosome"] . ":" . $variant["coordinates"];
+                    if ($variant["dbsnp"]) $returned_text .= "<br>" . $variant["dbsnp"];
+                    $returned_text .= "</TD><TD>";
                 }
                 $returned_text .= $variant["autoscore"] . "</TD><TD>";
                 $returned_text .= $variant["allele_freq"] . "</TD><TD>";
+                $returned_text .= $variant["zygosity"] . "</TD><TD>";
                 if (array_key_exists("summary_short", $variant)
                                     and strlen($variant["summary_short"]) > 0) {
                     $returned_text .= $variant["summary_short"] . "</TD></TR>\n";
@@ -128,7 +140,7 @@ function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
     // -1 = no effect expected (recessive carrier) or unknown
     $alleles = preg_split('/\//', $genotype);
     $zygosity = "Heterozygous";
-    if ($alleles[0] == $alleles[1]) {
+    if (count($alleles) == 1 or $alleles[0] == $alleles[1]) {
         $zygosity = "Homozygous";
     }
     if ($variant_dominance == "dominant") {
