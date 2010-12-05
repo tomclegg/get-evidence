@@ -13,7 +13,7 @@ function genome_display($shasum, $oid) {
                     . "<input type=\"hidden\" name=\"download_nickname\" value=\""
 		    . htmlspecialchars($db_query[0]['nickname']) . "\">\n"
                     . "<input type=\"submit\" value=\"Download source data\" "
-                    . "class=\"button\" \/>";
+                    . "class=\"button\" \/></form>";
 
     $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
