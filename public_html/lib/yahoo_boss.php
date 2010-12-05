@@ -123,8 +123,8 @@ function yahoo_boss_update_external ($variant_id)
 		    $resulttag = FALSE;
 		    continue;
 		}
-	    if (ereg ("snp\.med\.harvard\.edu|evidence\.personalgenomes\.org",
-		      $resulttag["url"])) {
+	    if (preg_match ('{snp\.med\.harvard\.edu|snp-dev.*\.freelogy\.org|evidence\.personalgenomes\.org}',
+			    $resulttag["url"])) {
 		$skipped_hits++;
 		continue;
 	    }
