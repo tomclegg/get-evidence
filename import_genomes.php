@@ -5,15 +5,6 @@
 // Copyright 2010 Clinical Future, Inc.
 // Authors: see git-blame(1)
 
-$fh = 0;			// stdin
-if ($_SERVER["argc"] == 2)
-    $fh = fopen($_SERVER["argv"][1], "r");
-
-if ($fh === FALSE)
-    {
-	die ("Can't open ".$_SERVER["argv"][1]."\n");
-    }
-
 chdir ('public_html');
 require_once 'lib/setup.php';
 require_once 'lib/genomes.php';
@@ -21,6 +12,9 @@ require_once 'lib/openid.php';
 require_once 'lib/bp.php';
 
 ini_set ("output_buffering", FALSE);
+
+if ($_SERVER["argc"] == 2)
+    $want_genome = $_SERVER["argv"][1];
 
 genomes_create_tables ();
 openid_login_as_robot ("Genome Importing Robot");
@@ -44,8 +38,15 @@ theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
 
 // Dump current list of variants into import_genomes_tmp table
 
-$public_genomes = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid IN (?,?)",
-				   array ($pgp_data_user, $public_data_user));
+$and = "";
+$params = array ($pgp_data_user, $public_data_user);
+if (isset ($want_genome)) {
+    $and = "AND (private_genome_id=? OR shasum=?)";
+    $params[] = $want_genome;
+    $params[] = $want_genome;
+}
+$public_genomes = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid IN (?,?) $and",
+				   $params);
 
 foreach ($public_genomes as $g) {
     $datadir = "$gBackendBaseDir/upload/{$g['shasum']}-out";
@@ -65,15 +66,14 @@ foreach ($public_genomes as $g) {
 
     $genome_id = evidence_get_genome_id ($global_human_id);
     $dataset_id = substr($g['shasum'], 0, 16);
+    print "Using dataset_id $dataset_id\n";
     $sex = '';			// TODO: store this somewhere? figure it out from chrX/Y?
 
     theDb()->query ("UPDATE genomes SET name=? WHERE genome_id=?",
 		    array ($g['nickname'], $genome_id));
     theDb()->query ("REPLACE INTO datasets SET dataset_id=?, genome_id=?, sex=?, dataset_url=?",
-		    array ("GET-E/{$g['private_genome_id']}", $genome_id, $sex,
+		    array ($dataset_id, $genome_id, $sex,
 			   "/genomes?{$g['private_genome_id']}"));
-    theDb()->query ("INSERT INTO imported_datasets SET dataset_id=?",
-		    array ("GET-E/{$g['private_genome_id']}"));
 
     $ops = 0;
     $count_existing_variants = 0;
@@ -138,9 +138,83 @@ foreach ($public_genomes as $g) {
 				     $zygosity));
 	if (theDb()->isError($ok)) die ($ok->getMessage());
     }
-    print "$count_existing_variants existing and $count_new_variants new variants.";
-    print "\n";
+    print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
     fclose ($fh);
+
+    $fh = fopen ("$datadir/ns.gff", "r");
+    if (!$fh) { print "open($datadir/ns.gff) failed.\n"; continue; }
+    if (file_exists ("$datadir/lock")) { print "Skipping because backend is still processing.\n"; continue; }
+    $ops = 0;
+    $count_existing_variants = 0;
+    $count_new_variants = 0;
+    while (($line = fgets ($fh)) !== false) {
+	++$ops;
+	if ($ops % 100000 == 0)
+	    print $ops;
+	else if ($ops % 10000 == 0)
+	    print ".";
+	$gff = explode ("\t", $line);
+
+	if (preg_match ('{amino_acid ([^;\n]+)}', $gff[8], $regs))
+	    $variant_names = explode ("/", $regs[1]);
+	else if (preg_match ('{db_xref dbsnp:(rs\d+)}', $gff[8], $regs))
+	    // If we wanted to add all dbsnp variants, we would do...
+	    // $variant_names = array ($regs[1]);
+	    // ...but we don't.
+	    continue;
+	else
+	    continue;
+
+	if (preg_match ('{alleles ([A-Z,/]+)}', $gff[8], $regs))
+	    $allele = $regs[1];
+	else continue;
+
+	if (preg_match ('{ref_allele ([ACGT])}', $gff[8], $regs))
+	    $ref_allele = $regs[1];
+	else continue;
+
+	$chromosome = $gff[0];
+	$position = $gff[3];
+
+	$zygosity = preg_match ('{^[ACGT]$}', $allele) ? "homozygous" : "heterozygous";
+	$trait_allele = preg_replace ('{[^ACGT]|'.$ref_allele.'}', '', $allele);
+	if (strlen($trait_allele) > 1) {
+	    $trait_allele = bp_flatten ($trait_allele); // compound het
+	}
+
+	foreach ($variant_names as $variant_name) {
+	    $variant_id = evidence_get_variant_id ($variant_name);
+	    if ($variant_id)
+		++$count_existing_variants;
+	    else if (!preg_match ('{^rs\d+$}', $variant_name)) {
+		++$count_new_variants;
+
+		// Create the variant, and an "initial edit/add" row in edits table
+		$variant_id = evidence_get_variant_id ($variant_name,
+						       false, false, false,
+						       true);
+		$edit_id = evidence_get_latest_edit ($variant_id,
+						     0, 0, 0,
+						     true);
+	    }
+	}
+	$ok = theDb()->query ("INSERT IGNORE INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
+			      array ($variant_id,
+				     $genome_id,
+				     $jvariant["chromosome"],
+				     $jvariant["coordinates"],
+				     $trait_allele,
+				     $taf,
+				     isset($jvariant["dbsnp"]) ? $jvariant["dbsnp"] : null,
+				     $dataset_id,
+				     $zygosity));
+	if (theDb()->isError($ok)) die ($ok->getMessage());
+    }
+    print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
+    fclose ($fh);
+
+    theDb()->query ("INSERT INTO imported_datasets SET dataset_id=?",
+		    array ($dataset_id));
 }
 
 print "Adding {dataset,variant} associations to variant_occurs table...";
@@ -208,33 +282,46 @@ print "\n";
 // evidence in variant_occurs supporting it, add a "delete" edit and
 // remove the entry from snap_latest.
 
-print "Entering \"delete\" edits for \"genome\" comment which have no supporting evidence after deleting those disputed rows and have not been edited by users...";
+print "Making list of {genome,variant} pairs to check...";
+$q = theDb()->query ("
+CREATE TEMPORARY TABLE check_genome_variant
+SELECT DISTINCT genome_id, variant_id
+FROM variant_occurs_not v
+LEFT JOIN datasets d
+ ON d.dataset_id=v.dataset_id");
+if (theDb()->isError($q)) print $q->getMessage();
+print ($count_check_pairs = theDb()->affectedRows());
+print "\n";
+
+print "Entering \"delete\" edits for \"genome\" comment which have no supporting evidence after deleting the disputed rows and have not been edited by users...";
 $q = theDb()->query ("
 INSERT IGNORE INTO edits
 (variant_id, genome_id, article_pmid, previous_edit_id, is_draft, is_delete,
  edit_oid, edit_timestamp)
+-- find all variants deleted from these datasets...
 SELECT old.variant_id, old.genome_id, 0, old.edit_id, 0, 1, ?, ?
-FROM variant_occurs_not del
-LEFT JOIN datasets deld
- ON deld.dataset_id=del.dataset_id
+FROM check_genome_variant del
+-- ...find 'genome X added by robot' edits in snap_latest...
 LEFT JOIN snap_latest old
  ON old.variant_id=del.variant_id
  AND old.article_pmid=0
- AND old.genome_id=deld.genome_id
+ AND old.genome_id=del.genome_id
+ AND old.disease_id=0
  AND old.edit_oid=?
+-- ...find any remaining rows linking this variant to this genome...
 LEFT JOIN variant_occurs v
- ON old.variant_id=v.variant_id
-LEFT JOIN datasets d
- ON v.dataset_id=d.dataset_id
- AND d.genome_id=deld.genome_id
+ ON v.variant_id=old.variant_id
+ AND v.dataset_id IN (SELECT dataset_id FROM datasets WHERE genome_id = del.genome_id)
+-- Submit a 'delete' entry if the entry hasn't been touched since it was added by the robot...
 WHERE old.edit_id IS NOT NULL
- AND d.dataset_id IS NULL
-GROUP BY del.variant_id, deld.genome_id
+-- ...and none of the remaining datasets mention the variant
+ AND v.variant_id IS NULL
 ", array (getCurrentUser("oid"), $timestamp,
 	  getCurrentUser("oid")));
 if (theDb()->isError($q)) print $q->getMessage();
 print ($count_removals = theDb()->affectedRows());
 print "\n";
+
 
 if ($count_removals > 0)
 {
