@@ -140,7 +140,7 @@ function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
     // -1 = no effect expected (recessive carrier) or unknown
     $alleles = preg_split('/\//', $genotype);
     $zygosity = "Heterozygous";
-    if (array_key_exists(1,$alleles) && ($alleles[0] == $alleles[1])) {
+    if (!array_key_exists(1,$alleles) || ($alleles[0] == $alleles[1])) {
         $zygosity = "Homozygous";
     }
     if ($variant_dominance == "dominant") {
