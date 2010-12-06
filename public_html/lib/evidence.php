@@ -577,11 +577,11 @@ function evidence_get_report ($snap, $variant_id)
 			LEFT JOIN genomes
 				ON $table.genome_id > 0
 				AND $table.genome_id = genomes.genome_id
-			LEFT JOIN datasets
-				ON datasets.genome_id = $table.genome_id
 			LEFT JOIN variant_occurs
 				ON $table.variant_id = variant_occurs.variant_id
-				AND variant_occurs.dataset_id = datasets.dataset_id
+				AND variant_occurs.dataset_id IN (SELECT dataset_id FROM datasets WHERE genome_id = $table.genome_id)
+			LEFT JOIN datasets
+				ON datasets.dataset_id = variant_occurs.dataset_id
 			LEFT JOIN variant_frequency vf
 				ON vf.variant_id=variants.variant_id
 			WHERE variants.variant_id=?
