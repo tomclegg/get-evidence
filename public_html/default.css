@@ -183,6 +183,7 @@ h1,h2,h3 {
 .report_table th {
 	font-weight: normal;
 	background: #ddd;
+	white-space: nowrap;
 }
 
 /* "editable" toolbar */

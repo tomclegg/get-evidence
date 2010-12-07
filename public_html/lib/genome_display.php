@@ -79,12 +79,12 @@ function genome_display($shasum, $oid) {
 
         usort($suff_eval_variants, "sort_reviewed");
         $returned_text .= "<h1>GET-Evidence evaluated variants:</h1>\n";
-        $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
+        $returned_text .= "<TABLE class=\"report_table datatables_please\"><THEAD><TR><TH>Variant</TH>"
                             . "<TH>Clinical Importance</TH>"
                             . "<TH>Evidence</TH>"
                             . "<TH>Impact</TH>"
                             . "<TH>Allele freq</TH>"
-                            . "<TH>Summary</TH></TR>\n";
+                            . "<TH>Summary</TH></TR></THEAD><TBODY>\n";
         foreach ($suff_eval_variants as $variant) {
             $var_id = "";
             if (array_key_exists("amino_acid_change", $variant)) {
@@ -103,14 +103,14 @@ function genome_display($shasum, $oid) {
                     . $variant["summary_short"] . "</TD></TR>\n";
             }
         }
-        $returned_text .= "</TABLE>\n";
+        $returned_text .= "</TBODY></TABLE>\n";
 
         usort($insuff_eval_variants, "sort_by_autoscore");
         $returned_text .= "<h1>Insufficiently reviewed variants:</h1>\n";
-        $returned_text .= "<TABLE class=\"report_table\"><TR><TH>Variant</TH>"
+        $returned_text .= "<TABLE class=\"report_table datatables_please\"><THEAD><TR><TH>Variant</TH>"
                             . "<TH>Autoscore</TH>"
                             . "<TH>Allele freq</TH>"
-                            . "<TH>Summary</TH></TR>\n";
+                            . "<TH>Summary</TH></TR></THEAD><TBODY>\n";
         foreach ($insuff_eval_variants as $variant) {
             $var_id = "";
             if (array_key_exists("amino_acid_change", $variant)) {
@@ -137,7 +137,7 @@ function genome_display($shasum, $oid) {
                 }
             }
         }
-        $returned_text .= "</TABLE>\n";
+        $returned_text .= "</TBODY></TABLE>\n";
     } else {
         $returned_text = "Sorry, the results file for this genome is not available. "
                     . "This may be because genome data has not finished processing.";
