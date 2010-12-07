@@ -96,6 +96,8 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
         # skip exons we know are noncoding (we reported UTR already earlier)
         if exonWCodeEnds[j] > cdsStart and exonWCodeStarts[j] <= cdsEnd:
             
+            # Commenting out splice prediction for now - MPB 2010/12/03
+            '''
             # check if it is spanning or within 2bp of the splice junction
             overlap_start = (record.start <= exonWCodeStarts[j] and record.end > exonWCodeStarts[j] - 2) \
                             and exonWCodeStarts[j] >= cdsStart
@@ -103,10 +105,6 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                             and exonWCodeEnds[j] <= cdsEnd
             before_seq = after_seq = ""
             if overlap_start:
-                # print str(record.start) + " " + str(record.end)
-                # print str(exonWCodeStarts[j]) + " " + str(exonWCodeEnds[j])
-                # print exonCodingRanges[j]
-                # print str(cdsStart) + " " + str(cdsEnd)
                 if strand == "-":
                     before_seq = reverse_complement("".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges[0:j+1])]))
                     after_seq = reverse_complement(twobit_file[chr][exonCodingRanges[j+1][0]:exonCodingRanges[j+1][1]])
@@ -114,10 +112,6 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     before_seq = "".join([twobit_file[chr][e[0]:e[1]] for e in exonCodingRanges[0:j]])
                     after_seq = twobit_file[chr][exonCodingRanges[j][0]:exonCodingRanges[j][1]]
             elif overlap_end:
-                # print str(record.start) + " " + str(record.end)
-                # print str(exonWCodeStarts[j]) + " " + str(exonWCodeEnds[j])
-                # print exonCodingRanges[j]
-                # print str(cdsStart) + " " + str(cdsEnd)
                 if strand == "-":
                     before_seq = reverse_complement("".join([twobit_file[chr][e[0]:e[1]] for e in reversed(exonCodingRanges[0:j])]))
                     after_seq = reverse_complement(twobit_file[chr][exonCodingRanges[j][0]:exonCodingRanges[j][1]])
@@ -131,7 +125,6 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     var2 = codon_1to3(translate(after_seq[:3]))
                     pos = len(before_seq) / 3
                     desc = var1 + "-" + var2 + str(pos) + "-" + str(pos+1) + "Splice"
-                    # print "Predicting splice start -, seq_ref: " + seq_ref + " next_exon: " + next_exon + " vars: " + var1 + " " + var2 + " desc: " + desc
                 else:
                     aa = translate(before_seq + after_seq)
                     var = codon_1to3(aa[(len(before_seq)/3)])
@@ -139,6 +132,7 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     desc = var + str(pos) + "Splice"
                     # print "Predicting splice start -, seq_ref: " + seq_ref + " next_exon: " + next_exon + " var: " + var + " desc: " + desc
                 return ("splice site",1,desc)
+            '''
 
             # trim the start and end to the coding region
             if exonWCodeStarts[j] < cdsStart:
@@ -164,16 +158,8 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                 if (record.start > intron_start and record.end <= intron_end):
                     return ("intron", running_intron_count)
 
-            # look in exon
-            #if (not ( (record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
-            #    or (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j]))):
-            #    print "WARNING: Isn't this suppose to be in the exon??"
-            #    print "record start: " + str(record.start) + " end: " + str(record.end)
-            #    print "exon start: " + str(exonWCodeStarts[j]) + " end: " + str(exonWCodeEnds[j])
-
             if ( (record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
                 or (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
-            #else:
                 
                 # get alleles and length is reference genome
                 alleles = record.attributes["alleles"].strip("\"").split("/")
@@ -191,13 +177,6 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     alleles.remove(ref_allele)
                 except ValueError:
                     pass
-
-
-                #if not ((record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
-                #    and (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
-                    # print "WARNING: Doesn't this cover a splice junction?"
-                    # print "record start: " + str(record.start) + " end: " + str(record.end)
-                    # print "exon start: " + str(exonWCodeStarts[j]) + " end: " + str(exonWCodeEnds[j])
 
                 # Generate reference and variant coding region DNA sequences
                 seq_var = [ ]
@@ -229,8 +208,6 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     variant_descriptions = []
                     try: variant_descriptions = desc_variants(seq_ref, seq_var[i])
                     except AssertionError as problem:
-                        #print "Malformed coding sequence for " + geneName + " " + str(exonStarts) \
-                        #    + " " + str(exonEnds) + "  " + str(problem)
                         next
                     if (variant_descriptions):
                         amino_acid_changes.append(variant_descriptions)
@@ -246,13 +223,11 @@ def unique(seq): # not order preserving, but that's OK; we can sort it later
     return {}.fromkeys(seq).keys()
 
 def desc_variants (coding_seq1, coding_seq2):
-    # print "coding seq: " + coding_seq1
     var_description = ""
     assert len(coding_seq1) % 3 == 0, "Reference coding sequence malformed: " \
             + "should have a length that is a multiple of 3! " \
             + "DNA sequence is: " + coding_seq1
     aa1 = list(translate(coding_seq1))
-    # print "amino acid seq: "  + "".join(aa1)
     for i in range(len(aa1)-1):
         assert aa1[i] != "*", "Reference coding sequence malformed: only " \
             + "last codon should be stop codon! AA sequence is: " + "".join(aa1) \
@@ -264,16 +239,13 @@ def desc_variants (coding_seq1, coding_seq2):
         # Frameshift. Find first amino acid that is changed.
         coding_seq2_trimmed = coding_seq2[0:3 * (len(coding_seq2)/3)]
         aa2 = list(translate(coding_seq2))
-        # print "var aa seq: " + "".join(aa2)
         pos = 1
-        # print "ref_coding_seq: " + "".join(aa1) + " var_coding_seq: " + "".join(aa2)
         while (pos <= len(aa1) and pos <= len(aa2) and aa1[pos-1] == aa2[pos-1]):
             pos += 1
         if (pos <= len(aa1)):
             var_description = aa1[pos-1] + str(pos) + "Shift"
     else:
         aa2 = list(translate(coding_seq2))
-        # print "var aa seq: " + "".join(aa2)
         position = 1
         last_ref_aa = ""
         while (len(aa1) > 0 and len(aa2) > 0 and aa1[0] == aa2[0]):
@@ -407,15 +379,11 @@ def main():
         is_nonsynonymous = is_splice = False
         
         for data in transcripts:
-            # print data
             # need to make "d" match up with refFlat's order
             # d : geneName, strand, cdsStart, cdsEnd, exonStarts, exonEnds
             #     0, 3, 6, 7, 9, 10
             d = ( data[0], data[3], int(data[6]), int(data[7]), data[9], data[10] )
-            #print record_position
-            #print d
             i = infer_function(twobit_file, record, *d)
-            #print i
             if i[0] == "nonsynonymous coding":
                 nonsyn_inferences.append("%s %s" % (d[0], i[2]))
                 is_nonsynonymous = True
