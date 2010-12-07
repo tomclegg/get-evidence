@@ -15,7 +15,7 @@ import MySQLdb
 from utils import gff, twobit
 from utils.biopython_utils import reverse_complement, translate
 from utils.codon_intersect import codon_intersect
-from config import REFFLAT_SORTED
+from config import KNOWNGENE_SORTED
 from codon import codon_123
 
 
@@ -172,7 +172,7 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                 return ("span_exon_boundary", )
 
             if ( (record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
-                or (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
+                and (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
                 
                 # get alleles and length is reference genome
                 alleles = record.attributes["alleles"].strip("\"").split("/")
@@ -213,7 +213,6 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                         seq = seq_ref_pre + twobit_file[chr][exonCodingRanges[j][0]:(record.start - 1)] \
                             + allele + twobit_file[chr][record.end:exonCodingRanges[j][1]] + seq_ref_post
                     seq_var.append(seq)
-                ref_aa = list(translate(seq_ref))
 
                 # Get variants
                 amino_acid_changes = []
@@ -308,7 +307,7 @@ def codon_1to3 (aa):
         threeletter = "Stop"
     return threeletter
 
-class refFlat:
+class transcript_file:
     def __init__(self, filename):
         self.f = open(filename)
         self.data = self.f.readline().split()
@@ -362,8 +361,8 @@ def main():
         gff_file = gff.input(sys.argv[1])
         twobit_file = twobit.input(sys.argv[2])
     
-    # set up refFlat input
-    refFlat_input = refFlat(os.getenv('DATA') + "/" + REFFLAT_SORTED)
+    # set up transcript file input
+    transcript_input = transcript_file(os.getenv('DATA') + "/" + KNOWNGENE_SORTED)
 
     for record in gff_file:
         if record.seqname.startswith("chr"):
@@ -374,10 +373,10 @@ def main():
             else:
                 chromosome = "chr" + record.seqname
         
-        # record.start is 1-based, but refFlat is 0-based, so subtract 1
+        # record.start is 1-based, but UCSC annotation starts are 0-based, so subtract 1
         record_position = (chromosome, record.start - 1)
 
-        transcripts = refFlat_input.cover_next_position(record_position)
+        transcripts = transcript_input.cover_next_position(record_position)
 
         # Skip the rest if no transcripts are returned
         if (not transcripts):
@@ -392,7 +391,7 @@ def main():
         is_nonsynonymous = is_splice = False
         
         for data in transcripts:
-            # need to make "d" match up with refFlat's order
+            # need to make "d" match up with transcript file order
             # d : geneName, strand, cdsStart, cdsEnd, exonStarts, exonEnds
             #     0, 3, 6, 7, 9, 10
             d = ( data[0], data[3], int(data[6]), int(data[7]), data[9], data[10] )
