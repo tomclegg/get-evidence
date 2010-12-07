@@ -153,10 +153,23 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
 
                 running_intron_count += 1
 
-                # test if is in within intron 
-                # (variants spanning exon/introns should've been caught earlier)
+                # test if is in within intron
                 if (record.start > intron_start and record.end <= intron_end):
                     return ("intron", running_intron_count)
+
+            # skip variants spanning start or end of coding region
+            # (we haven't worked out how to report these yet)
+            if (record.start <= cdsStart and record.end > cdsStart) or \
+                (record.start <= cdsEnd and record.end > cdsEnd) or \
+                (record.start - 1 == record.end == cdsStart) or \
+                (record.start == record.end + 1 == cdsEnd):
+                return ("span_coding_edge", )
+
+            # skip variants spanning start or end of exon boundaries
+            # (we haven't worked out how to report these yet)
+            if (record.start <= exonWCodeStarts[j] and record.end > exonWCodeStarts) or \
+                (record.start <= exonWCodeEnds[j] and record.end > exonWCodeEnds[j]):
+                return ("span_exon_boundary", )
 
             if ( (record.start > exonWCodeStarts[j] and record.start <= exonWCodeEnds[j]) \
                 or (record.end > exonWCodeStarts[j] and record.end <= exonWCodeEnds[j])):
