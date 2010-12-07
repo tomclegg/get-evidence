@@ -3,17 +3,40 @@
 require_once ("lib/quality_eval.php");
 
 function genome_display($shasum, $oid) {
-    $db_query = theDb()->getAll ("SELECT nickname FROM private_genomes WHERE shasum=? AND oid=?",
+    $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=? AND oid=?",
                                             array($shasum, $oid));
-    $returned_text = "<h1>Genome report for " . $db_query[0]['nickname'] . "</h1>\n";
-
-    $returned_text .= "<form action=\"/genome_download.php\" method=\"GET\">\n"
-                    . "<input type=\"hidden\" name=\"download_genome_id\" value=\""
-                    . $shasum . "\">\n"
-                    . "<input type=\"hidden\" name=\"download_nickname\" value=\""
-		    . htmlspecialchars($db_query[0]['nickname']) . "\">\n"
-                    . "<input type=\"submit\" value=\"Download source data\" "
-                    . "class=\"button\" \/></form>";
+    $ds = array ("Name" => false,
+		 "Public profile" => false,
+		 "This report" => "<a href=\"/genomes?$shasum\">evidence.personalgenomes.org/genomes?$shasum</a>");
+    if ($db_query[0]['nickname']) {
+	$realname = $db_query[0]['nickname'];
+	if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
+	    $realname = $regs[1];
+	$ds["Name"] = htmlspecialchars ($realname, ENT_QUOTES, "UTF-8");
+    }
+    $global_human_id = $db_query[0]['global_human_id'];
+    if (preg_match ('{^hu[A-F0-9]+$}', $global_human_id)) {
+	$hu = false;
+	// $hu = json_decode(file_get_contents("http://my.personalgenomes.org/api/get/$global_human_id"), true);
+	if ($hu && isset($hu["realname"]))
+	    $ds["Name"] = $hu["realname"];
+	$url = "https://my.personalgenomes.org/profile/$global_human_id";
+	$ds["Public profile"] = "<a href=\"".htmlspecialchars($url)."\">".preg_replace('{^https?://}','',$url)."</a>";
+    }
+    $data_size = filesize ($GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff");
+    if ($data_size) {
+	if ($data_size > 1000000) $data_size = (floor($data_size / 1000000) . " MB");
+	else if ($data_size > 1000) $data_size = (floor($data_size / 1000) . " KB");
+	else $data_size = $data_size . " B";
+	$ds["Source data"] = "<a href=\"/genome_download.php?download_genome_id=$shasum&amp;download_nickname=".urlencode($db_query[0]['nickname'])."\">download GFF</a> ($data_size)";
+    }
+    $qrealname = htmlspecialchars($ds["Name"], ENT_QUOTES, "UTF-8");
+    $GLOBALS["gOut"]["title"] = $qrealname." - GET-Evidence variant report";
+    $returned_text = "<h1>Variant report for ".htmlspecialchars($db_query[0]['nickname'],ENT_QUOTES,"UTF-8")."</h1><ul>";
+    foreach ($ds as $k => $v)
+	if ($v)
+	    $returned_text .= "<li>$k: $v</li>\n";
+    $returned_text .= "</ul>\n";
 
     $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
