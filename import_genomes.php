@@ -155,11 +155,15 @@ foreach ($public_genomes as $g) {
 	    print ".";
 	$gff = explode ("\t", $line);
 
+	$dbSNP = null;
+	if (preg_match ('{db_xref dbsnp:rs(\d+)}', $gff[8], $regs))
+	    $dbSNP = $regs[1];
+
 	if (preg_match ('{amino_acid ([^;\n]+)}', $gff[8], $regs))
 	    $variant_names = explode ("/", $regs[1]);
-	else if (preg_match ('{db_xref dbsnp:(rs\d+)}', $gff[8], $regs))
+	else if ($dbSNP)
 	    // If we wanted to add all dbsnp variants, we would do...
-	    // $variant_names = array ($regs[1]);
+	    // $variant_names = array ("rs$dbSNP");
 	    // ...but we don't.
 	    continue;
 	else
@@ -201,11 +205,11 @@ foreach ($public_genomes as $g) {
 	$ok = theDb()->query ("INSERT IGNORE INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
 			      array ($variant_id,
 				     $genome_id,
-				     $jvariant["chromosome"],
-				     $jvariant["coordinates"],
+				     $chromosome,
+				     $position,
 				     $trait_allele,
 				     $taf,
-				     isset($jvariant["dbsnp"]) ? $jvariant["dbsnp"] : null,
+				     $dbSNP,
 				     $dataset_id,
 				     $zygosity));
 	if (theDb()->isError($ok)) die ($ok->getMessage());
