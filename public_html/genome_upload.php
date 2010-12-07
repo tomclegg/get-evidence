@@ -16,10 +16,18 @@ include('xmlrpc/xmlrpc.inc');
 
 // Сheck that we have a file
 if ($reprocess_genome_ID) {
-    $page_content .= "Starting reprocessing of " . $reprocess_genome_ID . "<br>\n";
-    $page_content .= "Old data will remain available until new analysis is complete.<br>\n";
     $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype.gff";
-    send_to_server($permname);
+    if (! file_exists($permname)) {
+        $permname = $permname . ".gz";
+    }
+    if (file_exists($permname)) {
+        $page_content .= "Starting reprocessing of " . $reprocess_genome_ID . "<br>\n";
+        $page_content .= "Old data will remain available until new analysis is complete.<br>\n";
+        send_to_server($permname);
+    } else {
+        $page_content .= "Error! Sorry, for some reason we are unable to find the "
+            . "original file for " . $reprocess_genome_ID . "<br>";
+    }
 } elseif ($delete_genome_ID) {
     if ($user['oid'] != $user_oid) {
         $page_content .= "User ID doesn't match the requesting user!";
@@ -61,6 +69,9 @@ if ($reprocess_genome_ID) {
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
         $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype.gff";
+        if ($ext == "gz") {
+            $permname = $permname . ".gz";
+        }
         // Attempt to move the uploaded file to its new place
         @mkdir ($GLOBALS["gBackendBaseDir"] . "/upload/$shasum");
         if (move_uploaded_file($tempname, $permname)) {
