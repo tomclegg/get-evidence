@@ -40,24 +40,19 @@ function genome_display($shasum, $oid) {
 
     $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
+	$variants = array();
         $lines = file($results_file);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
 	    if (!$variant_data) continue; // sometimes we can't read python's json??
             # Get allele frequency
-            if (array_key_exists("num",$variant_data) and array_key_exists("denom",$variant_data)) {
-                $allele_freq = 100 * ($variant_data["num"] / $variant_data["denom"]);
-                if ($allele_freq > 10) {
-                    $variant_data["allele_freq"] = sprintf("%d%%", $allele_freq);
-                } elseif ($allele_freq > 1) {
-                    $variant_data["allele_freq"] = sprintf("%.1f%%", $allele_freq);
-                } elseif ($allele_freq > 0.1) {
-                    $variant_data["allele_freq"] = sprintf("%.2f%%", $allele_freq);
-                } else {
-                    $variant_data["allele_freq"] = sprintf("%.3f%%", $allele_freq);
-                }
+            if (array_key_exists("num",$variant_data) &&
+		array_key_exists("denom",$variant_data) &&
+		$variant_data["denom"] > 0) {
+		$allele_freq = sprintf("%.3f", $variant_data["num"] / $variant_data["denom"]);
+                $variant_data["allele_freq"] = $allele_freq;
             } else {
-                $variant_data["allele_freq"] = "?";
+                $variant_data["allele_freq"] = "";
             }
             # Get zygosity
             $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
@@ -67,25 +62,32 @@ function genome_display($shasum, $oid) {
             if ($variant_data["suff_eval"]) {
                 $variant_data["clinical"] = quality_eval_clinical($variant_data["variant_quality"]);
                 $variant_data["evidence"] = quality_eval_evidence($variant_data["variant_quality"]);
-                $variant_data["expect_effect"] = $eval_zyg_out[0];
-                $variant_data["zygosity"] = $eval_zyg_out[1];
-                $variant_data["inheritance_desc"] = $eval_zyg_out[2];
-                $suff_eval_variants[] = $variant_data;
             } else {
-                $insuff_eval_variants[] = $variant_data;
+                $variant_data["clinical"] = "";
+                $variant_data["evidence"] = "";
             }
-            #$returned_text .= $line . "<br>\n";
+	    $variant_data["expect_effect"] = $eval_zyg_out[0];
+	    $variant_data["zygosity"] = $eval_zyg_out[1];
+	    $variant_data["inheritance_desc"] = $eval_zyg_out[2];
+	    $variants[] = $variant_data;
         }
 
-        usort($suff_eval_variants, "sort_reviewed");
-        $returned_text .= "<h1>GET-Evidence evaluated variants:</h1>\n";
-        $returned_text .= "<TABLE class=\"report_table datatables_please\"><THEAD><TR><TH>Variant</TH>"
-                            . "<TH>Clinical Importance</TH>"
-                            . "<TH>Evidence</TH>"
-                            . "<TH>Impact</TH>"
-                            . "<TH>Allele freq</TH>"
-                            . "<TH>Summary</TH></TR></THEAD><TBODY>\n";
-        foreach ($suff_eval_variants as $variant) {
+	$returned_text .= "<p align='right'><input type='checkbox' id='variant_table_showall' name='variant_table_showall' value='1' class='ui-state-default variant_table_updater' /> show all variants<br />(turn off relevance filters)</p>\n";
+
+        usort($variants, "sort_variants");
+        $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table'><THEAD><TR>"
+	    . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
+	    . "<TH>Variant</TH>"
+	    . "<TH class='SortImportance'>Clinical<BR />Importance</TH>"
+	    . "<TH class='SortEvidence'>Evidence</TH>"
+	    . "<TH>Impact</TH>"
+	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
+	    . "<TH>Summary</TH>"
+	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
+	    . "</TR></THEAD><TBODY>\n";
+	$rownumber = 0;
+        foreach ($variants as $variant) {
+	    ++$rownumber;
             $var_id = "";
             if (array_key_exists("amino_acid_change", $variant)) {
                 $var_id = $variant["gene"] . "-" . $variant["amino_acid_change"];
@@ -93,48 +95,16 @@ function genome_display($shasum, $oid) {
                 $var_id = "rs" . $variant["dbSNP"];
             }
             if (strlen($var_id) > 0) {
-                $returned_text .= "<TR><TD><A HREF=\"http://evidence.personalgenomes.org/"
+                $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
+		    . "<TD><A HREF=\"http://evidence.personalgenomes.org/"
                     . $var_id . "\">" . $var_id . "</A></TD><TD>"
                     . $variant["clinical"] . "</TD><TD>"
                     . $variant["evidence"] . "</TD><TD>"
                     . "<ul>" . ucfirst($variant["variant_impact"]) . "</ul><p>"
                     . $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
                     . $variant["allele_freq"] . "</TD><TD>"
-                    . $variant["summary_short"] . "</TD></TR>\n";
-            }
-        }
-        $returned_text .= "</TBODY></TABLE>\n";
-
-        usort($insuff_eval_variants, "sort_by_autoscore");
-        $returned_text .= "<h1>Insufficiently reviewed variants:</h1>\n";
-        $returned_text .= "<TABLE class=\"report_table datatables_please\"><THEAD><TR><TH>Variant</TH>"
-                            . "<TH>Autoscore</TH>"
-                            . "<TH>Allele freq</TH>"
-                            . "<TH>Summary</TH></TR></THEAD><TBODY>\n";
-        foreach ($insuff_eval_variants as $variant) {
-            $var_id = "";
-            if (array_key_exists("amino_acid_change", $variant)) {
-                $var_id = $variant["gene"] . "-" . $variant["amino_acid_change"];
-            } else if (array_key_exists("dbSNP", $variant)) {
-                $var_id = "rs" . $variant["dbSNP"];
-            }
-            if (strlen($var_id) > 0) {
-                if ($variant["GET-Evidence"]) {
-                    $returned_text .= "<TR><TD><A HREF=\"http://evidence.personalgenomes.org/"
-                            . $var_id . "\">" . $var_id . "</A></TD><TD>";
-                } else {
-                    $returned_text .= "<TR><TD>" . $var_id
-                            . "<BR><A HREF=http://evidence.personalgenomes.org/"
-                            . $var_id . ">Create GET-Evidence entry</A></TD><TD>";
-                }
-                $returned_text .= $variant["autoscore"] . "</TD><TD>";
-                $returned_text .= $variant["allele_freq"] . "</TD><TD>";
-                if (array_key_exists("summary_short", $variant)
-                                    and strlen($variant["summary_short"]) > 0) {
-                    $returned_text .= $variant["summary_short"] . "</TD></TR>\n";
-                } else {
-                    $returned_text .= autoscore_evidence($variant) . "</TD></TR>\n";
-                }
+                    . $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
+                    . $variant["suff_eval"] . "</TD></TR>\n";
             }
         }
         $returned_text .= "</TBODY></TABLE>\n";
@@ -207,6 +177,16 @@ function autoscore_evidence($variant) {
     }
     $returned_text = implode(", ",$items);
     return $returned_text;
+}
+
+function sort_variants($a, $b) {
+    if ($a['suff_eval'] && $b['suff_eval'])
+	return sort_reviewed ($a, $b);
+    if ($a['suff_eval'])
+	return -1;
+    if ($b['suff_eval'])
+	return 1;
+    return sort_by_autoscore ($a, $b);
 }
 
 function sort_reviewed($a, $b) {
