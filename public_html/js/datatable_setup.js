@@ -4,18 +4,23 @@ var datatables_options = {
 	'bAutoWidth': false,
 	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
 	'iDisplayLength': -1,
-	'aoColumnDefs': [{'aTargets': [1,2,3,4,5], 'sWidth': '10%'}]
+	'aoColumnDefs': [{'aTargets': [1,2,4,5], 'sWidth': '10%'},
+			 {'aTargets': [4], 'iDataSort': 3}]
     }
 };
 var datatables_objects = {};
 var variant_table_showall = false;
 var variant_table = false;
+var variant_table_filter = function(){return true;};
+var variant_table_filters = [function(oSettings, aData, iDataIndex) { return !!aData[7]; },
+			     function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); },
+			     function(oSettings, aData, iDataIndex) { return true; }];
 
 jQuery(document).ready(function($){
 	$.fn.dataTableExt.afnFiltering.push(function(oSettings, aData, iDataIndex) {
 		var t = datatables_objects["variant_table"];
 		if (t && oSettings == t.fnSettings())
-		    return variant_table_showall || aData[7];
+		    return variant_table_filter(oSettings, aData, iDataIndex);
 		else
 		    return true;
 	    });
@@ -61,6 +66,8 @@ jQuery(document).ready(function($){
 		opts.aoColumnDefs.push({'aTargets': ['SortNumeric'], 'sType': 'numeric'});
 		opts.aoColumnDefs.push({'aTargets': ['SortImportance'], 'sType': 'importance'});
 		opts.aoColumnDefs.push({'aTargets': ['SortEvidence'], 'sType': 'evidence'});
+		opts.aoColumnDefs.push({'aTargets': ['SortDescFirst'], 'asSorting': ['desc','asc']});
+		opts.aoColumnDefs.push({'aTargets': ['Unsortable'], 'bSortable': false});
 		opts.aoColumnDefs.push({'aTargets': ['RenderFreq'], 'fnRender': datatable_render_freq, 'bUseRendered': false});
 		var t = $(this).dataTable(opts);
 		if (name)
@@ -68,10 +75,16 @@ jQuery(document).ready(function($){
 	    });
 	
 	function variant_table_update (ev) {
-		variant_table_showall = $("#variant_table_showall").attr("checked");
-		var t = datatables_objects["variant_table"];
-		t.fnFilter(t.fnSettings().oPreviousSearch.sSearch);
+	    for (var i=0; i<variant_table_filters.length; i++) {
+		if (jQuery("#variant_filter_radio"+i).attr("checked")) {
+		    variant_table_filter = variant_table_filters[i];
+		    var t = datatables_objects["variant_table"];
+		    t.fnFilter(t.fnSettings().oPreviousSearch.sSearch);
+		}
+	    }
+	    return true;
 	}
-	$(".variant_table_updater").bind("change", variant_table_update);
+	$("#variant_filter_radio input").bind("change", variant_table_update);
+	$("#variant_filter_radio").buttonset();
 	variant_table_update();
     });

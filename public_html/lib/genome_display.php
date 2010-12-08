@@ -7,7 +7,7 @@ function genome_display($shasum, $oid) {
                                             array($shasum, $oid));
     $ds = array ("Name" => false,
 		 "Public profile" => false,
-		 "This report" => "<a href=\"/genomes?$shasum\">evidence.personalgenomes.org/genomes?$shasum</a>");
+		 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
     if ($db_query[0]['nickname']) {
 	$realname = $db_query[0]['nickname'];
 	if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
@@ -72,17 +72,21 @@ function genome_display($shasum, $oid) {
 	    $variants[] = $variant_data;
         }
 
-	$returned_text .= "<p align='right'><input type='checkbox' id='variant_table_showall' name='variant_table_showall' value='1' class='ui-state-default variant_table_updater' /> show all variants<br />(turn off relevance filters)</p>\n";
+	$returned_text .= "<div id='variant_filter_radio'>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show sufficiently evaluated variants</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show rare (<i>f</i><10%), possibly pathogenic variants</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio2' /><label for='variant_filter_radio2'>Show all</label>
+</div><br clear=all />";
 
         usort($variants, "sort_variants");
         $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table'><THEAD><TR>"
 	    . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
 	    . "<TH>Variant</TH>"
-	    . "<TH class='SortImportance'>Clinical<BR />Importance</TH>"
-	    . "<TH class='SortEvidence'>Evidence</TH>"
-	    . "<TH>Impact</TH>"
+	    . "<TH class='SortImportance SortDescFirst'>Clinical<BR />Importance</TH>"
+	    . "<TH class='SortEvidence Invisible'>Evidence</TH>"
+	    . "<TH class='SortDescFirst'>Impact</TH>"
 	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
-	    . "<TH>Summary</TH>"
+	    . "<TH class='Unsortable'>Summary</TH>"
 	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
 	    . "</TR></THEAD><TBODY>\n";
 	$rownumber = 0;
@@ -100,7 +104,8 @@ function genome_display($shasum, $oid) {
                     . $var_id . "\">" . $var_id . "</A></TD><TD>"
                     . $variant["clinical"] . "</TD><TD>"
                     . $variant["evidence"] . "</TD><TD>"
-                    . "<ul>" . ucfirst($variant["variant_impact"]) . "</ul><p>"
+                    . $variant["evidence"]
+                    . " " . $variant["variant_impact"] . "<br /><br />"
                     . $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
                     . $variant["allele_freq"] . "</TD><TD>"
                     . $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
