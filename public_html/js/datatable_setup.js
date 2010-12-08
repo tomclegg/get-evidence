@@ -6,15 +6,22 @@ var datatables_options = {
 	'iDisplayLength': -1,
 	'aoColumnDefs': [{'aTargets': [1,2,4,5], 'sWidth': '10%'},
 			 {'aTargets': [4], 'iDataSort': 3}]
+    },
+    'variant_table_insuff': {
+	'bProcessing': true,
+	'bAutoWidth': false,
+	'aaSorting': [[2,'desc'], [3,'asc']],
+	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
+	'iDisplayLength': -1,
+	'aoColumnDefs': [{'aTargets': [1,2,3], 'sWidth': '15%'}]
     }
 };
 var datatables_objects = {};
 var variant_table_showall = false;
 var variant_table = false;
 var variant_table_filter = function(){return true;};
-var variant_table_filters = [function(oSettings, aData, iDataIndex) { return !!aData[7]; },
-			     function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); },
-			     function(oSettings, aData, iDataIndex) { return true; }];
+var variant_table_filters = [function(oSettings, aData, iDataIndex) { return true; },
+			     function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); }];
 
 jQuery(document).ready(function($){
 	$.fn.dataTableExt.afnFiltering.push(function(oSettings, aData, iDataIndex) {
@@ -87,4 +94,5 @@ jQuery(document).ready(function($){
 	$("#variant_filter_radio input").bind("change", variant_table_update);
 	$("#variant_filter_radio").buttonset();
 	variant_table_update();
+	$("#variant_table_tabs").tabs();
     });

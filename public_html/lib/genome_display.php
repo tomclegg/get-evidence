@@ -40,11 +40,20 @@ function genome_display($shasum, $oid) {
 
     $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
-	$variants = array();
+	$variants = array(array(),array());
         $lines = file($results_file);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
 	    if (!$variant_data) continue; // sometimes we can't read python's json??
+
+            $variant_data["name"] = "";
+            if (array_key_exists("amino_acid_change", $variant_data)) {
+                $variant_data["name"] = $variant_data["gene"] . "-" . $variant_data["amino_acid_change"];
+            } else if (array_key_exists("dbSNP", $variant_data)) {
+                $variant_data["name"] = "rs" . $variant_data["dbSNP"];
+            } else
+		continue;
+
             # Get allele frequency
             if (array_key_exists("num",$variant_data) &&
 		array_key_exists("denom",$variant_data) &&
@@ -69,16 +78,24 @@ function genome_display($shasum, $oid) {
 	    $variant_data["expect_effect"] = $eval_zyg_out[0];
 	    $variant_data["zygosity"] = $eval_zyg_out[1];
 	    $variant_data["inheritance_desc"] = $eval_zyg_out[2];
-	    $variants[] = $variant_data;
+	    if ($variant_data["suff_eval"])
+		$variants[0][] = $variant_data;
+	    else
+		$variants[1][] = $variant_data;
         }
 
-	$returned_text .= "<div id='variant_filter_radio'>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show sufficiently evaluated variants</label>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show rare (<i>f</i><10%), possibly pathogenic variants</label>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio2' /><label for='variant_filter_radio2'>Show all</label>
+	$returned_text .= "<div id='variant_table_tabs'><ul>\n"
+	    . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
+	    . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n"
+	    . "</ul>\n"
+	    . "<div id='variant_table_tab_0'>";
+
+	$returned_text .= "<div style='float:right; margin-bottom: 3px' id='variant_filter_radio'>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show all</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show rare (<i>f</i><10%) pathogenic variants</label>
 </div><br clear=all />";
 
-        usort($variants, "sort_variants");
+        usort($variants[0], "sort_variants");
         $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table'><THEAD><TR>"
 	    . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
 	    . "<TH>Variant</TH>"
@@ -90,29 +107,47 @@ function genome_display($shasum, $oid) {
 	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
 	    . "</TR></THEAD><TBODY>\n";
 	$rownumber = 0;
-        foreach ($variants as $variant) {
+        foreach ($variants[0] as $variant) {
 	    ++$rownumber;
-            $var_id = "";
-            if (array_key_exists("amino_acid_change", $variant)) {
-                $var_id = $variant["gene"] . "-" . $variant["amino_acid_change"];
-            } else if (array_key_exists("dbSNP", $variant)) {
-                $var_id = "rs" . $variant["dbSNP"];
-            }
-            if (strlen($var_id) > 0) {
-                $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
-		    . "<TD><A HREF=\"http://evidence.personalgenomes.org/"
-                    . $var_id . "\">" . $var_id . "</A></TD><TD>"
-                    . $variant["clinical"] . "</TD><TD>"
-                    . $variant["evidence"] . "</TD><TD>"
-                    . $variant["evidence"]
-                    . " " . $variant["variant_impact"] . "<br /><br />"
-                    . $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
-                    . $variant["allele_freq"] . "</TD><TD>"
-                    . $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
-                    . $variant["suff_eval"] . "</TD></TR>\n";
-            }
+	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
+		. "<TD><A HREF=\"http://evidence.personalgenomes.org/"
+		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
+		. $variant["clinical"] . "</TD><TD>"
+		. $variant["evidence"] . "</TD><TD>"
+		. $variant["evidence"]
+		. " " . $variant["variant_impact"] . "<br /><br />"
+		. $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
+		. $variant["allele_freq"] . "</TD><TD>"
+		. $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
+		. $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
+
+	$returned_text .= "</div>\n<div id='variant_table_tab_1'>\n";
+
+        usort($variants[1], "sort_variants");
+        $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff'><THEAD><TR>"
+	    . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
+	    . "<TH>Variant</TH>"
+	    . "<TH class='SortNumeric SortDescFirst'>Autoscore</TH>"
+	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
+	    . "<TH class='Unsortable'>Summary</TH>"
+	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
+	    . "</TR></THEAD><TBODY>\n";
+	$rownumber = 0;
+        foreach ($variants[1] as $variant) {
+	    ++$rownumber;
+	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
+		. "<TD><A HREF=\"http://evidence.personalgenomes.org/"
+		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
+		. $variant["autoscore"]. "</TD><TD>"
+		. $variant["allele_freq"] . "</TD><TD>"
+		. $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
+		. $variant["suff_eval"] . "</TD></TR>\n";
+        }
+        $returned_text .= "</TBODY></TABLE>\n";
+
+	$returned_text .= "</div></div>\n";
     } else {
         $returned_text = "Sorry, the results file for this genome is not available. "
                     . "This may be because genome data has not finished processing.";
