@@ -11,6 +11,8 @@ h3. Other guides
 
 * "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
 * "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
+* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
+* "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads
 
 h2. Logging in with OpenID
 
