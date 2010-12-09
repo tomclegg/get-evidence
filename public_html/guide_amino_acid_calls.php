@@ -7,7 +7,7 @@ h1. Variant call nomenclature
 
 In the process of interpreting a genome we match dbSNP IDs and predict amino acid changes in order to assist interpretation and allow comparison against other variant databases. Internally these are stored within a GFF file's "Attributes" column using "db_xref" and "amino_acid" variable names. 
 
-Any variants which occur within coding region is analyzed to see if it causes an amino acid change. We examined other standard nomenclature for calling amino acid changes (link), but we wanted something more concise and so ended up creating our own. Our nomenclature is explained below. In general it follows this rule: "genename reference_aa_sequence/first_reference_aa_position/variant_aa_sequence"
+Any variants which occur within coding region is analyzed to see if it causes an amino acid change. We examined "other standard nomenclature":http://www.hgvs.org/mutnomen/disc.html for calling amino acid changes, but we wanted something more concise and standardized for amino acid insertions and deletions. In general it follows this pattern: two strings seperated by a space, the first is the gene name, the second string combines three data: reference sequence, first reference position, variant sequence (entirely replacing the reference).
 
 h3. Other guides
 
