@@ -42,9 +42,9 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
     if (record.strand == "+" and record.end <= cdsStart) or \
       (record.strand == "-" and record.start > cdsEnd):
         return ("5'-UTR",)
-    
-    if (record.strand == "+" and record.end > cdsEnd) or \
-      (record.strand == "-" and record.start <= cdsStart):
+   
+    if (record.strand == "+" and record.start > cdsEnd) or \
+      (record.strand == "-" and record.end <= cdsStart):
         return ("3'-UTR",)
     
     # make exonStarts and exonEnds into lists
@@ -167,7 +167,7 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
 
             # skip variants spanning start or end of exon boundaries
             # (we haven't worked out how to report these yet)
-            if (record.start <= exonWCodeStarts[j] and record.end > exonWCodeStarts) or \
+            if (record.start <= exonWCodeStarts[j] and record.end > exonWCodeStarts[j]) or \
                 (record.start <= exonWCodeEnds[j] and record.end > exonWCodeEnds[j]):
                 return ("span_exon_boundary", )
 
