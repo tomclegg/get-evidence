@@ -577,11 +577,11 @@ function evidence_get_report ($snap, $variant_id)
 			LEFT JOIN genomes
 				ON $table.genome_id > 0
 				AND $table.genome_id = genomes.genome_id
-			LEFT JOIN datasets
-				ON datasets.genome_id = $table.genome_id
 			LEFT JOIN variant_occurs
 				ON $table.variant_id = variant_occurs.variant_id
-				AND variant_occurs.dataset_id = datasets.dataset_id
+				AND variant_occurs.dataset_id IN (SELECT dataset_id FROM datasets WHERE genome_id = $table.genome_id)
+			LEFT JOIN datasets
+				ON datasets.dataset_id = variant_occurs.dataset_id
 			LEFT JOIN variant_frequency vf
 				ON vf.variant_id=variants.variant_id
 			WHERE variants.variant_id=?
@@ -899,17 +899,25 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
       $flat["qualitycomment_".$scoreaxis] = "-";
   }
 
-  $flat["gene_in_genetests"]
+  if (isset($flat["gene"]))
+    $flat["gene_in_genetests"]
       = theDb()->getOne ("SELECT 1 FROM gene_disease WHERE gene=? LIMIT 1",
 			 array ($flat["gene"])) ? 'Y' : '-';
+  else
+    $flat["gene_in_genetests"] = '-';
 
   $flat["in_omim"] = $nonflat["in_omim"];
   $flat["in_gwas"] = $nonflat["in_gwas"];
   $flat["in_pharmgkb"] = $nonflat["in_pharmgkb"];
   $flat["genetests_testable"] = (isset($nonflat["genetests_testable"]) && $nonflat["genetests_testable"]) ? 'Y' : '-';
   $flat["genetests_reviewed"] = (isset($nonflat["genetests_reviewed"]) && $nonflat["genetests_reviewed"]) ? 'Y' : '-';
-  $flat["nblosum100"] = $nonflat["nblosum100"];
-  $flat["nblosum100>3"] = $nonflat["nblosum100"] > 3 ? 'Y' : '-';
+  if (isset($nonflat["nblosum100"])) {
+    $flat["nblosum100"] = $nonflat["nblosum100"];
+    $flat["nblosum100>3"] = $nonflat["nblosum100"] > 3 ? 'Y' : '-';
+  } else {
+    $flat["nblosum100"] = '-';
+    $flat["nblosum100>3"] = '-';
+  }
   if (isset($nonflat["disease_max_or"])) {
     $flat["max_or_disease_name"] = $nonflat["disease_max_or"]["disease_name"];
     foreach (array ("case_pos", "case_neg", "control_pos", "control_neg", "or")

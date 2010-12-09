@@ -10,10 +10,10 @@ $public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 
 $display_genome_ID = $_REQUEST['display_genome_id'];
 
-if (preg_match ('{^\d+$}', $_SERVER['QUERY_STRING'], $matches)) {
+if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
     $display_genome_ID = theDb()->getOne
-	("SELECT shasum FROM private_genomes WHERE private_genome_id=?",
-	 array ($matches[0]));
+	("SELECT shasum FROM private_genomes WHERE private_genome_id=? OR shasum=?",
+	 array ($matches[0], $matches[0]));
 }
 
 $user = getCurrentUser();

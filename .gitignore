@@ -2,5 +2,8 @@
 php-openid
 textile-2.0.0
 textile-2.0.0.tar.gz
+DataTables-*.zip
+public_html/DataTables-*
+public_html/jquery-ui
 wz_tooltip
 tmp

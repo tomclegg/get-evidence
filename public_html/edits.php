@@ -16,7 +16,10 @@ else if (isset($_GET["variant_id"])) {
 }
 else {
   $report_title = "Recent changes";
-  $where_sql = "1=1";
+  if (isset($_GET["includerobots"]))
+      $where_sql = "1=1";
+  else
+      $where_sql = "edit_oid not like 'none:%'";
   $where_param = array();
 }
 

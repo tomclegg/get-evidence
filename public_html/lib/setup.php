@@ -11,6 +11,9 @@ if (get_magic_quotes_gpc())
     foreach ($_COOKIE as $k => $v) { $_COOKIE[$k] = stripslashes($v); }
   }
 
+mb_regex_encoding ("UTF-8");
+mb_http_output ("UTF-8");
+
 require_once ("lib/config-default.php");
 require_once ("config.php");
 require_once ("lib/util.php");
