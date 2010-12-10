@@ -7,6 +7,7 @@ DB_HOST = "localhost"
 
 DBSNP_SORTED = "b130_SNPChrPosOnRef_36_3_sorted.bcp"
 REFFLAT_SORTED = "refFlat_sorted.txt"
+KNOWNGENE_SORTED = "knownGene_sorted.txt"
 
 GETEVIDENCE_USER = "evidence"
 GETEVIDENCE_PASSWD = "shakespeare"

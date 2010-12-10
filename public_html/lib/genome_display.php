@@ -23,7 +23,9 @@ function genome_display($shasum, $oid) {
 	$url = "https://my.personalgenomes.org/profile/$global_human_id";
 	$ds["Public profile"] = "<a href=\"".htmlspecialchars($url)."\">".preg_replace('{^https?://}','',$url)."</a>";
     }
-    $data_size = filesize ($GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff");
+    $sourcefile = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff";
+    if (! file_exists($sourcefile)) $sourcefile = $sourcefile . ".gz";
+    $data_size = filesize ($sourcefile);
     if ($data_size) {
 	if ($data_size > 1000000) $data_size = (floor($data_size / 1000000) . " MB");
 	else if ($data_size > 1000) $data_size = (floor($data_size / 1000) . " KB");
@@ -161,7 +163,7 @@ function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
     // -1 = no effect expected (recessive carrier) or unknown
     $alleles = preg_split('/\//', $genotype);
     $zygosity = "Heterozygous";
-    if (array_key_exists(1,$alleles) && ($alleles[0] == $alleles[1])) {
+    if (!array_key_exists(1,$alleles) || ($alleles[0] == $alleles[1])) {
         $zygosity = "Homozygous";
     }
     if ($variant_dominance == "dominant") {

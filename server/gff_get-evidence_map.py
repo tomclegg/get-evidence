@@ -111,6 +111,13 @@ WHERE (variants.variant_rsid=%s)
 ORDER BY snap_latest.edit_id DESC
 '''
 
+query_gene = '''
+SELECT genetests.testable,
+genetests.reviewed
+FROM genetests
+WHERE (genetests.gene=%s)
+'''
+
 def main():
     # return if we don't have the correct arguments
     if len(sys.argv) != 2:
@@ -138,14 +145,19 @@ def main():
         # lightly parse to find the alleles and rs number
         alleles = record.attributes["alleles"].strip("\"").split("/")
         ref_allele = record.attributes["ref_allele"].strip("\"")
-        xrefs = ()
-        try:
-            xrefs = record.attributes["db_xref"].strip("\"").split(",")
-        except KeyError:
-            try:
-                xrefs = record.attributes["Dbxref"].strip("\"").split(",")
-            except KeyError:
-                pass
+        dbsnp_ids = []
+        if "db_xref" in record.attributes:
+            db_xref_entries = [d.strip() for d in record.attributes["db_xref"].split(",")]
+            for entry in db_xref_entries:
+                data = entry.split(":")
+                if re.match('dbsnp',data[0]) and re.match('rs',data[1]):
+                    dbsnp_ids.append(data[1])
+        elif "Dbxref" in record.attributes:
+            db_xref_entries = [d.strip() for d in record.attributes["Dbxref"].split(",")]
+            for entry in db_xref_entries:
+                data = entry.split(":")
+                if re.match('dbsnp',data[0]) and re.match('rs',data[1]):
+                    dbsnp_ids.append(data[1])
 
         # we wouldn't know what to do with this, so pass it up for now
         if len(alleles) > 2:
@@ -164,11 +176,6 @@ def main():
             genotype = alleles[0]
         else:
             genotype = '/'.join(sorted(alleles))
-        rs_number = 0
-        for x in xrefs:
-            if x.startswith("dbsnp:rs"):
-                rs_number = int(x.replace("dbsnp:rs",""))
-                break
             
         # Store output here, add GET-Evidence or other findings if available
         output = {
@@ -178,8 +185,8 @@ def main():
                     "ref_allele": ref_allele,
                     "GET-Evidence": False
                 }
-        if rs_number > 0:
-            output["dbSNP"] = rs_number
+        if dbsnp_ids:
+            output["dbsnp"] = ",".join(dbsnp_ids)
 
         # Record found variant_id's here, if any are found
         variants_found = list()
@@ -198,25 +205,35 @@ def main():
                 x = splice_variant.split(" ")
                 gene = x[0]
                 amino_acid_change_and_position = x[1]
-                # convert amino acid single-letter (short) form to three-letter (long) form
-                (aa_from_short, aa_pos, aa_to_short) = re.search(r'([A-Z\*])([0-9]*)([A-Z\*])', amino_acid_change_and_position).groups()
-                aa_from = codon_123(aa_from_short)
-                aa_to = codon_123(aa_to_short)
-                aa_to = re.sub(r'TERM', 'Stop', aa_to)
+                aa_from = []
+                aa_pos = []
+                aa_to = []
+                # Parse out the from and to
+                (aa_from, aa_pos, aa_to) = re.search(r'([A-Z\*]*)([0-9]*)([A-Z\*]*)', \
+                        amino_acid_change_and_position).groups()
+                
                 # store gene and amino acid change in output_splice_variant
                 output_splice_variant["gene"] = gene
-                output_splice_variant["amino_acid_change"] = amino_acid_change_and_position
+                output_splice_variant["amino_acid_change"] = x[1]
+
+                aa_from_long = "".join([codon_123(aa) for aa in list(aa_from)])
+                aa_to_long = aa_to
+                if (aa_to not in ["Del", "Shift", "Frameshift"]):
+                    aa_to_long = "".join([codon_123(aa) for aa in list(aa_to)])
+                aa_from_long = re.sub('TERM','Stop',aa_from_long)
+                aa_to_long = re.sub('TERM','Stop',aa_to_long)
 
                 # query the GET-Evidence edits database for curated data
-                cursor.execute(query_aa_freq, (gene, aa_from, aa_pos, aa_to, "1000g"))
+                data = []
+                cursor.execute(query_aa_freq, (gene, aa_from_long, aa_pos, aa_to_long, "1000g"))
                 if cursor.rowcount == 0:
-                    cursor.execute(query_aa_freq, (gene, aa_from, aa_pos, aa_to, "HapMap"))
+                    cursor.execute(query_aa_freq, (gene, aa_from_long, aa_pos, aa_to_long, "HapMap"))
                 if cursor.rowcount == 0:
-                    cursor.execute(query_aa_nofreq, (gene, aa_from, aa_pos, aa_to))
+                    cursor.execute(query_aa_nofreq, (gene, aa_from_long, aa_pos, aa_to_long))
                 data = cursor.fetchall()
 
                 # If this gene/AA change caused a hit, report it
-                if cursor.rowcount > 0:
+                if cursor.rowcount > 0 and data:
                     for key in data[0].keys():
                         if key != "tag":
                             output_splice_variant[key] = data[0][key]
@@ -231,21 +248,84 @@ def main():
                             output_splice_variant["in_gwas"] = True
                         if d["tag"] == "PharmGKB":
                             output_splice_variant["in_pharmgkb"] = True
+ 
+                    output_splice_variant["autoscore"] = autoscore(output_splice_variant, \
+                                                            blosum_matrix, aa_from, aa_to)               
 
-                output_splice_variant["autoscore"] = autoscore(output_splice_variant, blosum_matrix, aa_from_short, aa_to_short)
-
-                if (output_splice_variant["autoscore"] >= 2 or suff_eval(output_splice_variant)):
-                    print json.dumps(output_splice_variant, ensure_ascii=False)
+                    if (output_splice_variant["autoscore"] >= 2 or suff_eval(output_splice_variant)):
+                        print json.dumps(output_splice_variant, ensure_ascii=False)
 
             # If no splice variants had a GET-Evidence hit, analyze using first splice variant
             if (not output["GET-Evidence"]):
                 x = splice_variant_list[0].split(" ")
                 gene = x[0]
                 amino_acid_change_and_position = x[1]
-                # Get amino acid change for first splice variant
-                (aa_from_short, aa_pos, aa_to_short) = re.search(r'([A-Z\*])([0-9]*)([A-Z\*])', amino_acid_change_and_position).groups()
-                if "dbSNP" in output:
-                    cursor.execute(query_rsid, (output["dbSNP"]))
+                # Parse out the from and to
+                (aa_from, aa_pos, aa_to) = re.search(r'([A-Za-z\*\-]*)([0-9\-]*)([A-Za-z\-\*]*)', \
+                        amino_acid_change_and_position).groups()
+
+                # store gene and amino acid change in output_splice_variant
+                output["gene"] = gene
+                output["amino_acid_change"] = x[1]
+                
+                cursor.execute(query_gene, (output["gene"]))
+                if cursor.rowcount > 0:
+                    #print "Found a gene match for " + output["gene"]
+                    data = cursor.fetchall()
+                    for key in data[0].keys():
+                        output[key] = data[0][key]
+
+
+                if "dbsnp" in output:
+                    dbsnp_ids = output["dbsnp"].split(",")
+                    for dbsnp_id in dbsnp_ids:
+                        dbsnp_id = dbsnp_id.strip('rs')
+                        cursor.execute(query_rsid, (dbsnp_id))
+                        data = cursor.fetchall()
+                        if cursor.rowcount > 0:
+                            print "Found match for rs" + dbsnp_id + "!"
+                            for key in data[0].keys():
+                                if key != "tag":
+                                    output[key] = data[0][key]
+                            output["GET-Evidence"] = True
+                            for d in data:
+                                if d["tag"] == "OMIM":
+                                    output["in_omim"] = True
+                                if d["tag"] == "GWAS":
+                                    output["in_gwas"] = True
+                                if d["tag"] == "PharmGKB":
+                                    output["in_pharmgkb"] = True
+                            break;  # quit after first hit
+
+                output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
+
+                if (output["autoscore"] >= 2 or suff_eval(output)):
+                    print json.dumps(output, ensure_ascii=False)               
+                    
+        else:
+            # Not handling splices for now, but might in the future.
+            #   -- Madeleine 11/29/2010
+            '''
+            if "splice" in record.attributes:
+                splice_variants = record.attributes["splice"].split("/")
+                output["splice_site"] = splice_variants[0]
+                splice_data = splice_variants[0].split(" ")
+                output["gene"] = splice_data[0]
+            if "gene" in output:
+                cursor.execute(query_gene, (output["gene"]))
+                if cursor.rowcount > 0:
+                    #print "Found a gene match for " + output["gene"]
+                    data = cursor.fetchall()
+                    for key in data[0].keys():
+                        output[key] = data[0][key]
+            '''
+
+
+            if "dbsnp" in output:
+                dbsnp_ids = output["dbsnp"].split(",")
+                for dbsnp_id in dbsnp_ids:
+                    dbsnp_id = dbsnp_id.strip('rs')
+                    cursor.execute(query_rsid, (dbsnp_id))
                     data = cursor.fetchall()
                     if cursor.rowcount > 0:
                         for key in data[0].keys():
@@ -259,27 +339,8 @@ def main():
                                 output["in_gwas"] = True
                             if d["tag"] == "PharmGKB":
                                 output["in_pharmgkb"] = True
-                output["autoscore"] = autoscore(output, blosum_matrix, aa_from_short, aa_to_short)
+                        break;  # quit after first hit
 
-                if (output["autoscore"] >= 2 or suff_eval(output)):
-                    print json.dumps(output, ensure_ascii=False)               
-                    
-        else:
-            if "dbSNP" in output:
-                cursor.execute(query_rsid, (output["dbSNP"]))
-                data = cursor.fetchall()
-                if cursor.rowcount > 0:
-                    for key in data[0].keys():
-                        if key != "tag":
-                            output[key] = data[0][key]
-                output["GET-Evidence"] = True
-                for d in data:
-                    if d["tag"] == "OMIM":
-                        output["in_omim"] = True
-                    if d["tag"] == "GWAS":
-                        output["in_gwas"] = True
-                    if d["tag"] == "PharmGKB":
-                        output["in_pharmgkb"] = True
             output["autoscore"] = autoscore(output)
 
             # Autoscore bar is lower here because you can only get points if 
@@ -294,26 +355,42 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
     score_var_database = 0;
     score_gene_database = 0;
     score_comp = 0;
+    # Variant specific databases
     if "in_omim" in data and data["in_omim"]:
         score_var_database += 2
     if "in_gwas" in data and data["in_gwas"]:
         score_var_database += 1
     if "in_pharmgkb" in data and data["in_pharmgkb"]:
         score_var_database += 1
-    if (score_var_database > 2):
-        score_var_database = 2
+    # Gene specific databases
     if "testable" in data and data["testable"] == 1:
         if "reviewed" in data and data["reviewed"] == 1:
             score_gene_database +=2
         else:
             score_gene_database +=1
-    if (blosum and blosum.value(aa_from, aa_to) <= -4):
-        if aa_to == "X" or aa_to == "*":
-            score_comp = 2
-            data["nonsense"] = True
-        else:
-            score_comp = 1
-            data["disruptive"] = True
+    # Computational prediction
+    #if (aa_from and aa_to):
+    #    print "Running autoscore, aa_from: " + aa_from + " aa_to: " + aa_to
+    if (aa_to and re.search(r'Del', aa_to)):
+        score_comp = 1
+        data["indel"] = True
+    elif (aa_to and re.search(r'Shift', aa_to)):
+        score_comp = 2
+        data["frameshift"] = True
+    elif aa_from and aa_to and re.match('\*',aa_to):
+        score_comp = 2
+        data["nonsense"] = True
+    elif (aa_from and aa_to and len(aa_from) != len(aa_to)):
+        score_comp = 1
+    elif (aa_from and aa_to):
+        for i in range(len(aa_from)):
+            if blosum.value(aa_from[i], aa_to[i]) <= -4:
+                score_comp = 1
+                data["disruptive"] = True
+    # Max all to 2
+    score_var_database = min(2,score_var_database)
+    score_gene_database = min(2,score_gene_database)
+    score_comp = min(2,score_comp)
     return score_var_database + score_gene_database + score_comp
 
 def suff_eval(variant_data):

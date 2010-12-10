@@ -107,8 +107,14 @@ def _gff_iterator(f, version=DEFAULT_GFF_VERSION):
         # sanity check on start and end
         start = long(l[3])
         end = long(l[4])
-        if end < start:
-            raise Exception("end before start (%s,%s) at line %d" % (start, end, linenumber))
+        
+        # Commenting these out to allow us to call insertions as having a start 
+        # 1bp before end (thereby distinguishing them by position from 
+        # substitutions, which have same start equal to end).
+        # This contradicts GFF specs.  - Madeleine Ball 11/23/2010
+        #
+        #if end < start:
+        #    raise Exception("end before start (%s,%s) at line %d" % (start, end, linenumber))
             
         # convert score to float
         score = l[5]

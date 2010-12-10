@@ -16,6 +16,8 @@ h3. Other guides
 
 * "Guide to editing":guide_editing: Explains how to edit variant evaluations.
 * "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
+* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
+* "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads
 
 h2. Insufficiently evaluated qualifier
 
