@@ -5,6 +5,21 @@ require_once ("lib/quality_eval.php");
 function genome_display($shasum, $oid) {
     $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=? AND oid=?",
                                             array($shasum, $oid));
+
+    $still_processing = false;
+    $lockfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/lock";
+    if (file_exists ($lockfile)) {
+	$logfile = $lockfile;
+	if (!is_writable ($lockfile) || // if !writable, fuser won't work; assume lock is current
+	    "ok" == shell_exec("fuser ''".escapeshellarg($lockfile)." >/dev/null && echo -n ok")) {
+	    $still_processing = true;
+	}
+    } else {
+	$logfile = preg_replace ('{lock$}', 'log', $lockfile);
+    }
+    if (!file_exists ($logfile) || !is_readable ($logfile))
+	$logfile = "/dev/null";
+
     $ds = array ("Name" => false,
 		 "Public profile" => false,
 		 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
@@ -151,8 +166,13 @@ function genome_display($shasum, $oid) {
 
 	$returned_text .= "</div></div>\n";
     } else {
-        $returned_text = "Sorry, the results file for this genome is not available. "
-                    . "This may be because genome data has not finished processing.";
+	if ($still_processing) {
+	    $returned_text = "<P>This genome is still being processed.</P>";
+	} else {
+	    $returned_text = "<P>Results are not available for this genome.</P><P>Processing seems to have failed; the server log may contain additional information.</P>";
+	}
+	$returned_text .= "<P id=\"showdebuginfo\"><A href=\"#\" onclick=\"jQuery('#showdebuginfo').addClass('ui-helper-hidden'); jQuery('#debuginfo').removeClass('ui-helper-hidden'); return false;\">Show server log / debug info</A></P>\n";
+        $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><PRE>Log file: ".$logfile."\n\n".htmlspecialchars(file_get_contents($logfile),ENT_QUOTES,"UTF-8")."\n\nLog file ends: ".date("r",filemtime($logfile))."</PRE></DIV>\n";
     }
     return($returned_text);
 }
