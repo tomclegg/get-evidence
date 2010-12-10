@@ -173,6 +173,7 @@ function genome_display($shasum, $oid) {
 	}
 	$returned_text .= "<P id=\"showdebuginfo\"><A href=\"#\" onclick=\"jQuery('#showdebuginfo').addClass('ui-helper-hidden'); jQuery('#debuginfo').removeClass('ui-helper-hidden'); return false;\">Show server log / debug info</A></P>\n";
         $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><PRE>Log file: ".$logfile."\n\n".htmlspecialchars(file_get_contents($logfile),ENT_QUOTES,"UTF-8")."\n\nLog file ends: ".date("r",filemtime($logfile))."</PRE></DIV>\n";
+	$returned_text .= "<P></P>";
     }
     return($returned_text);
 }
