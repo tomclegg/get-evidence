@@ -23,7 +23,9 @@ function genome_display($shasum, $oid) {
 	$url = "https://my.personalgenomes.org/profile/$global_human_id";
 	$ds["Public profile"] = "<a href=\"".htmlspecialchars($url)."\">".preg_replace('{^https?://}','',$url)."</a>";
     }
-    $data_size = filesize ($GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff");
+    $sourcefile = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff";
+    if (! file_exists($sourcefile)) $sourcefile = $sourcefile . ".gz";
+    $data_size = filesize ($sourcefile);
     if ($data_size) {
 	if ($data_size > 1000000) $data_size = (floor($data_size / 1000000) . " MB");
 	else if ($data_size > 1000) $data_size = (floor($data_size / 1000) . " KB");
