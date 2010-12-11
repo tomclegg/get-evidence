@@ -6,38 +6,34 @@ $gOut["title"] = "GET-Evidence: Genome uploaded";
 $user = getCurrentUser();
 $page_content = "";
 
-$reprocess_genome_ID = $_POST['reprocess_genome_id'];
-$delete_genome_ID = $_POST['delete_genome_id'];
-$delete_genome_nickname = $_POST['delete_genome_nickname'];
-$user_oid = $_POST['user_oid'];
-$location = $_POST['location'];
 
 include('xmlrpc/xmlrpc.inc');
 
-// Сheck that we have a file
-if ($reprocess_genome_ID) {
+// check that we have a file
+if (isset($_POST['reprocess_genome_id'])) {
+    $reprocess_genome_ID = $_POST['reprocess_genome_id'];
     $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype.gff";
     if (! file_exists($permname)) {
         $permname = $permname . ".gz";
     }
     if (file_exists($permname)) {
-        $page_content .= "Starting reprocessing of " . $reprocess_genome_ID . "<br>\n";
-        $page_content .= "Old data will remain available until new analysis is complete.<br>\n";
+        $page_content .= "<P>Reprocessing data: " . $reprocess_genome_ID . "</P>\n";
+        $page_content .= "<P>The <A href=\"genomes?display_genome_id=$reprocess_genome_ID\">existing results</A> will remain available until the new analysis is complete.</P>\n";
         send_to_server($permname);
     } else {
-        $page_content .= "Error! Sorry, for some reason we are unable to find the "
-            . "original file for " . $reprocess_genome_ID . "<br>";
+        $page_content .= "<P>Error! Sorry, for some reason we are unable to find the "
+            . "original file for " . $reprocess_genome_ID . "</P>";
     }
-} elseif ($delete_genome_ID) {
-    if ($user['oid'] != $user_oid) {
-        $page_content .= "User ID doesn't match the requesting user!";
-    } else if (!preg_match ('{^[0-9a-f]+$}', $delete_genome_ID)) {
+} elseif (isset($_POST['delete_genome_id'])) {
+    $delete_genome_ID = $_POST['delete_genome_id'];
+    $delete_genome_nickname = $_POST['delete_genome_nickname'];
+    if (!preg_match ('{^[0-9a-f]+$}', $delete_genome_ID)) {
 	$page_content .= "Invalid delete_genome_id supplied: $delete_genome_ID";
     } else {
-        $page_content .= "Deleting " . $user_oid . " " . $delete_genome_nickname 
+        $page_content .= "Deleting " . $user["oid"] . " " . $delete_genome_nickname 
                         . " " . $delete_genome_ID . "<br>\n";
         theDb()->query ("DELETE FROM private_genomes WHERE oid=? AND nickname=? AND shasum=?", 
-                            array ($user_oid, $delete_genome_nickname, $delete_genome_ID));
+                            array ($user["oid"], $delete_genome_nickname, $delete_genome_ID));
         $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE shasum=?", array($delete_genome_ID));
         if ($db_query) {
             $page_content .= "Your usage of this data instance (Nickname \""
@@ -81,16 +77,15 @@ if ($reprocess_genome_ID) {
             theDB()->query ("INSERT IGNORE INTO private_genomes SET
                                 oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
                                 array ($oid,$nickname,$shasum));
-            $page_content .= "It's done! The file has been saved as: $permname<br>";
-            $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
+	    header ("Location: genomes?display_genome_id=$shasum");
         } else {
             $page_content .= "Error: A problem occurred during file upload!";
         }
     } else {
         $page_content .= "Error: Only .txt or .gff files under 500MB are accepted for upload";
     }
-} elseif (!empty($location) and $user) {
-  $location = preg_replace('/\.\./','',$location); # No shenanigans
+} elseif (isset($_POST['location']) && $user && $user['oid']) {
+  $location = preg_replace('{/\.\./}','',$_POST['location']); # No shenanigans
   if (preg_match('{^file:///}',$location)) {
     $location = preg_replace('{^file://}','',$location);
     if (file_exists($location) && strpos ($location, $GLOBALS["gBackendBaseDir"]) === 0) {
@@ -105,8 +100,8 @@ if ($reprocess_genome_ID) {
         theDB()->query ("INSERT IGNORE INTO private_genomes SET
                             oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
                             array ($oid,$nickname,$shasum));
-        $page_content .= "It's done! The file has been saved as: $permname<br>";
-        $page_content .= "User ID is " . $oid . ", genome ID is " . $shasum . ", nickname is " . $nickname . "<br>\n";
+	header ("Location: genomes?display_genome_id=$shasum");
+	exit;
       } else {
         $page_content .= "Error: A problem occurred during file upload!";
       }

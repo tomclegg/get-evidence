@@ -217,3 +217,53 @@ function evidence_web_vote (variant_id, voter_element, score)
     new Ajax.Request('webvote.php', x);
     return false;
 }
+
+function variant_report_progress_update()
+{
+    var x = {
+	method: 'get',
+	parameters:
+	{
+	    'display_genome_id': $('display_genome_id').value,
+	    'json': true
+	},
+	onSuccess: function(transport)
+	{
+	    var j = transport.responseJSON;
+	    if (j) {
+		if (typeof j.progress != 'undefined')
+		    jQuery('#variant_report_progress').progressbar('value', 100*j.progress);
+		if (typeof j.status != 'undefined') {
+		    if (j.status == 'finished')
+			window.location.href = window.location.href;
+		    else
+			jQuery('#variant_report_status').html(j.status);
+		}
+		if (j.log) {
+		    jQuery('#debuginfotext').html(('Log file: '+j.logfilename+'\n\n'+j.log+'\n\n').escapeHTML());
+		}
+	    }
+	}
+    };
+    new Ajax.Request('genomes', x);
+}
+function variant_report_progress_setup()
+{
+    var val = 0;
+    var div = '#variant_report_progress';
+    if (!jQuery(div).length)
+	return;
+    if (jQuery(div).attr('value')) val = parseFloat(jQuery(div).attr('value'));
+    jQuery(div).progressbar();
+    jQuery(div).progressbar('value', val * 100);
+    jQuery(div).css('width', '100px');
+    setInterval(variant_report_progress_update, 10000);
+}
+jQuery(document).ready(variant_report_progress_setup);
+
+function closeKeepAlive()
+{
+    if (/AppleWebKit|MSIE/.test(navigator.userAgent)) {
+	new Ajax.Request("/about", { asynchronous:false });
+    }
+}

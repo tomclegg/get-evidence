@@ -2,24 +2,54 @@
 
 require_once ("lib/quality_eval.php");
 
-function genome_display($shasum, $oid) {
-    $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=? AND oid=?",
-                                            array($shasum, $oid));
+function genome_get_results ($shasum, $oid) {
+    $ret = array();
+
+    $ret["progress"] = 0;
+    $ret["status"] = "unknown";
 
     $still_processing = false;
+
+    $resultfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     $lockfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/lock";
     if (file_exists ($lockfile)) {
 	$logfile = $lockfile;
+	$ret["progress"] = 1;
+	$ret["status"] = "failed";
 	if (!is_writable ($lockfile) || // if !writable, fuser won't work; assume lock is current
 	    "ok" == shell_exec("fuser ''".escapeshellarg($lockfile)." >/dev/null && echo -n ok")) {
 	    $still_processing = true;
+	    $total_steps = 100;
+	    foreach (file($lockfile) as $logline) {
+		if (preg_match ('{^#status (\d*)/?(\d*) (.+)}', $logline, $regs)) {
+		    if ($regs[2] > 0) $total_steps = $regs[2];
+		    $ret["progress"] = $regs[1] / $total_steps;
+		    $ret["status"] = $regs[3];
+		}
+	    }
 	}
     } else {
 	$logfile = preg_replace ('{lock$}', 'log', $lockfile);
+	if (file_exists ($logfile) && file_exists ($resultfile)) {
+	    $ret["progress"] = 1;
+	    $ret["status"] = "finished";
+	}
     }
     if (!file_exists ($logfile) || !is_readable ($logfile))
 	$logfile = "/dev/null";
 
+    $ret["log"] = file_get_contents ($logfile);
+    $ret["logmtime"] = filemtime ($logfile);
+    $ret["logfilename"] = $logfile;
+    $ret["log"] .= "\n\nLog file ends: ".date("r",$ret["logmtime"]);
+
+    return $ret;
+}
+
+function genome_display($shasum, $oid) {
+    $results = genome_get_results ($shasum, $oid);
+    $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=? AND oid=?",
+                                            array($shasum, $oid));
     $ds = array ("Name" => false,
 		 "Public profile" => false,
 		 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
@@ -53,7 +83,15 @@ function genome_display($shasum, $oid) {
     foreach ($ds as $k => $v)
 	if ($v)
 	    $returned_text .= "<li>$k: $v</li>\n";
+
+    if ($results["progress"] < 1) {
+	$returned_text .= "<li>Processing status: &nbsp; <div style='margin:3px 0 -3px 0;display:inline-block;height:12px;' id='variant_report_progress' value='{$results['progress']}'></div> &nbsp; <div style='display:inline' id='variant_report_status'>{$results['status']}</div><input type='hidden' id='display_genome_id' value='{$shasum}' /></li>\n";
+    }
+    $logfile = $results["logfilename"];
+    $log = $results["log"];
+    $returned_text .= "<li><A id=\"showdebuginfo\" href=\"#\" onclick=\"jQuery('#debuginfo').toggleClass('ui-helper-hidden');jQuery('#showdebuginfo').html('Show/hide debugging info');return false;\">Show debugging info</A></li>\n";
     $returned_text .= "</ul>\n";
+    $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><BLOCKQUOTE><PRE id='debuginfotext'>Log file: ".$logfile."\n\n".htmlspecialchars($log,ENT_QUOTES,"UTF-8")."\n\n</PRE></BLOCKQUOTE></DIV>\n";
 
     $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
@@ -165,15 +203,6 @@ function genome_display($shasum, $oid) {
         $returned_text .= "</TBODY></TABLE>\n";
 
 	$returned_text .= "</div></div>\n";
-    } else {
-	if ($still_processing) {
-	    $returned_text = "<P>This genome is still being processed.</P>";
-	} else {
-	    $returned_text = "<P>Results are not available for this genome.</P><P>Processing seems to have failed; the server log may contain additional information.</P>";
-	}
-	$returned_text .= "<P id=\"showdebuginfo\"><A href=\"#\" onclick=\"jQuery('#showdebuginfo').addClass('ui-helper-hidden'); jQuery('#debuginfo').removeClass('ui-helper-hidden'); return false;\">Show server log / debug info</A></P>\n";
-        $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><PRE>Log file: ".$logfile."\n\n".htmlspecialchars(file_get_contents($logfile),ENT_QUOTES,"UTF-8")."\n\nLog file ends: ".date("r",filemtime($logfile))."</PRE></DIV>\n";
-	$returned_text .= "<P></P>";
     }
     return($returned_text);
 }
