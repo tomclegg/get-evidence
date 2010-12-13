@@ -220,7 +220,7 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     variant_descriptions = []
                     try: variant_descriptions = desc_variants(seq_ref, seq_var[i])
                     except AssertionError:
-                        next
+                        continue
                     if (variant_descriptions):
                         amino_acid_changes.append(variant_descriptions)
                 if amino_acid_changes:
