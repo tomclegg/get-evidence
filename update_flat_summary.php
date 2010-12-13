@@ -37,9 +37,20 @@ if ($tot == 0) {
 }
 $q = theDb()->query ("SELECT DISTINCT v.variant_id FROM variants v $join");
 $n = 0;
+$starttime = time();
+$eta = "";
+$sql = "";
 while ($row =& $q->fetchRow()) {
     ++$n;
-    print "\r$n / $tot ";
+    if ($n % 30 == 0) {
+	$remain = (time()-$starttime)*$tot/$n;
+	$eta = sprintf ("ETA %d:%02d:%02ds = %s  ",
+			floor($remain/3600),
+			floor($remain/60)%60,
+			floor($remain)%60,
+			date("r", $starttime+$remain));
+    }
+    print "\r$n / $tot $eta";
     $flat = evidence_get_assoc_flat_summary ($snap, $row["variant_id"]);
     $sql .= "(?, ?, ?, ?, ?),";
     $sqlparam[] = $row["variant_id"];
