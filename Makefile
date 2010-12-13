@@ -15,7 +15,7 @@ textile-2.0.0:
 DataTables-1.7.4.zip:
 	wget -c http://www.datatables.net/releases/DataTables-1.7.4.zip
 
-public_html/DataTables-1.7.4:
+public_html/DataTables-1.7.4: DataTables-1.7.4.zip
 	cd public_html && unzip ../DataTables-1.7.4.zip
 
 public_html/jquery-ui:
