@@ -8,7 +8,9 @@ $page_content = "";  // all html output stored here
 $pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
 $public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 
-$display_genome_ID = $_REQUEST['display_genome_id'];
+$display_genome_ID = "";
+if (isset ($_REQUEST['display_genome_id']))
+    $display_genome_ID = $_REQUEST['display_genome_id'];
 
 if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
     $display_genome_ID = theDb()->getOne
@@ -44,6 +46,11 @@ if (strlen($display_genome_ID) > 0) {
         }
     }
     if ($permission) {
+	if (isset($_REQUEST["json"])) {
+	    header ("Content-type: application/json");
+	    print json_encode (genome_get_results ($display_genome_ID, $request_ID));
+	    exit;
+	}
         $page_content .= genome_display($display_genome_ID, $request_ID);
     } else {
         $page_content .= "Sorry, for some reason you've requested a genome you don't have "
@@ -61,6 +68,8 @@ if (strlen($display_genome_ID) > 0) {
         $page_content .= "<hr>";
         $page_content .= "<h2>Upload a genome for analysis</h2>\n";
 	$page_content .= upload_warning();
+        $page_content .= "<p><A HREF=\"guide_upload_and_source_file_formats\">"
+                . "Upload file form guide</A></p>";
         $page_content .= genome_entry_form();
     } else {
         $page_content .= "<P>If you log in with your OpenID, you can process "
@@ -162,28 +171,25 @@ EOT
 }
 
 function genome_entry_form() {
-    $returned_text = "<div>\n<form enctype=\"multipart/form-data\" "
-                    . "action=\"/genome_upload.php\" method=\"post\">\n";
-    $returned_text .= "<table><tr>\n";
-    $returned_text .= "<td><label class=\"label\">Filename<br>\n";
-    $returned_text .= "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" "
-                        . "value=\"500000000\">\n";
-    $returned_text .= "<input type=\"file\" class=\"file\" name=\"genotype\" "
-                        . "id=\"genotype\"></label></td>\n";
-    $returned_text .= "<td>OR</td>\n";
-    $returned_text .= "<td><label class=\"label\">File location on server (use file:/// syntax)<br>\n";
-    $returned_text .= "<input type=\"text\" size=\"64\" name=\"location\" "
-                        . "id=\"path\"></label></td>\n";
-    $returned_text .= "</tr><tr>\n";
-    $returned_text .= "<td colspan=\"10\"><label class=\"label\">Genome name<br>\n";
-    $returned_text .= "<input type=\"text\" size=\"64\" name=\"nickname\" "
-                        . "id=\"nickname\"></label>\n";
-    $returned_text .= "<input type=\"submit\" value=\"Upload\" class=\"button\" /></td>\n";
-    $returned_text .= "</tr></table>\n";
-    $returned_text .= "</form>\n</div>\n";
-    $returned_text .= "<P>&nbsp;</P>\n";
-
-    return($returned_text);
+    return '
+<div> 
+<form enctype="multipart/form-data" action="/genome_upload.php" method="post"
+ onsubmit="closeKeepAlive();">
+<table><tr> 
+<td><label class="label">Filename<br> 
+<input type="hidden" name="MAX_FILE_SIZE" value="500000000"> 
+<input type="file" class="file" name="genotype" id="genotype" /></label></td> 
+<td>OR</td>
+	<td><label class="label">File location on server (use file:/// syntax)<br> 
+<input type="text" size="64" name="location" id="path" /></label></td> 
+</tr><tr> 
+<td colspan="10"><label class="label">Genome name<br> 
+<input type="text" size="64" name="nickname" id="nickname"></label> 
+<input type="submit" value="Upload" class="button" /></td> 
+</tr></table> 
+</form> 
+</div>
+<p>&nbsp;</p>';
 }
 
 ?>

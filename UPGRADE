@@ -1,0 +1,31 @@
+Perform the following steps after updating your installation (using
+git-pull or whatever).
+
+Upgrade database tables by visiting:
+
+ http://your.site.example.com/install
+
+Compare /home/trait/config/config.py and
+/home/trait/config/config.default.py -- if any configuration settings
+have been added, make the same additions (and alter to suit) in your
+config file.
+
+ (
+  source ~/get-evidence/server/script/config-local.sh
+  sudo -u $USER diff -u /home/trait/config/config{.default,}.py
+  sudo -u $USER emacs/home/trait/config/config*.py
+ )
+
+Run install-user.sh -- it might need to download new data files.
+
+ (
+  cd ~/get-evidence/server/script/
+  source config-local.sh
+  sudo -u $USER ./install-user.sh
+ )
+
+Restart the back-end server.
+
+ sudo /etc/init.d/trait-o-matic restart
+
+Try processing some data.

@@ -41,12 +41,22 @@ header('Content-Type: text/html; charset=UTF-8');
 <?php endif; ?>
 <script type="text/javascript" 
  src="http://ajax.googleapis.com/ajax/libs/prototype/1.6.1/prototype.js"></script>
+<script type="text/javascript" src="/DataTables-1.7.4/media/js/jquery.js"></script>
+<script type="text/javascript" src="/DataTables-1.7.4/media/js/jquery.dataTables.js"></script>
+<script type="text/javascript" src="/jquery-ui/js/jquery-ui-1.8.6.custom.min.js"></script>
+<link rel="stylesheet" type="text/css" href="/jquery-ui/css/custom-theme/jquery-ui-1.8.6.custom.css"/>
+<link rel="stylesheet" type="text/css" href="/DataTables-1.7.4/media/css/demo_page.css"/>
+<link rel="stylesheet" type="text/css" href="/DataTables-1.7.4/media/css/demo_table_jui.css"/>
+<script type="text/javascript">
+  jQuery.noConflict();
+</script>
 <script type="text/javascript" src="/js/addEvent.js"></script>
 <script type="text/javascript" src="/js/message.js"></script>
 <script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
 <script type="text/javascript" src="/js/evidence.js"></script>
 <script type="text/javascript" src="/js/report.js"></script>
 <script type="text/javascript" src="/js/show-what.js"></script>
+<script type="text/javascript" src="/js/datatable_setup.js"></script>
 <title><?php frag("title"); ?></title>
 </head>
 

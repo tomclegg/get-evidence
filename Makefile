@@ -1,5 +1,5 @@
-daily: update_genomes dump_database vis_data_local
-install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js
+daily: dump_database vis_data_local
+install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js public_html/DataTables-1.7.4 public_html/jquery-ui
 
 php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
@@ -11,6 +11,15 @@ textile-2.0.0:
 	[ `md5sum textile-2.0.0.tar.gz | head -c 32` = c4f2454b16227236e01fc1c761366fe3 ]
 	tar xzf textile-2.0.0.tar.gz
 	patch -p0 <textile-2.0.0-php-5.2.4.patch
+
+DataTables-1.7.4.zip:
+	wget -c http://www.datatables.net/releases/DataTables-1.7.4.zip
+
+public_html/DataTables-1.7.4:
+	cd public_html && unzip ../DataTables-1.7.4.zip
+
+public_html/jquery-ui:
+	mkdir -p public_html/jquery-ui && cd public_html/jquery-ui && unzip ../../jquery-ui-1.8.6.custom.zip
 
 public_html/js/wz_tooltip.js:
 ######## Walter Zorn's tooltip library seems to be homeless, so we
@@ -35,19 +44,7 @@ public_html/js/tip_balloon.js:
 GETEVIDENCEHOST?=evidence.personalgenomes.org
 TRAITOMATICHOST?=snp.oxf.freelogy.org
 CACHEDIR=$(shell pwd)/tmp
-CACHEFILE=$(CACHEDIR)/allsnps-$(TRAITOMATICHOST).txt
-ALLSNPSURL?=http://$(TRAITOMATICHOST)/browse/allsnps/public
 PID:=$(shell echo $$PPID)
-update_genomes: remove_cachefile import_genomes
-remove_cachefile:
-	rm -f $(CACHEFILE) $(CACHEFILE).tmp.*
-$(CACHEFILE):
-	mkdir -p $(CACHEDIR)
-	rm -f $(CACHEFILE).tmp.*
-	wget -O$(CACHEFILE).tmp.$(PID) $(ALLSNPSURL)
-	mv $(CACHEFILE).tmp.$(PID) $(CACHEFILE)
-import_genomes: $(CACHEFILE)
-	./import_genomes.php $(CACHEFILE)
 
 dump_database:
 	./dump_database.php public_html/get-evidence.sql.gz

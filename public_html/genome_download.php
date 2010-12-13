@@ -19,6 +19,12 @@ foreach ($db_query as $result) {
 }
 
 if ($permission) {
+    if (! file_exists($fullPath)) {
+        if (file_exists ($fullPath . ".gz")) {
+            $fullPath = $fullPath . ".gz";
+            $nickname = $nickname . ".gz";
+        }
+    }
     if ($fd = fopen ($fullPath, "r")) {
         $fsize = filesize($fullPath);
         header("Content-type: text/plain");

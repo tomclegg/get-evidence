@@ -738,12 +738,11 @@ function evidence_get_report ($snap, $variant_id)
     $urlscores =& evidence_get_web_votes ($variant_id);
     foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
 						     array ($variant_id, "Yahoo!"))) as $url) {
-      if ($urlscores[$url] == 1) {
+      if (!isset($urlscores[$url]) || !strlen($urlscores[$url]))
+	$row["webscore"] = "-";
+      else if ($urlscores[$url] == 1) {
 	$row["webscore"] = "Y";
 	break;
-      }
-      if (!strlen ($urlscores[$url])) {
-	$row["webscore"] = "-";
       }
     }
   }
@@ -867,11 +866,13 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $flat["n_genomes_annotated"] = 0;
   $flat["n_haplomes"] = 0;
   foreach ($nonflat["genomes"] as &$g) {
-    if (strlen ($g["summary_long"]) > 0)
+    if (isset($g["summary_long"]) && strlen ($g["summary_long"]) > 0)
       $flat["n_genomes_annotated"] ++;
 
-    if ($g["zygosity"] != "homozygous" ||
-	($g["sex"] == "M" && ($g["chr"] == "chrX" || $g["chr"] == "chrY")))
+    if (!isset($g["zygosity"]))
+      ;
+    else if ($g["zygosity"] != "homozygous" ||
+	     ($g["sex"] == "M" && ($g["chr"] == "chrX" || $g["chr"] == "chrY")))
       $flat["n_haplomes"] ++;
     else
       $flat["n_haplomes"] += 2;
@@ -879,7 +880,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $flat["n_articles"] = sizeof ($nonflat["articles"]);
   $flat["n_articles_annotated"] = 0;
   foreach ($nonflat["articles"] as &$g) {
-    if (strlen ($g["summary_long"]) > 0)
+    if (isset($g["summary_long"]) && strlen ($g["summary_long"]) > 0)
       $flat["n_articles_annotated"] ++;
   }
   $i = -1;
@@ -1292,10 +1293,19 @@ function evidence_get_all_oddsratios ($report)
 	!strlen ($figs["control_pos"]) &&
 	!strlen ($figs["control_neg"]))
       continue;
-    $disease[$id]["figs"]["case_pos"] += $figs["case_pos"];
-    $disease[$id]["figs"]["case_neg"] += $figs["case_neg"];
-    $disease[$id]["figs"]["control_pos"] += $figs["control_pos"];
-    $disease[$id]["figs"]["control_neg"] += $figs["control_neg"];
+    if (!isset ($disease[$id]))
+      $disease[$id] = array("figs" => array("case_pos" => 0,
+					    "case_neg" => 0,
+					    "control_pos" => 0,
+					    "control_neg" => 0));
+    if (isset($figs["case_pos"]))
+      $disease[$id]["figs"]["case_pos"] += $figs["case_pos"];
+    if (isset($figs["case_neg"]))
+      $disease[$id]["figs"]["case_neg"] += $figs["case_neg"];
+    if (isset($figs["control_pos"]))
+      $disease[$id]["figs"]["control_pos"] += $figs["control_pos"];
+    if (isset($figs["control_neg"]))
+      $disease[$id]["figs"]["control_neg"] += $figs["control_neg"];
     $disease[$id]["disease_id"] = $row["disease_id"];
     $disease[$id]["disease_name"] = $row["disease_name"];
     $disease[$id]["article_pmid"] = "*";

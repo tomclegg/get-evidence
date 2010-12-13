@@ -8,7 +8,7 @@ usage: %prog gff_file
 # Append db_xref (or, for GFF3, Dbxref) attribute with dbSNP information, if available
 # ---
 
-import os, sys
+import os, sys, re
 from utils import gff
 from config import DBSNP_SORTED
 
@@ -59,10 +59,20 @@ def main():
         dbSNP_data = dbSNP_input.data
 
         if (dbSNP_position and dbSNP_input.comp_position(dbSNP_position,record_position) == 0):
+            dbSNP_datum = "dbsnp:rs%s" % dbSNP_data[0]
+            record_dbxref_data = []
             if record.version >= 3:
-                record.attributes["Dbxref"] = "dbsnp:rs%s" % dbSNP_data[0]
+                if "Dbxref" in record.attributes:
+                    record_dbxref_data = record.attributes["Dbxref"].split(",")
+                if not any([re.search(dbSNP_data[0],datum) for datum in record_dbxref_data]):
+                    record_dbxref_data.append(dbSNP_datum)
+                    record.attributes["Dbxref"] = ",".join(record_dbxref_data)
             else:
-                record.attributes["db_xref"] = "dbsnp:rs%s" % dbSNP_data[0]
+                if "db_xref" in record.attributes:
+                    record_dbxref_data = record.attributes["db_xref"].split(",")
+                if not any([re.search(dbSNP_data[0],datum) for datum in record_dbxref_data]):
+                    record_dbxref_data.append(dbSNP_datum)
+                    record.attributes["db_xref"] = ",".join(record_dbxref_data)
         print record
 
 

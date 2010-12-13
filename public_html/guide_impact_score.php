@@ -5,14 +5,24 @@ $gOut["title"] = "GET-Evidence: Variant Impact Score";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
 h1. Variant Impact Score
 
-Each variant is graded in six categories, the first four related to evidence and last two related to clinical importance. Each category may be assigned up to five points to reflect the strength of evidence in that category. Zero points reflects no significant evidence in a category, -1 reflects contradicting evidence. These six categories are the "variant impact score".
+To facilitate automatic reporting of variants, we ask that users score variants in various categories. There are seven impact scores that are recorded, described below.
 
 h3. Other guides
 
 * "Guide to editing":guide_editing: Explains how to edit variant evaluations.
 * "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
+* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
+* "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads
 
-h2. Computational evidence
+h2. Variant evidence vs. clinical importance
+
+Of the seven impact scores, the first four reflect variant evidence (how "real" a variant effect is) while the last three reflect clinical importance (how severe and/or treatable the effect is). It is important to distinguish between these two sets of scores. Some variants may be predicted to have a very severe effect but have weak supporting evidence because the variant's rarity makes it hard to collect statistically significant data - such a variant would have high clinical importance scores but low evidence scores. On the other hand, some variants may have strong statistical significance but are common and have a weak impact on disease (for example, variants found through genome-wide association studies of common SNPs) - such variants would have high evidence scores but low clinical importance.
+
+Thus, there are many types of "pathogenic" variants. We combine variant impact scores from these two categories to automatically generate impact qualifiers that more accurately describe a variant. For example: the rare, severe variant with little supporting evidence would be called "high clinical importance, uncertain pathogenic", while the common variant with significant evidence supporting a weak effect would be called "low clinical importance, pathogenic". An explanation for these descriptions is in our "guide to qualifiers":guide_qualifiers.
+
+h2. Variant evidence scores
+
+h3. Computational evidence
 
 This category scores the amount of computational and theoretical evidence that supports this variant as having a functional effect. One point is awarded for each of the following:
 * NBLOSUM of 3 or greater
@@ -23,7 +33,7 @@ This category scores the amount of computational and theoretical evidence that s
 * SIFT "not tolerated" prediction
 * GVGD deleterious prediction 
 
-h2. Functional evidence
+h3. Functional evidence
 
 This category scores experimental, variant-specific evidence supporting the variant having an effect. One point for each variant-specific experiment supporting the result, and penalize one point for conflicting results. Experiments must be variant-specific recombinant sequences, not merely from patient-derived cell lines (which may carry another causal variant). Ignore general data regarding gene function and importance. Examples:
 * enzyme activity
@@ -31,7 +41,7 @@ This category scores experimental, variant-specific evidence supporting the vari
 * cellular localization
 * animal models
 
-h2. Case/control evidence
+h3. Case/control evidence
 
 This category measures evidence based on the incidence of this variant in people with the phenotype (cases), compared to people who do not have the phenotype but are otherwise similar (controls). Cases should not be related (ie. not from the same family). Case/control numbers have an should be "evaluated using Fisher's exact test to get a p value":calculators, which determines the score:
 
@@ -43,7 +53,7 @@ This category measures evidence based on the incidence of this variant in people
 * 0 points if none of the above conditions are met
 * -1 points if the frequency of the allele contradicts a highly pathogenic hypothesis
 
-h3. What are case+ and case-?
+h4. What are case+ and case-?
 
 You'll see our "Fisher's exact test calculator":calculators requires you to provide numbers for these. "Case+" refers to people or chromosomes that have both the variant and the phenotype being studied. "Case-" refers to people or chromosomes that have the phenotype, but ''do not'' have the genotype being measured.
 
@@ -52,7 +62,7 @@ Exactly what is being counted can vary.
 * Dominant hypothesis: Homozygous and heterozygous carriers are counted as case+, non-carriers are case-
 * Counting chromosomes: Alleles rather than genotypes are counted, case+ is the number of chromosomes carrying the variant, case- is the number of chromosomes without it.
 
-h2. Familial evidence
+h3. Familial evidence
 
 This category measures evidence based on the inheritance of this variant in families with the phenotype and how correlated the variant and phenotype are. For this category LOD (log-odds, using base10) scores are used:
 
@@ -64,15 +74,15 @@ This category measures evidence based on the inheritance of this variant in fami
 * 0 points if no data, or very weak data
 * -1 points if familial evidence is contradictory 
 
-h3. What is a LOD score?
+h4. What is a LOD score?
 
 LOD scores are often reported in papers that study variants within a family. You can also calculate your own LOD scores, we plan to add a guide to do this soon.
 
-h3. Why do you require multiple families?
+h4. Why do you require multiple families?
 
 Multiple families are required because it is possible that a non-causal variant tracks with the disease within a single family because it is linked&mdash;because we are looking for evidence of causality rather than evidence of linkage we require evidence from multiple families. See "DSPP Arg68Trp":DSPP-Arg68Trp for an example of strong segregation data from within a single family (LOD = 3.6) for a variant that is almost certainly not pathogenic in the dominant manner reported (1000 Genomes allele frequency of 11.6%).
 
-h1. Clinical importance
+h2. Clinical importance
 
 Clinical importance categories reflect the clinical consequences of a variant. These do *not* reflect how well existing evidence supports this effect, but how important this effect is *if* it is true. Variants should always be evaluated according to their _published hypotheses_ regarding severity and penetrance. 
 

@@ -34,7 +34,9 @@ def main():
         else:
             chr = "chr" + record.seqname
         
-        ref_seq = twobit_file[chr][(record.start - 1):record.end]
+        ref_seq = "-"
+        if (record.end - (record.start - 1)) > 0:
+            ref_seq = twobit_file[chr][(record.start - 1):record.end]
         
         if option.diff:
             if record.attributes.has_key("ref_allele"):

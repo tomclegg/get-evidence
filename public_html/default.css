@@ -18,7 +18,7 @@ body {
 input,textarea {
 	font: normal 12px "Lucida Sans Unicode",sans-serif;
 }
-p,cite,code,ul,td,th,span {
+p,cite,code,ul,td,th {
 	/* font-size: 1.2em; */
 	font-size: 12px;
 	padding-bottom: 1.2em;
@@ -172,6 +172,7 @@ h1,h2,h3 {
 	border-collapse: collapse;
 }
 .report_table td,.report_table th {
+	font-size: 11px;
 	padding: 2px;
 	margin: 0px;
 	border-style: solid;

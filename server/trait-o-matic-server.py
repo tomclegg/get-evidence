@@ -139,7 +139,7 @@ def main():
         args = { 'reprocess_all': reprocess_all,
              'A': os.path.join(script_dir, "gff_twobit_query.py"),
                  'B': os.path.join(script_dir, "gff_dbsnp_query_from_file.py"),
-                 'C': os.path.join(script_dir, "gff_nonsynonymous_filter_refflat_file.py"),
+                 'C': os.path.join(script_dir, "gff_nonsynonymous_filter_from_file.py"),
                  'in': genotype_file,
              'fetch': fetch_command,
                  'reference': REFERENCE_GENOME,
@@ -160,21 +160,25 @@ def main():
         set -e
 
         date 1>&2
+        echo >&2 "#status 0/10 starting"
 
         cd '%(output_dir)s' || exit
         if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
         then
-            %(fetch)s '%(in)s' | gzip -cdf | perl -ne 'if (/^#/) { print; }' > '%(sorted)s'.tmp
-            %(fetch)s '%(in)s' | gzip -cdf | sort --key=1,1 --key=4n,4 | grep -v "^#" | python '%(A)s' '%(reference)s' /dev/stdin | egrep 'ref_allele [ACGTN]' >> '%(sorted)s'.tmp
+            echo >&2 "#status 1 sorting input"
+            %(fetch)s '%(in)s' | gzip -cdf | grep -v "^#" | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | egrep 'ref_allele [-ACGTN]' >> '%(sorted)s'.tmp
             mv '%(sorted)s'.tmp '%(sorted)s'
 
+            echo >&2 "#status 2 looking up dbsnp IDs"
             python '%(B)s' '%(sorted)s' > '%(dbsnp_gff)s'.tmp
             mv '%(dbsnp_gff)s'.tmp '%(dbsnp_gff)s'
 
+            echo >&2 "#status 4 computing nsSNPs"
             python '%(C)s' '%(dbsnp_gff)s' '%(reference)s' print-all > '%(ns_gff)s'.tmp
             mv '%(ns_gff)s'.tmp '%(ns_gff)s'
         fi
 
+        echo >&2 "#status 7 looking up GET-Evidence hits"
         for filter in get-evidence
         do
             python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
@@ -183,6 +187,7 @@ def main():
         done
 
         mv %(lockfile)s %(logfile)s
+        echo >&2 "#status 10 finished"
         ) 2>>%(lockfile)s &''' % args
         subprocess.call(cmd, shell=True)
         return output_dir
