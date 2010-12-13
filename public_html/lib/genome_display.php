@@ -99,7 +99,7 @@ function genome_display($shasum, $oid) {
         $lines = file($results_file);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
-	    if (!$variant_data) continue; // sometimes we can't read python's json??
+	    if (!is_array($variant_data)) continue; // sometimes we can't read python's json??
 
             $variant_data["name"] = "";
             if (array_key_exists("amino_acid_change", $variant_data)) {
