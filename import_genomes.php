@@ -41,8 +41,10 @@ theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
 $and = "";
 $params = array ($pgp_data_user, $public_data_user);
 if (isset ($want_genome)) {
-    $and = "AND (private_genome_id=? OR shasum=?)";
-    $params[] = $want_genome;
+    if (strlen($want_genome) == 40)
+	$and = "AND shasum=?";
+    else
+	$and = "AND private_genome_id=?";
     $params[] = $want_genome;
 }
 $public_genomes = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid IN (?,?) $and",
