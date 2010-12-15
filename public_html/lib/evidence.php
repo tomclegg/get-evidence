@@ -317,7 +317,7 @@ function evidence_get_variant_id ($gene,
   $aa_to = aa_long_form ($aa_to);
   $from = "from";
   $to = "to";
-  if (strlen($aa_from) != 3 || (strlen($aa_to) != 3 && strlen($aa_to) != 4)) {
+  if (!isset($GLOBALS["aa_31"][$aa_from]) || !isset($GLOBALS["aa_31"][$aa_to])) {
       $aa_from = aa_short_form($aa_from);
       $aa_to = aa_short_form($aa_to);
       $from = "del";

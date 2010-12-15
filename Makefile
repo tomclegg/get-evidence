@@ -41,6 +41,14 @@ public_html/js/tip_balloon.js:
 	cp -p wz_tooltip/tip_balloon/* public_html/js/tip_balloon/
 	perl -p -e 's:".*?":"/js/tip_balloon/": if m:^config\.\s*BalloonImgPath:' < wz_tooltip/tip_balloon.js > public_html/js/tip_balloon.js
 
+import_omim: OmimVarLocusIdSNP.bcp morbidmap
+	./import_omim.php `pwd`/OmimVarLocusIdSNP.bcp `pwd`/morbidmap
+OmimVarLocusIdSNP.bcp:
+	wget ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/organism_data/OmimVarLocusIdSNP.bcp.gz
+	gunzip OmimVarLocusIdSNP.bcp.gz
+morbidmap:
+	wget ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap
+
 GETEVIDENCEHOST?=evidence.personalgenomes.org
 TRAITOMATICHOST?=snp.oxf.freelogy.org
 CACHEDIR=$(shell pwd)/tmp
