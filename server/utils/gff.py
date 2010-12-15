@@ -34,7 +34,7 @@ class GFFRecord(Interval):
     
     def __str__(self):
         if self.attributes is None:
-            attributes_string = ""
+            attributes_string = "."
         elif self.version >= 3:
             attributes_string = ";".join(["=".join([k, v]) for k, v in sorted(self.attributes.items())])
         elif self.version == 2:
@@ -128,6 +128,8 @@ def _gff_iterator(f, version=DEFAULT_GFF_VERSION):
         
         # parse attributes (shallow, for speed reasons)
         if len(l) < 9:
+            attributes = None
+        elif l[8].strip() == ".":
             attributes = None
         elif version >= 3:
             attributes = dict(attr.strip().split('=', 1) for attr in l[8].strip(";").split(';'))
