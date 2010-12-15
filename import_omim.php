@@ -154,7 +154,7 @@ print "\n";
 
 
 print "Deleting rows with no/invalid AA change...";
-theDb()->query ("DELETE FROM omim_a WHERE aa_from IS NULL OR aa_to IS NULL OR aa_pos IS NULL OR aa_pos<=0");
+theDb()->query ("DELETE FROM omim_a WHERE variant_id IS NULL AND (aa_from IS NULL OR aa_to IS NULL OR aa_pos IS NULL OR aa_pos<=0)");
 print theDb()->affectedRows();
 print "\n";
 
