@@ -195,7 +195,7 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Editing \"unknown\" variants to \"likely pathogenic\"...";
+print "Editing \"unknown\" variants to \"pathogenic\"...";
 $timestamp = theDb()->getOne("SELECT NOW()");
 $q = theDb()->query ("INSERT INTO edits
 	(variant_id, genome_id, article_pmid, disease_id, is_draft,
@@ -209,7 +209,7 @@ $q = theDb()->query ("INSERT INTO edits
 	FROM omim_a
 	LEFT JOIN snap_latest s ON omim_a.variant_id=s.variant_id AND s.article_pmid=0 AND s.genome_id=0 AND s.disease_id=0
 	WHERE s.variant_impact='none'",
-		     array ('likely pathogenic',
+		     array ('pathogenic',
 			    getCurrentUser("oid"), $timestamp));
 if (theDb()->isError($q)) { print $q->getMessage(); print "..."; }
 print theDb()->affectedRows();
