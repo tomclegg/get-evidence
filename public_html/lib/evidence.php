@@ -202,7 +202,7 @@ function evidence_create_tables ()
   theDb()->query ("ALTER TABLE flat_summary ADD webscore CHAR(1) after autoscore");
   theDb()->query ("ALTER TABLE flat_summary ADD n_genomes INT after webscore");
   theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_index (webscore)");
-  theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_priority_index (genome_hits, autoscore)");
+  theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_priority_index (n_genomes, autoscore)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS web_vote_history (
   vote_id SERIAL,
@@ -693,6 +693,18 @@ function evidence_get_report ($snap, $variant_id)
     else if ($row["variant_aa_del"])
       $row["nblosum100"] = 0-blosum100($row["variant_aa_del"], $row["variant_aa_ins"]);
 
+    $webhits_relevant = 0;
+    $webhits_unscored = 0;
+    $urlscores =& evidence_get_web_votes ($variant_id);
+    foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
+						     array ($variant_id, "Yahoo!"))) as $url) {
+      if (!isset($urlscores[$url]) || !strlen($urlscores[$url]))
+	++$webhits_unscored;
+      else if ($urlscores[$url] > 0)
+	if (++$webhits_relevant >= 2)
+	  break;
+    }
+
     $tags = array();
     foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($variant_id)) as $tagrow) {
       $tags[] = $tagrow["tag"];
@@ -723,6 +735,7 @@ function evidence_get_report ($snap, $variant_id)
       }
     }
     if ($row["in_pharmgkb"] == 'Y') { ++$autoscore_db; $why[] = "PharmGKB"; }
+    if ($webhits_relevant > 0) { $autoscore_db += $webhits_relevant; $why[] = "relevant web hits"; }
     if ($autoscore_db > 2) $autoscore_db = 2;
     $autoscore += $autoscore_db;
 
@@ -730,21 +743,15 @@ function evidence_get_report ($snap, $variant_id)
     if ($row["genetests_testable"]) { $autoscore++; $why[] = "genetest"; }
     if ($row["genetests_reviewed"]) { $autoscore++; $why[] = "genereview"; }
 
+    if ($webhits_unscored && $autoscore_db < 2)
+      $row["webscore"] = "-";	// could gain autoscore points by getting web votes
+    else if ($webhits_relevant > 0)
+      $row["webscore"] = "Y";	// already getting web scores
+    else
+      $row["webscore"] = "N";	// no hits, or all hits are voted irrelevant
+
     $row["autoscore"] = $autoscore;
     $row["autoscore_flags"] = implode(", ",$why);
-
-    // Summarize relevant/not-relevant votes as one of { null, 0, 1 }
-    $row["webscore"] = "N";
-    $urlscores =& evidence_get_web_votes ($variant_id);
-    foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
-						     array ($variant_id, "Yahoo!"))) as $url) {
-      if (!isset($urlscores[$url]) || !strlen($urlscores[$url]))
-	$row["webscore"] = "-";
-      else if ($urlscores[$url] == 1) {
-	$row["webscore"] = "Y";
-	break;
-      }
-    }
   }
 
   return $v;
