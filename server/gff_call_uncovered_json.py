@@ -26,56 +26,96 @@ FROM genetests
 WHERE (genetests.gene=%s)
 '''
 
-class transcript_file:
+class Transcript:
+    def __init__(self, transcript_data, column_specs = {}):
+        self.data = {}
+        self.__init_string_data(transcript_data, column_specs)
+        self.__init_int_data(transcript_data, column_specs)
+        self.__init_int_array_data(transcript_data, column_specs)
+        self.__get_coding_regions()
+
+    def __init_string_data(self, transcript_data, column_specs):
+        string_col_names = ("name", "ID", "chr", "strand")
+        string_default_cols = (0, 1, 2, 3)
+        for i in range(len(string_col_names)):
+            key = string_col_names[i]
+            if key in column_specs:
+                self.data[key] = transcript_data[col_specs[key]]
+            else:
+                self.data[key] = transcript_data[string_default_cols[i]]
+
+    def __init_int_data(self, transcript_data, column_specs):
+        int_col_names = ("start", "end", "coding_start", "coding_end", "num_exons")
+        int_default_cols = (4, 5, 6, 7, 8)
+        for i in range(len(int_col_names)):
+            key = int_col_names[i]
+            if key in column_specs:
+                self.data[key] = int(transcript_data[col_specs[key]])
+            else:
+                self.data[key] = int(transcript_data[int_default_cols[i]])
+
+    def __init_int_array_data(self, transcript_data, column_specs):
+        int_array_col_names = ("exon_starts", "exon_ends")
+        int_array_default_cols = (9, 10)
+        for i in range(len(int_array_col_names)):
+            key = int_array_col_names[i]
+            if key in column_specs:
+                self.data[key] = int(transcript_data[col_specs[key]])
+            else:
+                self.data[key] = [int(x) for x in transcript_data[int_array_default_cols[i]].strip(",").split(",")]
+
+    def __get_coding_regions(self):
+        coding_starts = []
+        coding_ends = []
+        for i in range(len(self.data["exon_starts"])):
+            if self.data["exon_ends"][i] > self.data["coding_start"] and self.data["exon_starts"][i] < self.data["coding_end"]:
+                start = max(self.data["exon_starts"][i], self.data["coding_start"])
+                end = min(self.data["exon_ends"][i], self.data["coding_end"])
+                coding_starts.append(start)
+                coding_ends.append(end)
+        self.data["coding_starts"] = coding_starts
+        self.data["coding_ends"] = coding_ends
+
+    def get_coding_length(self):
+        length = 0
+        for i in range(len(self.data["coding_starts"])):
+            length += self.data["coding_ends"][i] - self.data["coding_starts"][i]
+        return length
+
+class Transcript_file:
     def __init__(self, filename):
         self.f = open(filename)
         self.data = self.f.readline().split()
-        self.transcripts = [ self.data ]
+        self.transcripts = [ Transcript(self.data) ]
 
     def cover_next_position(self, position):
         if (self.data):
-            # Indexes 2 and 4 are chromosome and transcript start position
-            last_start_position = (self.transcripts[-1][2], int(self.transcripts[-1][4]))
+            last_start_position = (self.transcripts[-1].data["chr"], int(self.transcripts[-1].data["start"]))
         # Move ahead until empty or start of newest transcript is after given position
         while (self.data and self.comp_position(last_start_position, position) < 0):
             self.data = self.f.readline().split()
             if (self.data):
-                self.transcripts.append(self.data)
-                last_start_position = (self.transcripts[-1][2], int(self.transcripts[-1][4]))
-        # return all transcripts covering or after this position
+                self.transcripts.append(Transcript(self.data))
+                last_start_position = (self.transcripts[-1].data["chr"], int(self.transcripts[-1].data["start"]))
+        # return all transcripts removed in this step
         return self._remove_uncovered_transcripts(position)
-
-    def new_next_position(self, position):
-        if (self.data):
-            # Indexes 2 and 4 are chromosome and transcript start position
-            last_start_position = (self.transcripts[-1][2], int(self.transcripts[-1][4]))
-        new_transcripts = []
-        # Move ahead until empty or start of newest transcript is after given position
-        while (self.data and self.comp_position(last_start_position, position) < 0):
-            self.data = self.f.readline().split()
-            if (self.data):
-                self.transcripts.append(self.data)
-                new_transcripts.append(self.data)
-                last_start_position = (self.transcripts[-1][2], int(self.transcripts[-1][4]))
-        self._remove_uncovered_transcripts(position)
-        return new_transcripts
 
     def _remove_uncovered_transcripts(self, position):
         covered_transcripts = []
-        data_to_remove = []
+        ts_to_remove = []
         if self.transcripts:
-            for data in self.transcripts:
-                start_position = (data[2], int(data[4]))
-                end_position = (data[2], int(data[5]))
+            for ts in self.transcripts:
+                start_position = (ts.data["chr"], ts.data["start"])
+                end_position = (ts.data["chr"], ts.data["end"])
                 if (self.comp_position(position, end_position) <= 0):
                     if (self.comp_position(position, start_position) >= 0):
-                        covered_transcripts.append(list(data))
+                        covered_transcripts.append(ts)
                 else:
                     # remove any with end before target
-                    data_to_remove.append(data)
-            for data in data_to_remove:
-                self.transcripts.remove(data)
-        return covered_transcripts
+                    ts_to_remove.append(ts)
+            for ts in ts_to_remove:
+                self.transcripts.remove(ts)
+        return ts_to_remove
 
     def comp_position(self, position1, position2):
         # positions are tuples of chromosome (str) and position (int)
@@ -83,54 +123,6 @@ class transcript_file:
             return cmp(position1[0],position2[0])
         else:
             return cmp(position1[1],position2[1])
-
-def get_coding(transcript):
-    coding_start = int(transcript[6])
-    coding_end = int(transcript[7])
-    starts = [int(x) for x in transcript[9].strip(",").split(",")]
-    ends = [int(x) for x in transcript[10].strip(",").split(",")]
-    coding_regions = []
-    for i in range(len(starts)):
-        if ends[i] > coding_start and starts[i] < coding_end:
-            start = starts[i]
-            end = ends[i]
-            if start < coding_start:
-                start = coding_start
-            if end > coding_end:
-                end = coding_end
-            start = start + 1  # going to compare with 1-based
-            region = (transcript[0], transcript[2], start, end)
-            coding_regions.append(region)
-    return coding_regions
-
-def remove_covered_regions(check_regions, record):
-    new_check_regions = []
-    for region in check_regions:
-        if record.end < region[2] or record.start > region[3]:
-            new_check_regions.append(region)
-        else:       # some overlap exists
-            if record.start <= region[2] and record.end >= region[3]:
-                pass        # fully covered!
-            elif record.start <= region[2]:
-                remaining_region = (region[0], region[1], int(record.end + 1), region[3])
-                new_check_regions.append(remaining_region)
-            else:
-                remaining_before = (region[0], region[1], region[2], int(record.start - 1))
-                new_check_regions.append(remaining_before)
-                if record.end < region[3]:
-                    remaining_after = (region[0], region[1], int(record.end + 1), region[3])
-                    new_check_regions.append(remaining_after)
-    return new_check_regions
-
-def remove_uncovered_regions(check_regions, record):
-    uncovered_regions = []
-    for region in check_regions:
-        if region[3] < record.start:
-            uncovered_regions.append(region)
-    for region in uncovered_regions:
-        check_regions.remove(region)
-    return uncovered_regions
-
 
 def main():
     # return if we don't have the correct arguments
@@ -152,23 +144,24 @@ def main():
         sys.stderr.write ("No 'snap_latest' table => empty output")
         sys.exit()
 
-
     # open gff file
     gff_file = gff.input(sys.argv[1])
     
     # set up transcript file input
-    transcript_input = transcript_file(os.getenv('DATA') + "/" + KNOWNGENE_SORTED)
-
-    # keep list of regions we're checking
-    # each will be tuple of (info, chr, start, end)
-    check_regions = []
+    transcript_input = Transcript_file(os.getenv('DATA') + "/" + KNOWNGENE_SORTED)
 
     # check if reference coverage is reported
-    cmd = "head -100 " + sys.argv[1] + " | grep REF"
+    cmd = "head -100 " + sys.argv[1] + " | perl -ne '@data=split(\"\\t\"); if ($data[2] eq \"REF\") { print; }'"
     out = os.popen(cmd);
 
-    same_gene = []
+    # if we got any lines in the first 100 with "REF" in 
+    # the third column, we assume coverage data exists
     if (out.readline()):
+        # Store regions being examined, remove or reduce if covered
+        # key: Transcript object
+        # value: list of tuples (chr (string), start (int), end (int))
+        # Note: Start is 1-based, not 0-based as is in transcript files
+        examined_regions = {}
         for record in gff_file:
             if record.seqname.startswith("chr"):
                 chromosome = record.seqname
@@ -178,55 +171,79 @@ def main():
                 else:
                     chromosome = "chr" + record.seqname
 
-            # print "record: "+ str(record) + str(record.start)
             # Move forward in transcripts until past record end
             record_end = (chromosome, record.end)
-            new_transcripts = transcript_input.new_next_position(record_end)            
-            for transcript in new_transcripts:
-                # print "New transcript: " + str(transcript)
-                new_regions = get_coding(transcript)
-                check_regions = check_regions + new_regions
+            removed_transcripts = transcript_input.cover_next_position(record_end)
 
-            if check_regions:
-                # print "Check regions before: " + str(check_regions)
-                check_regions = remove_covered_regions(check_regions, record)
-                # print "After: " + str(check_regions)
-                uncovered_regions = remove_uncovered_regions(check_regions, record)
-                for region in uncovered_regions:
-                    #print region[0] + "\t" + region[1] + "\t" + str(region[2]) + "\t" + str(region[3])
-                    if (not same_gene) or same_gene[0][0] == region[0]:
-                        same_gene.append(region)
+            for ts in transcript_input.transcripts:
+
+                # Add to examined_regions if new
+                if (not ts in examined_regions):
+                    regions = [] 
+                    for i in range(len(ts.data["coding_starts"])):
+                        regions.append( (ts.data["chr"], (ts.data["coding_starts"][i] + 1), ts.data["coding_ends"][i]) )
+                    examined_regions[ts] = regions
+
+                # examine regions and remove any covered by the record
+                updated_regions = []
+                for region in examined_regions[ts]:
+                    # if overlaps...
+                    if (chromosome == region[0] and record.start <= region[2] and record.end >= region[1]):
+                        if record.start <= region[1]:
+                            if record.end >= region[2]:
+                                pass    # full overlap!
+                            else:
+                                remaining_region = (region[0], record.end + 1, region[2])
+                                updated_regions.append(remaining_region)
+                        elif record.end >= region[2]:
+                            remaining_region = (region[0], region[1], record.start - 1)
+                            updated_regions.append(remaining_region)
+                        else:
+                            remaining_before = (region[0], region[1], record.start - 1)
+                            remaining_after = (region[0], record.end + 1, region[2])
+                            updated_regions.extend([remaining_before, remaining_after])
                     else:
-                        regions_in_gene = []
-                        for region_in_gene in same_gene:
-                            regions_in_gene.append(region[1] + ":" + str(region[2]) + "-" + str(region[3]))
-                        region_data = { }
-                        region_data["regions"] = ", ".join(regions_in_gene)
-                        region_data["gene"] = same_gene[0][0]
-                        
-                        # check get-evidence if gene is in genetests...
-                        cursor.execute(query_gene, (region_data["gene"]))
-                        if cursor.rowcount > 0:
-                            data = cursor.fetchall()
-                            for key in data[0].keys():
-                                region_data[key] = data[0][key]
-                        print json.dumps(region_data)
-                        same_gene = [ region ]
-        regions_in_gene = []
-        for region_in_gene in same_gene:
-            regions_in_gene.append(region[1] + ":" + str(region[2]) + "-" + str(region[3]))
-        region_data = { }
-        region_data["regions"] = ", ".join(regions_in_gene)
-        region_data["gene"] = same_gene[0][0]
+                        updated_regions.append(region)
+                examined_regions[ts] = updated_regions
 
-        # check get-evidence if gene is in genetests...
-        cursor.execute(query_gene, (region_data["gene"]))
-        if cursor.rowcount > 0:
-            data = cursor.fetchall()
-            for key in data[0].keys():
-                region_data[key] = data[0][key]
-        print json.dumps(region_data)
+            for ts in removed_transcripts:
+                gene_data = {}
+                gene_data["gene"] = ts.data["name"]
+                gene_data["length"] = ts.get_coding_length()
+                total_uncovered = 0
+                missing_regions = []
+                if ts in examined_regions and examined_regions[ts]:
+                    for region in examined_regions[ts]:
+                        missing_regions.append(region[0] + ":" + str(region[1]) + "-" + str(region[2]))
+                        total_uncovered += region[2] - (region[1] - 1)
+                gene_data["missing"] = total_uncovered
+                gene_data["missing_regions"] = ", ".join(missing_regions)
+                cursor.execute(query_gene, (gene_data["gene"]))
+                if cursor.rowcount > 0:
+                    data = cursor.fetchall()
+                    for key in data[0].keys():
+                        gene_data[key] = data[0][key]
+                print json.dumps(gene_data)
 
+        # clean up remaining transcripts (if any)
+        for ts in transcript_input.transcripts:
+            gene_data = {}
+            gene_data["gene"] = ts.data["name"]
+            gene_data["length"] = ts.get_coding_length()
+            total_uncovered = 0
+            missing_regions = []
+            if ts in examined_regions and examined_regions[ts]:
+                for region in examined_regions[ts]:
+                    missing_regions.append(region[0] + ":" + str(region[1]) + "-" + str(region[2]))
+                    total_uncovered += region[2] - (region[1] - 1)
+            gene_data["missing"] = total_uncovered
+            gene_data["missing_regions"] = ", ".join(missing_regions)
+            cursor.execute(query_gene, (gene_data["gene"]))
+            if cursor.rowcount > 0:
+                data = cursor.fetchall()
+                for key in data[0].keys():
+                    gene_data[key] = data[0][key]
+            print json.dumps(gene_data)
 
 
 
