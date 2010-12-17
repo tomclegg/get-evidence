@@ -209,10 +209,15 @@ function evidence_web_vote (variant_id, voter_element, score)
 			var url = jQuery(e).attr('vote-url');
 			var vote = transport.responseJSON.all[url];
 			var icons = {};
-			if(vote==1)
+			var color = '#ddd';
+			if(vote==1) {
 			    icons = {'primary': 'ui-icon-circle-check'};
-			else if(vote==0)
+			    color = '#beb';
+			}
+			else if(vote==0) {
 			    icons = {'primary': 'ui-icon-close'};
+			    color = '#ebb';
+			}
 			var plus = parseInt(transport.responseJSON.all['+'+url]);
 			var minus = parseInt(transport.responseJSON.all['-'+url]);
 			if (!(plus >= 0)) plus=0;
@@ -226,6 +231,9 @@ function evidence_web_vote (variant_id, voter_element, score)
 			    voteresult.button('option', {'icons':icons,'label':label});
 			    voteresult.effect('highlight', {}, 500);
 			}
+			voteresult.find('.ui-button-text').
+			    css('background-color', color).
+			    css('background-image', 'none');
 		    });
 		$$('button.webvoter').each(function(e) {
 			var url = jQuery(e).attr('vote-url');

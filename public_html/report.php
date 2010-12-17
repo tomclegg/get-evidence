@@ -91,7 +91,7 @@ else if ($want_report_type == "yours") {
 }
 else if ($want_report_type == "need-web-review") {
   $report_title = "Single-genome variants needing web review";
-  $sql_where = "fs.n_genomes = 1 AND y.hitcount > 0";
+  $sql_where = "fs.n_genomes = 1 AND fs.webscore = '-'";
   $sql_orderby = "ORDER BY fs.autoscore DESC, RAND()";
   $want_column["autoscore"] = "Autoscore";
   $config["MAXPAGES"] = 120;
