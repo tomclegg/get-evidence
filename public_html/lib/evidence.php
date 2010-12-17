@@ -1382,6 +1382,8 @@ function evidence_get_web_votes ($variant_id)
   $votes =& theDb()->getAll ("SELECT * FROM web_vote WHERE variant_id=?",
 			     array ($variant_id));
   foreach ($votes as &$v) {
+    $results["-".$v["url"]] = $v["vote_0"] + 0;
+    $results["+".$v["url"]] = $v["vote_1"] + 0;
     if ($v["vote_0"] > $v["vote_1"]) // "no" votes win
       $result = 0;
     else if ($v["vote_1"] > 0)	// tie, or "yes" votes win
@@ -1404,7 +1406,7 @@ function evidence_get_my_web_vote ($variant_id)
 				ORDER BY vote_timestamp DESC",
 			     array ($variant_id, $oid));
   foreach ($votes as &$v) {
-    if (!isset ($myvotes[$v["url"]]))
+    if (!array_key_exists ($v["url"], $myvotes))
       $myvotes[$v["url"]] = $v["vote_score"];
   }
   return $myvotes;
@@ -1417,10 +1419,10 @@ function evidence_set_my_web_vote ($variant_id, $url, $score)
     return;
   theDb()->query ("INSERT INTO web_vote_history SET
 			variant_id=?, url=?, vote_oid=?, vote_score=?",
-		  array ($variant_id, $url, $oid, $score));
+		  array ($variant_id, $url, $oid, strlen($score) ? $score : null));
   theDb()->query ("REPLACE INTO web_vote_latest SET
 			variant_id=?, url=?, vote_oid=?, vote_score=?",
-		  array ($variant_id, $url, $oid, $score));
+		  array ($variant_id, $url, $oid, strlen($score) ? $score : null));
 
   $current =& theDb()->getAll ("SELECT COUNT(*) c, vote_score
 				FROM web_vote_latest
@@ -1467,22 +1469,34 @@ function evidence_add_vote_tag_callback ($variant_id, $matches)
   global $webvote_unique_id;
   ++$webvote_unique_id;
 
-  $yes_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsup-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\">";
-  $no_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsdown-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\">";
-  $empty_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsup-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\" style=\"display:none;\">";
-
   $url = htmlspecialchars_decode ($matches[1], ENT_QUOTES);
-  if ($evidence_current_votes[$url] == 1)
-    $html = $yes_image . "&nbsp;" . $html;
+  $icon = "";
+  if ($evidence_current_votes[$url] > 0)
+    $icon = "ui-icon-circle-check";
   else if (strlen ($evidence_current_votes[$url]))
-    $html = $no_image . "&nbsp;" . $html;
+    $icon = "ui-icon-close";
   else if (getCurrentUser())
-    $html = $empty_image . "&nbsp;" . $html;
+    $icon = "ui-icon-help";
+
+  $iconhtml = "<button icon=\"$icon\" class=\"webvoter_result\" id=\"webvoter_all_$webvote_unique_id\" class=\"ui-state-active\" onclick=\"return false;\" style=\"vertical-align: middle\" variant_id=\"$variant_id\" vote-url=\"$matches[1]\">"
+    . "+{$evidence_current_votes["+$url"]} -{$evidence_current_votes["-$url"]}"
+    . "</button>";
 
   if (!getCurrentUser())
-    return $html;
+    return "<div style='float:right'>$iconhtml</div>$html";
 
-  return $html . "&nbsp;&nbsp;&nbsp;<a class=\"webvoter\" id=\"webvoter1_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,1);\" href=\"$matches[1]\">$yes_image</a>&nbsp;<a class=\"webvoter\" id=\"webvoter0_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,0);\" href=\"$matches[1]\">$no_image</a>";
+  return "<div style='float:right'>"
+    . "<div style='display:table-cell; vertical-align:middle'>$iconhtml</div>"
+    . "<div style='display:table-cell; vertical-align:middle'>"
+    . "<button class=\"webvoter plus\" id=\"webvoter1_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,1);\" vote-url=\"$matches[1]\">Vote \"relevant\"</button>"
+    . "<br />"
+    . "<button class=\"webvoter minus\" id=\"webvoter0_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,0);\" vote-url=\"$matches[1]\">Vote \"not relevant\"</button>"
+    . "</div>"
+    . "<div style='display:table-cell; vertical-align:middle'>"
+    . "<button class=\"webvoter cancel\" id=\"webvoterX_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,null);\" vote-url=\"$matches[1]\">Cancel my vote</button>"
+    . "</div>"
+    . "</div>"
+    . $html;
 }
 
 
