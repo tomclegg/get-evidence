@@ -213,8 +213,11 @@ function evidence_web_vote (variant_id, voter_element, score)
 			    icons = {'primary': 'ui-icon-circle-check'};
 			else if(vote==0)
 			    icons = {'primary': 'ui-icon-close'};
-			var label = '+' + parseInt(transport.responseJSON.all['+'+url]) +
-			    ' -' + parseInt(transport.responseJSON.all['-'+url]);
+			var plus = parseInt(transport.responseJSON.all['+'+url]);
+			var minus = parseInt(transport.responseJSON.all['-'+url]);
+			if (!(plus >= 0)) plus=0;
+			if (!(minus >= 0)) minus=0;
+			var label = '+' + plus + ' -' + minus;
 			if (label == '+0 -0')
 			    label = 'unrated';
 			var voteresult = jQuery('#webvoter_all_' + wuid);
