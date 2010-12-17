@@ -203,11 +203,12 @@ function evidence_web_vote (variant_id, voter_element, score)
 	    },
 	    onSuccess: function(transport)
 	    {
-		if (!transport.responseJSON) return;
+		var response = transport.responseJSON;
+		if (!response) return;
 		$$('button.webvoter_result').each(function(e) {
 			var wuid = e.id.replace(/^.*_/,'');
 			var url = jQuery(e).attr('vote-url');
-			var vote = transport.responseJSON.all[url];
+			var vote = response.all[url];
 			var icons = {};
 			var color = '#ddd';
 			if(vote==1) {
@@ -218,8 +219,8 @@ function evidence_web_vote (variant_id, voter_element, score)
 			    icons = {'primary': 'ui-icon-close'};
 			    color = '#ebb';
 			}
-			var plus = parseInt(transport.responseJSON.all['+'+url]);
-			var minus = parseInt(transport.responseJSON.all['-'+url]);
+			var plus = parseInt(response.all['+'+url]);
+			var minus = parseInt(response.all['-'+url]);
 			if (!(plus >= 0)) plus=0;
 			if (!(minus >= 0)) minus=0;
 			var label = '+' + plus + ' -' + minus;
@@ -237,7 +238,7 @@ function evidence_web_vote (variant_id, voter_element, score)
 		    });
 		$$('button.webvoter').each(function(e) {
 			var url = jQuery(e).attr('vote-url');
-			var vote = transport.responseJSON.my[url];
+			var vote = response.my[url];
 			var iscurrent = false;
 			if (jQuery(e).hasClass('plus'))
 			    iscurrent = vote==1;
@@ -248,6 +249,8 @@ function evidence_web_vote (variant_id, voter_element, score)
 			if (iscurrent) jQuery(e).addClass('ui-state-highlight');
 			else jQuery(e).removeClass('ui-state-highlight');
 		    });
+		if (response.autoscore)
+		    $('autoscore_v_'+variant_id).update(response.autoscore);
 	    }
     };
     new Ajax.Request('webvote.php', x);
