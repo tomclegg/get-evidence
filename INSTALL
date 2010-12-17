@@ -96,6 +96,11 @@ Add dbSNP data (newer versions of dbSNP should work just as well):
  wget -Otmp/dbsnp.bcp.gz ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/b130_archive/b130_SNPChrPosOnRef_36_3.bcp.gz
  ./import_dbsnp.php tmp/dbsnp.bcp.gz
 
+Add OMIM data:
+
+ cd ~/get-evidence
+ make import_omim
+
 Make sure genome analysis server is executable:
 
  cd ~/get-evidence/server/

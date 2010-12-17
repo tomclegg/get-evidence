@@ -1,3 +1,5 @@
+CACHEDIR=$(shell pwd)/tmp
+
 daily: dump_database vis_data_local
 install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js public_html/DataTables-1.7.4 public_html/jquery-ui
 
@@ -41,9 +43,16 @@ public_html/js/tip_balloon.js:
 	cp -p wz_tooltip/tip_balloon/* public_html/js/tip_balloon/
 	perl -p -e 's:".*?":"/js/tip_balloon/": if m:^config\.\s*BalloonImgPath:' < wz_tooltip/tip_balloon.js > public_html/js/tip_balloon.js
 
+import_omim: $(CACHEDIR)/OmimVarLocusIdSNP.bcp $(CACHEDIR)/morbidmap
+	./import_omim.php $(CACHEDIR)/OmimVarLocusIdSNP.bcp $(CACHEDIR)/morbidmap
+OmimVarLocusIdSNP.bcp:
+	cd $(CACHEDIR) && wget ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/organism_data/OmimVarLocusIdSNP.bcp.gz
+	gunzip $(CACHEDIR)/OmimVarLocusIdSNP.bcp.gz
+morbidmap:
+	cd $(CACHEDIR) && wget ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap
+
 GETEVIDENCEHOST?=evidence.personalgenomes.org
 TRAITOMATICHOST?=snp.oxf.freelogy.org
-CACHEDIR=$(shell pwd)/tmp
 PID:=$(shell echo $$PPID)
 
 dump_database:
