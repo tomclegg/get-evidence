@@ -376,7 +376,7 @@ $autoscore_html = $row0["autoscore"];
 if ($autoscore_html > 0) {
   $autoscore_html = "<SPAN onmouseover=\"Tip('".htmlspecialchars($row0["autoscore_flags"])."',BALLOON,true,FIX,[this,-18,0],FOLLOWMOUSE,false,ABOVE,true,WIDTH,-400);\" onmouseout=\"UnTip();\">".$autoscore_html."</SPAN>";
 }
-$html .= "<LI>GET-Evidence autoscore = <STRONG>" . $autoscore_html . "</STRONG>";
+$html .= "<LI>GET-Evidence autoscore = <SPAN id='autoscore_v_{$variant_id}' style='font-weight: bold'>" . $autoscore_html . "</SPAN>";
 $html .= "</LI>\n";
 $html .= "</UL>\n";
 $html .= "</DIV>";

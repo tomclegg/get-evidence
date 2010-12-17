@@ -492,6 +492,7 @@ function evidence_update_flat_summary ($variant_id)
 			 $flat["autoscore"],
 			 $flat["webscore"],
 			 $flat["n_genomes"]));
+  return $flat;
 }
 
 function evidence_signoff ($edit_id)
@@ -1440,8 +1441,9 @@ function evidence_set_my_web_vote ($variant_id, $url, $score)
   theDb()->query ("REPLACE INTO web_vote SET variant_id=?, url=?, vote_0=?, vote_1=?",
 		  array ($variant_id, $url, $vote_0, $vote_1));
   if (theDb()->affectedRows() > 0) {
-    evidence_update_flat_summary ($variant_id);
+    return evidence_update_flat_summary ($variant_id);
   }
+  return false;
 }
 
 
