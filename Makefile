@@ -1,7 +1,7 @@
 CACHEDIR=$(shell pwd)/tmp
 
-daily: dump_database vis_data_local
-install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js public_html/DataTables-1.7.4 public_html/jquery-ui
+daily: update_editors_summary dump_database vis_data_local
+install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js public_html/DataTables-1.7.4 public_html/jquery-ui update_editors_summary
 
 php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
@@ -42,6 +42,9 @@ public_html/js/tip_balloon.js:
 	mkdir -p public_html/js/tip_balloon
 	cp -p wz_tooltip/tip_balloon/* public_html/js/tip_balloon/
 	perl -p -e 's:".*?":"/js/tip_balloon/": if m:^config\.\s*BalloonImgPath:' < wz_tooltip/tip_balloon.js > public_html/js/tip_balloon.js
+
+update_editors_summary:
+	./update_editors_summary.php
 
 import_omim: $(CACHEDIR)/OmimVarLocusIdSNP.bcp $(CACHEDIR)/morbidmap
 	./import_omim.php $(CACHEDIR)/OmimVarLocusIdSNP.bcp $(CACHEDIR)/morbidmap
