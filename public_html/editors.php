@@ -7,31 +7,47 @@ $gOut["title"] = "GET-Evidence: $report_title";
 
 function print_content($x)
 {
+  global $want_json;
   global $report_title;
-  print "<h1>$report_title</h1>\n\n";
+  if (!$want_json) print "<h1>$report_title</h1>\n\n";
 
-  $q = theDb()->query ("SELECT edit_oid, count(*) edit_count, UNIX_TIMESTAMP(MAX(edit_timestamp)) t, eb_users.* FROM edits
-	LEFT JOIN eb_users ON edit_oid=oid
-	WHERE is_draft=0
-	GROUP BY edit_oid
-	ORDER BY edit_timestamp DESC");
+  $q = theDb()->query ("SELECT editor_summary.oid oid, total_edits,
+	UNIX_TIMESTAMP(latest_edit) t, webvotes, eb_users.*
+	FROM editor_summary
+	LEFT JOIN eb_users ON editor_summary.oid=eb_users.oid
+	WHERE total_edits > 0 OR webvotes > 0
+	ORDER BY latest_edit DESC");
   if (theDb()->isError ($q)) die ($q->getMessage());
 
-  print "<UL>";
+  if ($want_json) print "\"editors\":[";
+  else print "<UL>";
+
   while ($row =& $q->fetchRow()) {
-    print "<LI>";
+    if ($want_json) {
+      print json_encode (array("fullname" => $row["fullname"],
+			       "total_edits" => $row["total_edits"],
+			       "voted_urls" => $row["webvotes"],
+			       "latest_edit_timestamp" => $row["latest_edit"],
+			       "oid" => $row["oid"]));
+      continue;
+    }
+    print "<LI>".htmlspecialchars ($row["fullname"] ? $row["fullname"] : $row["nickname"], ENT_QUOTES, "UTF-8");
 
-    print ("<A href=\"edits?oid=".urlencode($row["edit_oid"])."\">".
-	   (htmlspecialchars ($row["fullname"] ? $row["fullname"] : $row["nickname"])).
-	   "</A>");
+    if ($row["total_edits"] > 0) {
+      print (" -- <A href=\"edits?oid=".urlencode($row["oid"])."\">"
+	     .$row["total_edits"]." edit".($row["total_edits"]==1?"":"s")
+	     ."</A>");
+      print strftime (" (latest %b %e)", $row["t"]);
+    }
 
-    print " -- ".$row["edit_count"]." edits";
-
-    print strftime (" -- latest %b %e", $row["t"]);
+    if ($row["webvotes"] > 0) {
+      print " -- ".$row["webvotes"]." web vote".($row["webvotes"]==1?"":"s");
+    }
 
     print "</LI>\n";
   }
-  print "</UL>\n";
+  if ($want_json) print "]";
+  else print "</UL>\n";
 }
 
 go();

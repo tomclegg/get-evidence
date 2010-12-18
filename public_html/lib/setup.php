@@ -29,7 +29,15 @@ $gOut = array("site_title" => "GET-Evidence");
 
 function go()
 {
-  include "lib/template.php";
+  if (isset($_REQUEST["want_json"])) {
+    header ("Content-type: application/json");
+    $GLOBALS["want_json"] = true;
+    print "{";
+    print_content();
+    print "}\n";
+  }
+  else
+    include "lib/template.php";
 }
 
 if (isset($_COOKIE) && array_key_exists ("PHPSESSID", $_COOKIE))

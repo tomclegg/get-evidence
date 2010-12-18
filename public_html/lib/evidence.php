@@ -233,13 +233,19 @@ function evidence_create_tables ()
   UNIQUE (variant_id,url)
   )");
 
-  theDb()->query ("
-CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
- variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
- xml TEXT
-)");
+  theDb()->query ("CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
+  variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  xml TEXT
+  )");
   theDb()->query ("ALTER TABLE yahoo_boss_cache ADD hitcount INT UNSIGNED");
   theDb()->query ("ALTER TABLE yahoo_boss_cache ADD retrieved DATETIME");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS editor_summary (
+  oid VARCHAR(255) PRIMARY KEY,
+  total_edits BIGINT UNSIGNED NOT NULL,
+  latest_edit DATETIME,
+  webvotes BIGINT UNSIGNED NOT NULL
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
