@@ -205,6 +205,15 @@ function editable_input (e)
 
 function editable_save (submit_flag, want_preview)
 {
+    var options = {};
+    if (typeof submit_flag == "object") {
+	// called as editable_save({...})
+	options = submit_flag;
+    } else {
+	// called as editable_save(submitflag,previewflag) (deprecated)
+	options.submit = submit_flag;
+	options.preview = want_preview;
+    }
     if (editable_save_request) {
 	editable_save_request.transport.abort();
 	editable_save_request = false;
@@ -212,10 +221,13 @@ function editable_save (submit_flag, want_preview)
     params = editable_save_result;
     if (!params)
 	params = {};
-    if (submit_flag)
+    if (options.submit)
 	params.submit_flag = true;
-    if (want_preview)
-	params.want_preview_id = want_preview.id;
+    if (options.preview)
+	params.want_preview_id = options.preview.id;
+    else
+	delete params.want_preview_id;
+    params.signoff_flag = !!options.signoff;
     params.save_time = (new Date()).getTime();
 
     // copy keys from variant quality rationale
@@ -232,7 +244,9 @@ function editable_save (submit_flag, want_preview)
 		editable_save_result = transport.responseJSON;
 		editable_save_result.last_save_time = transport.request.parameters.save_time;
 		editable_check_unsaved_all ();
-		if (editable_save_result.please_reload)
+		if (editable_save_result.please_signoff)
+		    curator_signoff(editable_save_result.please_signoff);
+		else if (editable_save_result.please_reload)
 		    window.location.reload();
 		// TODO: show errors (if any) in message box
 
@@ -403,12 +417,18 @@ function editable_check_unsaved_all ()
 function editable_update_unsaved_message ()
 {
     if (editable_have_unsaved || editable_have_unsubmitted) {
-	message = '<p>While you are editing, you should save often in case your connection is interrupted.<br /><button id="_editable_save" onclick="editable_save()">Save draft</button><br /><span id="editable_last_saved" style="font-size: .8em">' + editable_last_saved() + '</span></p>';
+	message = 'While you are editing, you should save often in case your connection is interrupted.<br /><button id="_editable_save" onclick="editable_save()" class="ui-state-highlight">Save draft</button><br /><span id="editable_last_saved" style="font-size: .8em">' + editable_last_saved() + '</span>';
 	if (editable_have_unsubmitted) {
-	    message += '<p>When you have finished editing, submit your edits to the database.<br /><button onclick="editable_save(true)">Submit changes</button>';
+	    message += '<br /><br />When you have finished editing, submit your edits to the database.<br /><button id="_editable_submit" onclick="editable_save(true)" class="ui-state-highlight">Submit changes</button>';
 	}
 	message_update (message);
-	$('_editable_save').disabled = !editable_have_unsaved;
+	jQuery("#_editable_save").button({icons:{primary:'ui-icon-disk'}});
+	jQuery("#_editable_submit").button({icons:{primary:'ui-icon-circle-arrow-e'}});
+	// $('_editable_save').disabled = !editable_have_unsaved;
+	jQuery("#_editable_save").button("option", "disabled", !editable_have_unsaved);
+	jQuery("#_editable_save").toggleClass("ui-state-highlight", editable_have_unsaved);
+	jQuery("#curator-signoff-edited").closest("span").show();
+	jQuery("#curator-signoff-orig").button("option","disabled",true);
     }
     else
 	message_update (false);

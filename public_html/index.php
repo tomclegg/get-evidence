@@ -168,9 +168,19 @@ if ($max_edit_id) {
     $gDisableEditing = TRUE;
 }
 
+if ($history_box && $max_edit_id)
+    $snap = 0 + $max_edit_id;
+else if ($_REQUEST["snap"] == "latest" || $_REQUEST["snap"] == "release")
+    $snap = $_REQUEST["snap"];
+else if ($_COOKIE["snap"] == "latest" || $_REQUEST["snap"] == "release")
+    $snap = $_COOKIE["snap"];
+else
+    $snap = "latest";
 
-$report =& evidence_get_report (($history_box && $max_edit_id) ? 0 + $max_edit_id : "latest",
-				$variant_id);
+$report =& evidence_get_report ($snap, $variant_id);
+if (!$report && $snap == "release")
+    $report =& evidence_get_report ("latest", $variant_id);
+
 $row0 =& $report[0];
 
 $variant_name_long = evidence_get_variant_name ($row0, " ", false);
@@ -189,9 +199,17 @@ if (!quality_eval_suff($row0["variant_quality"],$row0["variant_impact"])) {
     $gOut["content"] = "";
 }
 
+$gOut["content"] .= "
+<DIV style='float:right' id='release-status' class='ui-widget ui-state-highlight ui-corner-all'>
+".evidence_release_status_html($report)."
+</DIV>
+";
+
 $gOut["content"] .= "<h1>$variant_name_short</h1>\n<!-- $variant_id -->\n";
 if ($variant_name_long != $variant_name_short)
     $gOut["content"] .= "<p>($variant_name_long)</p>\n";
+
+$gOut["content"] .= "<br clear=all />\n";
 
 $gOut["content"] .= seealso_related($row0["variant_gene"], $row0["variant_aa_pos"], $variant_id);
 $gOut["content"] .= $history_box;

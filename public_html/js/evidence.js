@@ -314,6 +314,55 @@ function variant_report_progress_setup()
 }
 jQuery(document).ready(variant_report_progress_setup);
 
+function release_status_setup()
+{
+    jQuery('button.release-status-yes').
+	button({icons:{primary:'ui-icon-circle-check'}}).
+	css('background-color','#dfd');
+    jQuery('button.release-status-no').
+	button({icons:{primary:'ui-icon-alert'}}).
+	css('background-color','#ffb');
+    jQuery('button.release-status-yes,button.release-status-no').
+	css('background-image','none').
+	button('option', 'disabled', true).
+	addClass('ui-state-hover').
+	removeClass('ui-state-disabled').
+	click(function(){return false;});
+    jQuery('div#release-status').
+	css('background-color','white').
+	css('background-image','none');
+}
+jQuery(document).ready(release_status_setup);
+
+function curator_signoff(ids)
+{
+    var x = {
+	'method': 'POST',
+	'parameters':
+	{'edit_ids': ids,
+	 'json': true },
+	'onSuccess': function(){window.location.reload();}
+    };
+    new Ajax.Request('signoff', x);
+}
+function curator_powers_setup()
+{
+    jQuery('a#curator-signoff-orig').
+	button({icons:{primary:'ui-icon-circle-check'}}).
+	click(function(){
+		curator_signoff(jQuery(this).attr('edit-ids'));
+		return false;
+	    });
+    jQuery('a#curator-signoff-edited').
+	button({icons:{primary:'ui-icon-circle-check',
+			secondary:'ui-icon-circle-arrow-e'}}).
+	click(function(){
+		editable_save({submit:true,signoff:true});
+		return false;
+	    });
+}
+jQuery(document).ready(curator_powers_setup);
+
 function closeKeepAlive()
 {
     if (/AppleWebKit|MSIE/.test(navigator.userAgent)) {
