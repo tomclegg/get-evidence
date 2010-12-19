@@ -581,6 +581,7 @@ function evidence_release_status_html (&$report)
 			  $edit_ids))) {
 	    $variant_name = evidence_get_variant_name($report[0],"-");
 	    $latest = "<button class='release-status-no'>This is not the latest version</button><br />(See the <A href='$variant_name?snap=latest'>latest version</A>)";
+	    $GLOBALS["gDisableEditing"] = true;
 	}
     }
 
