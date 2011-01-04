@@ -1,5 +1,5 @@
 daily: dump_database vis_data_local
-install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js public_html/DataTables-1.7.4 public_html/jquery-ui
+install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js DataTables-1.7.4.zip public_html/DataTables-1.7.4 public_html/jquery-ui
 
 php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
