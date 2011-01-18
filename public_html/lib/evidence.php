@@ -65,13 +65,13 @@ function evidence_create_tables ()
   UNIQUE(global_human_id))");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS private_genomes (
-  private_genome_id SERIAL,
   oid VARCHAR(255), 
   nickname VARCHAR(64),
   shasum VARCHAR(64),
   upload_date DATETIME,
   notes TEXT,
   INDEX (oid), INDEX (shasum))");
+  theDb()->query ("ALTER TABLE private_genomes ADD private_genome_id SERIAL FIRST");
   theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
