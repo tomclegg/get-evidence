@@ -157,8 +157,18 @@ header('Content-Type: text/html; charset=UTF-8');
 			</div>
 <?php		endif; ?>
 
+<?php if (getCurrentUser("is_admin")): ?>
+		<DIV class="sidebar_message_container"><P id="curation" class="sidebar_message ui-corner-all">You have <B>Curator Power</B>.
+<?php if (isset($GLOBALS["signoff_edit_ids"])): ?>
+		<BR /><BR /><A id="curator-signoff-orig" class="curator-signoff ui-state-highlight" href="#" edit-ids="<?=$GLOBALS["signoff_edit_ids"]?>">Sign off / approve this version</A>
+<?php endif; ?>
+		<SPAN class="ui-helper-hidden">
+		<BR /><BR /><A id="curator-signoff-edited" class="curator-signoff ui-state-highlight" href="#">Submit &amp; sign off</A>
+		</SPAN>
+		</P></div>
+<?php endif; ?>
 
-		<div class="unsubmitted_message_container"><div id="message" class="message unsubmitted_message" style="display: <?php echo (!isset($gOut["message"]) || 0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php if(isset($gOut["message"])) echo $gOut["message"]; ?></div></div>
+		<div class="sidebar_message_container"><p id="message" class="message sidebar_message ui-corner-all" style="display: <?php echo (!isset($gOut["message"]) || 0==strlen($gOut["message"]) ? "none" : "block"); ?>;"><?php if(isset($gOut["message"])) echo $gOut["message"]; ?></p></div>
 
 		</div>
 <?php } ?>
@@ -172,6 +182,7 @@ header('Content-Type: text/html; charset=UTF-8');
 <div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2010 Clinical Future, Inc.</div>
 <!--
 Template from <a href="http://arcsin.se">Arcsin</a>
+Current oid <?php echo getCurrentUser("oid"); ?>
 -->
 
 </body>

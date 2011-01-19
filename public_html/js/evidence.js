@@ -190,33 +190,86 @@ function object_data_equal (a, b)
 
 function evidence_web_vote (variant_id, voter_element, score)
 {
+    var url = null;
+    if (voter_element)
+	url = jQuery(voter_element).attr('vote-url');
     var x = {
 	    method: 'get',
 	    parameters:
 	    {
-		variant_id: variant_id,
-		url: voter_element.href,
-		score: score
+		'variant_id': variant_id,
+		'url': url,
+		'score': score
 	    },
 	    onSuccess: function(transport)
 	    {
-		if (transport.responseJSON)
-		    $$('a.webvoter').each(function(e) {
-			    wuid = e.id.replace(/^.*_/,'');
-			    if(transport.responseJSON.all[e.href]==1) {
-				$('webvoter_all_' + wuid).src = '/img/thumbsup-32.png';
-				$('webvoter_all_' + wuid).style.display = 'inline';
-			    }
-			    else if(transport.responseJSON.all[e.href]==0) {
-				$('webvoter_all_' + wuid).src = '/img/thumbsdown-32.png';
-				$('webvoter_all_' + wuid).style.display = 'inline';
-			    }
-			});
+		var response = transport.responseJSON;
+		if (!response) return;
+		$$('button.webvoter_result').each(function(e) {
+			var wuid = e.id.replace(/^.*_/,'');
+			var url = jQuery(e).attr('vote-url');
+			var vote = response.all[url];
+			var icons = {};
+			var color = '#ddd';
+			if(vote==1) {
+			    icons = {'primary': 'ui-icon-circle-check'};
+			    color = '#beb';
+			}
+			else if(vote==0) {
+			    icons = {'primary': 'ui-icon-close'};
+			    color = '#ebb';
+			}
+			var plus = parseInt(response.all['+'+url]);
+			var minus = parseInt(response.all['-'+url]);
+			if (!(plus >= 0)) plus=0;
+			if (!(minus >= 0)) minus=0;
+			var label = '+' + plus + ' -' + minus;
+			if (label == '+0 -0')
+			    label = 'unrated';
+			var voteresult = jQuery('#webvoter_all_' + wuid);
+			var oldlabel = voteresult.button('option', 'label');
+			if (oldlabel != label) {
+			    voteresult.button('option', {'icons':icons,'label':label});
+			    voteresult.effect('highlight', {}, 500);
+			}
+			voteresult.find('.ui-button-text').
+			    css('background-color', color).
+			    css('background-image', 'none');
+		    });
+		$$('button.webvoter').each(function(e) {
+			var url = jQuery(e).attr('vote-url');
+			var vote = response.my[url];
+			var iscurrent = false;
+			if (jQuery(e).hasClass('plus'))
+			    iscurrent = vote==1;
+			else if (jQuery(e).hasClass('minus'))
+			    iscurrent = vote==0;
+			else
+			    iscurrent = vote==null;
+			if (iscurrent) jQuery(e).addClass('ui-state-highlight');
+			else jQuery(e).removeClass('ui-state-highlight');
+		    });
+		if (response.autoscore)
+		    $('autoscore_v_'+variant_id).update(response.autoscore);
 	    }
     };
     new Ajax.Request('webvote.php', x);
     return false;
 }
+function evidence_web_vote_setup () {
+    jQuery('.webvoter').filter('.plus').button({icons:{primary:"ui-icon-plus"},text:false});
+    jQuery('.webvoter').filter('.minus').button({icons:{primary:"ui-icon-minus"},text:false});
+    jQuery('.webvoter').filter('.cancel').button({icons:{primary:"ui-icon-close"},text:false});
+    jQuery('.webvoter_result').each(function(){
+	    jQuery(this).button({ "icons":{primary:jQuery(this).attr('icon')}, "disabled":true});
+	});
+    jQuery('.webvoter').css('height','15px').css('width','15px');
+    var r = jQuery('.webvoter_result');
+    if (r)
+	evidence_web_vote (r.attr('variant_id'), null, null);
+    jQuery('.webvoter_result').addClass('ui-state-hover').removeClass('ui-state-disabled').css('min-width', '80px');
+}
+jQuery(document).ready(evidence_web_vote_setup);
 
 function variant_report_progress_update()
 {
@@ -260,6 +313,55 @@ function variant_report_progress_setup()
     setInterval(variant_report_progress_update, 10000);
 }
 jQuery(document).ready(variant_report_progress_setup);
+
+function release_status_setup()
+{
+    jQuery('button.release-status-yes').
+	button({icons:{primary:'ui-icon-circle-check'}}).
+	css('background-color','#dfd');
+    jQuery('button.release-status-no').
+	button({icons:{primary:'ui-icon-alert'}}).
+	css('background-color','#ffb');
+    jQuery('button.release-status-yes,button.release-status-no').
+	css('background-image','none').
+	button('option', 'disabled', true).
+	addClass('ui-state-hover').
+	removeClass('ui-state-disabled').
+	click(function(){return false;});
+    jQuery('div#release-status').
+	css('background-color','white').
+	css('background-image','none');
+}
+jQuery(document).ready(release_status_setup);
+
+function curator_signoff(ids)
+{
+    var x = {
+	'method': 'POST',
+	'parameters':
+	{'edit_ids': ids,
+	 'json': true },
+	'onSuccess': function(){window.location.reload();}
+    };
+    new Ajax.Request('signoff', x);
+}
+function curator_powers_setup()
+{
+    jQuery('a#curator-signoff-orig').
+	button({icons:{primary:'ui-icon-circle-check'}}).
+	click(function(){
+		curator_signoff(jQuery(this).attr('edit-ids'));
+		return false;
+	    });
+    jQuery('a#curator-signoff-edited').
+	button({icons:{primary:'ui-icon-circle-check',
+			secondary:'ui-icon-circle-arrow-e'}}).
+	click(function(){
+		editable_save({submit:true,signoff:true});
+		return false;
+	    });
+}
+jQuery(document).ready(curator_powers_setup);
 
 function closeKeepAlive()
 {

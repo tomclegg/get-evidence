@@ -13,9 +13,12 @@ if (isset ($_REQUEST['display_genome_id']))
     $display_genome_ID = $_REQUEST['display_genome_id'];
 
 if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
-    $display_genome_ID = theDb()->getOne
-	("SELECT shasum FROM private_genomes WHERE private_genome_id=? OR shasum=?",
-	 array ($matches[0], $matches[0]));
+    if (strlen($matches[0]) == 40)
+        $display_genome_ID = $matches[0];
+    else
+	$display_genome_ID = theDb()->getOne
+	    ("SELECT shasum FROM private_genomes WHERE private_genome_id=?",
+	     array ($matches[0]));
 }
 
 $user = getCurrentUser();
@@ -86,7 +89,7 @@ go();
 
 function list_uploaded_genomes($user_oid) {
     global $pgp_data_user, $public_data_user, $user;
-    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY upload_date", array("$user_oid"));
+    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY private_genome_id", array("$user_oid"));
     if ($db_query) {
         $returned_text = "<TABLE class=\"report_table\">\n";
         $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";

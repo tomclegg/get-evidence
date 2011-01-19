@@ -43,12 +43,12 @@ $sql = "";
 while ($row =& $q->fetchRow()) {
     ++$n;
     if ($n % 30 == 0) {
-	$remain = (time()-$starttime)*$tot/$n;
+	$remain = (time()-$starttime)*($tot-$n)/$n;
 	$eta = sprintf ("ETA %d:%02d:%02ds = %s  ",
 			floor($remain/3600),
 			floor($remain/60)%60,
 			floor($remain)%60,
-			date("r", $starttime+$remain));
+			date("r", time()+$remain));
     }
     print "\r$n / $tot $eta";
     $flat = evidence_get_assoc_flat_summary ($snap, $row["variant_id"]);

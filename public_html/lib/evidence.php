@@ -65,13 +65,13 @@ function evidence_create_tables ()
   UNIQUE(global_human_id))");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS private_genomes (
-  private_genome_id SERIAL,
   oid VARCHAR(255), 
   nickname VARCHAR(64),
   shasum VARCHAR(64),
   upload_date DATETIME,
   notes TEXT,
   INDEX (oid), INDEX (shasum))");
+  theDb()->query ("ALTER TABLE private_genomes ADD private_genome_id SERIAL FIRST");
   theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
@@ -202,7 +202,7 @@ function evidence_create_tables ()
   theDb()->query ("ALTER TABLE flat_summary ADD webscore CHAR(1) after autoscore");
   theDb()->query ("ALTER TABLE flat_summary ADD n_genomes INT after webscore");
   theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_index (webscore)");
-  theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_priority_index (genome_hits, autoscore)");
+  theDb()->query ("ALTER TABLE flat_summary ADD INDEX webscore_priority_index (n_genomes, autoscore)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS web_vote_history (
   vote_id SERIAL,
@@ -233,13 +233,19 @@ function evidence_create_tables ()
   UNIQUE (variant_id,url)
   )");
 
-  theDb()->query ("
-CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
- variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
- xml TEXT
-)");
+  theDb()->query ("CREATE TABLE IF NOT EXISTS yahoo_boss_cache (
+  variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  xml TEXT
+  )");
   theDb()->query ("ALTER TABLE yahoo_boss_cache ADD hitcount INT UNSIGNED");
   theDb()->query ("ALTER TABLE yahoo_boss_cache ADD retrieved DATETIME");
+
+  theDb()->query ("CREATE TABLE IF NOT EXISTS editor_summary (
+  oid VARCHAR(255) PRIMARY KEY,
+  total_edits BIGINT UNSIGNED NOT NULL,
+  latest_edit DATETIME,
+  webvotes BIGINT UNSIGNED NOT NULL
+  )");
 }
 
 function evidence_get_genome_id ($global_human_id)
@@ -317,7 +323,7 @@ function evidence_get_variant_id ($gene,
   $aa_to = aa_long_form ($aa_to);
   $from = "from";
   $to = "to";
-  if (strlen($aa_from) != 3 || (strlen($aa_to) != 3 && strlen($aa_to) != 4)) {
+  if (!isset($GLOBALS["aa_31"][$aa_from]) || !isset($GLOBALS["aa_31"][$aa_to])) {
       $aa_from = aa_short_form($aa_from);
       $aa_to = aa_short_form($aa_to);
       $from = "del";
@@ -492,33 +498,103 @@ function evidence_update_flat_summary ($variant_id)
 			 $flat["autoscore"],
 			 $flat["webscore"],
 			 $flat["n_genomes"]));
+  return $flat;
 }
 
-function evidence_signoff ($edit_id)
+function evidence_signoff ($edit_ids)
 {
   // Push this edit to the "release" snapshot.
 
-  if (!$_SESSION["user"]["is_admin"])
+  if (!getCurrentUser("is_admin"))
     {
       // TODO: proper error reporting
       die ("only admin can do this");
     }
 
+  $edit_ids_sql = "";
+  foreach ($edit_ids as $x) {
+    if (strlen($edit_ids_sql)) $edit_ids_sql .= ",?";
+    else $edit_ids_sql .= "?";
+  }
+
+  // Record who signed off on these edits
   theDb()->query ("UPDATE edits SET signoff_oid=?, signoff_timestamp=NOW()
-		   WHERE edit_id=? AND signoff_oid IS NULL",
-		  array ($_SESSION["user"]["oid"], $edit_id));
-  $latest_signedoff_edit =
-    theDb()->getOne ("SELECT edit_id FROM edits
-		      WHERE variant_id = (SELECT variant_id FROM edits WHERE edit_id=?)
-		      ORDER BY edit_timestamp DESC LIMIT 1",
-		     $edit_id);
-  if ($latest_signedoff_edit != $edit_id)
-    {
-      // TODO: proper error reporting
-      die ("A more recent edit ($latest_signedoff_edit) has already been signed off.");
+		   WHERE edit_id IN ($edit_ids_sql) AND signoff_oid IS NULL",
+		  array_merge (array ($_SESSION["user"]["oid"]), $edit_ids));
+
+  $variant_id = theDb()->getOne ("SELECT variant_id FROM edits WHERE edit_id IN $edit_ids_sql", $edit_ids);
+
+  // Push these edits to snap_release
+  theDb()->query ("REPLACE INTO snap_release
+		 SELECT * FROM edits WHERE edit_id IN ($edit_ids_sql)",
+		  $edit_ids);
+
+  // Remove any entries for this variant other than the ones being
+  // signed off now (assume this curator is signing off on deleting
+  // the relevant sub-entries from the variant page)
+  theDb()->query ("DELETE FROM snap_release
+		 WHERE variant_id=? AND edit_id NOT IN ($edit_ids_sql)",
+		  array_merge(array($variant_id), $edit_ids));
+}
+
+function evidence_release_status_html (&$report)
+{
+    if (!$report || !isset($report[0]) || !is_array($report[0]))
+	return "";
+
+    $edit_ids = array();
+    $edit_ids_sql = "";
+    foreach ($report as &$row) {
+	if ($row["edit_id"]) {
+	    if (count($edit_ids))
+		$edit_ids_sql .= ",";
+	    $edit_ids_sql .= "?";
+	    $edit_ids[] = $row["edit_id"];
+	}
     }
-  theDb()->query ("REPLACE INTO snap_release SELECT * FROM edits WHERE edit_id=?",
-		  $edit_id);
+
+    // Have all of the edits in this report been approved by curators?
+    $curation = "<button class='release-status-yes'>Approved</button>";
+    $table = $report[0]["table"];
+    if ($table != "snap_release") {
+	if (theDb()->getOne ("SELECT 1 FROM edits WHERE edit_id IN ($edit_ids_sql) AND signoff_oid IS NULL LIMIT 1", $edit_ids)) {
+	    $curation = "<button class='release-status-no'>Not yet reviewed/approved</button>";
+	    if (theDb()->getOne ("SELECT 1 FROM snap_release WHERE variant_id=? AND article_pmid=0 AND genome_id=0 AND disease_id=0", array ($report[0]["variant_id"]))) {
+		$variant_name = evidence_get_variant_name($report[0],"-");
+		$curation .= "<br />(See <A href='$variant_name?snap=release'>latest approved version</A>)";
+	    }
+
+	    if (getCurrentUser("is_admin"))
+	      $GLOBALS["signoff_edit_ids"] = implode(",", $edit_ids);
+	}
+    }
+
+    // Is this the latest version, or does snap_latest contain newer edits?
+    $latest = "<button class='release-status-yes'>This is the latest version</button>";
+    if ($table != "snap_latest") {
+	if ($newer = theDb()->getOne
+	    ("SELECT edit_id FROM snap_latest
+		 WHERE variant_id=?
+		 AND edit_id NOT IN ($edit_ids_sql)
+		 LIMIT 1",
+	     array_merge (array($report[0]["variant_id"]),
+			  $edit_ids))) {
+	    $variant_name = evidence_get_variant_name($report[0],"-");
+	    $latest = "<button class='release-status-no'>This is not the latest version</button><br />(See the <A href='$variant_name?snap=latest'>latest version</A>)";
+	    $GLOBALS["gDisableEditing"] = true;
+	}
+    }
+
+    return "
+<div style='display:table-cell; padding: 10px'>
+Curation:<br />
+$curation
+</div>
+<div style='display:table-cell; padding: 10px'>
+Currentness:<br />
+$latest
+</div>
+";
 }
 
 function evidence_get_report ($snap, $variant_id)
@@ -693,6 +769,18 @@ function evidence_get_report ($snap, $variant_id)
     else if ($row["variant_aa_del"])
       $row["nblosum100"] = 0-blosum100($row["variant_aa_del"], $row["variant_aa_ins"]);
 
+    $webhits_relevant = 0;
+    $webhits_unscored = 0;
+    $urlscores =& evidence_get_web_votes ($variant_id);
+    foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
+						     array ($variant_id, "Yahoo!"))) as $url) {
+      if (!isset($urlscores[$url]) || !strlen($urlscores[$url]))
+	++$webhits_unscored;
+      else if ($urlscores[$url] > 0)
+	if (++$webhits_relevant >= 2)
+	  break;
+    }
+
     $tags = array();
     foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($variant_id)) as $tagrow) {
       $tags[] = $tagrow["tag"];
@@ -723,6 +811,7 @@ function evidence_get_report ($snap, $variant_id)
       }
     }
     if ($row["in_pharmgkb"] == 'Y') { ++$autoscore_db; $why[] = "PharmGKB"; }
+    if ($webhits_relevant > 0) { $autoscore_db += $webhits_relevant; $why[] = "relevant web hits"; }
     if ($autoscore_db > 2) $autoscore_db = 2;
     $autoscore += $autoscore_db;
 
@@ -730,21 +819,17 @@ function evidence_get_report ($snap, $variant_id)
     if ($row["genetests_testable"]) { $autoscore++; $why[] = "genetest"; }
     if ($row["genetests_reviewed"]) { $autoscore++; $why[] = "genereview"; }
 
+    if ($webhits_unscored && $autoscore_db < 2)
+      $row["webscore"] = "-";	// could gain autoscore points by getting web votes
+    else if ($webhits_relevant > 0)
+      $row["webscore"] = "Y";	// already getting web scores
+    else
+      $row["webscore"] = "N";	// no hits, or all hits are voted irrelevant
+
     $row["autoscore"] = $autoscore;
     $row["autoscore_flags"] = implode(", ",$why);
 
-    // Summarize relevant/not-relevant votes as one of { null, 0, 1 }
-    $row["webscore"] = "N";
-    $urlscores =& evidence_get_web_votes ($variant_id);
-    foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
-						     array ($variant_id, "Yahoo!"))) as $url) {
-      if (!isset($urlscores[$url]) || !strlen($urlscores[$url]))
-	$row["webscore"] = "-";
-      else if ($urlscores[$url] == 1) {
-	$row["webscore"] = "Y";
-	break;
-      }
-    }
+    $row["table"] = $table;
   }
 
   return $v;
@@ -1375,6 +1460,8 @@ function evidence_get_web_votes ($variant_id)
   $votes =& theDb()->getAll ("SELECT * FROM web_vote WHERE variant_id=?",
 			     array ($variant_id));
   foreach ($votes as &$v) {
+    $results["-".$v["url"]] = $v["vote_0"] + 0;
+    $results["+".$v["url"]] = $v["vote_1"] + 0;
     if ($v["vote_0"] > $v["vote_1"]) // "no" votes win
       $result = 0;
     else if ($v["vote_1"] > 0)	// tie, or "yes" votes win
@@ -1397,7 +1484,7 @@ function evidence_get_my_web_vote ($variant_id)
 				ORDER BY vote_timestamp DESC",
 			     array ($variant_id, $oid));
   foreach ($votes as &$v) {
-    if (!isset ($myvotes[$v["url"]]))
+    if (!array_key_exists ($v["url"], $myvotes))
       $myvotes[$v["url"]] = $v["vote_score"];
   }
   return $myvotes;
@@ -1410,10 +1497,10 @@ function evidence_set_my_web_vote ($variant_id, $url, $score)
     return;
   theDb()->query ("INSERT INTO web_vote_history SET
 			variant_id=?, url=?, vote_oid=?, vote_score=?",
-		  array ($variant_id, $url, $oid, $score));
+		  array ($variant_id, $url, $oid, strlen($score) ? $score : null));
   theDb()->query ("REPLACE INTO web_vote_latest SET
 			variant_id=?, url=?, vote_oid=?, vote_score=?",
-		  array ($variant_id, $url, $oid, $score));
+		  array ($variant_id, $url, $oid, strlen($score) ? $score : null));
 
   $current =& theDb()->getAll ("SELECT COUNT(*) c, vote_score
 				FROM web_vote_latest
@@ -1431,8 +1518,9 @@ function evidence_set_my_web_vote ($variant_id, $url, $score)
   theDb()->query ("REPLACE INTO web_vote SET variant_id=?, url=?, vote_0=?, vote_1=?",
 		  array ($variant_id, $url, $vote_0, $vote_1));
   if (theDb()->affectedRows() > 0) {
-    evidence_update_flat_summary ($variant_id);
+    return evidence_update_flat_summary ($variant_id);
   }
+  return false;
 }
 
 
@@ -1460,22 +1548,34 @@ function evidence_add_vote_tag_callback ($variant_id, $matches)
   global $webvote_unique_id;
   ++$webvote_unique_id;
 
-  $yes_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsup-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\">";
-  $no_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsdown-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\">";
-  $empty_image = "<img id=\"webvoter_all_$webvote_unique_id\" src=\"/img/thumbsup-32.png\" width=\"16\" height=\"16\" border=\"0\" valign=\"bottom\" style=\"display:none;\">";
-
   $url = htmlspecialchars_decode ($matches[1], ENT_QUOTES);
-  if ($evidence_current_votes[$url] == 1)
-    $html = $yes_image . "&nbsp;" . $html;
+  $icon = "";
+  if ($evidence_current_votes[$url] > 0)
+    $icon = "ui-icon-circle-check";
   else if (strlen ($evidence_current_votes[$url]))
-    $html = $no_image . "&nbsp;" . $html;
+    $icon = "ui-icon-close";
   else if (getCurrentUser())
-    $html = $empty_image . "&nbsp;" . $html;
+    $icon = "ui-icon-help";
+
+  $iconhtml = "<button icon=\"$icon\" class=\"webvoter_result\" id=\"webvoter_all_$webvote_unique_id\" class=\"ui-state-active\" onclick=\"return false;\" style=\"vertical-align: middle\" variant_id=\"$variant_id\" vote-url=\"$matches[1]\">"
+    . "+{$evidence_current_votes["+$url"]} -{$evidence_current_votes["-$url"]}"
+    . "</button>";
 
   if (!getCurrentUser())
-    return $html;
+    return "<div style='float:right'>$iconhtml</div>$html";
 
-  return $html . "&nbsp;&nbsp;&nbsp;<a class=\"webvoter\" id=\"webvoter1_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,1);\" href=\"$matches[1]\">$yes_image</a>&nbsp;<a class=\"webvoter\" id=\"webvoter0_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,0);\" href=\"$matches[1]\">$no_image</a>";
+  return "<div style='float:right'>"
+    . "<div style='display:table-cell; vertical-align:middle'>$iconhtml</div>"
+    . "<div style='display:table-cell; vertical-align:middle'>"
+    . "<button class=\"webvoter plus\" id=\"webvoter1_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,1);\" vote-url=\"$matches[1]\">Vote \"relevant\"</button>"
+    . "<br />"
+    . "<button class=\"webvoter minus\" id=\"webvoter0_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,0);\" vote-url=\"$matches[1]\">Vote \"not relevant\"</button>"
+    . "</div>"
+    . "<div style='display:table-cell; vertical-align:middle'>"
+    . "<button class=\"webvoter cancel\" id=\"webvoterX_$webvote_unique_id\" onclick=\"return evidence_web_vote($variant_id,this,null);\" vote-url=\"$matches[1]\">Cancel my vote</button>"
+    . "</div>"
+    . "</div>"
+    . $html;
 }
 
 

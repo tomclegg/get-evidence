@@ -5,9 +5,9 @@
 // Copyright 2010 Clinical Future, Inc.
 // Authors: see git-blame(1)
 
-if ($_SERVER["argc"] != 2)
+if ($_SERVER["argc"] != 3)
     {
-	die ("Usage: ".$_SERVER["argv"][0]." omim.tsv\n");
+	die ("Usage: ".$_SERVER["argv"][0]." OmimVarLocusIdSNP.bcp morbidmap\n");
     }
 
 chdir ('public_html');
@@ -22,37 +22,108 @@ ini_set ("memory_limit", 67108864);
 genomes_create_tables ();
 openid_login_as_robot ("OMIM Importing Robot");
 
-print "Creating temporary table...";
+
+print "Creating omim locus/id/snp table...";
 theDb()->query ("CREATE TEMPORARY TABLE omim_a (
-  `phenotype` VARCHAR(255) NOT NULL,
-  `gene` VARCHAR(12) NOT NULL,
-  `amino_acid` VARCHAR(8) NOT NULL,
-  `codon` INT NOT NULL,
-  `word_count` INT,
-  `allelic_variant_id` VARCHAR(24)
+  `omim_id` BIGINT UNSIGNED,
+  `x1` INTEGER,
+  `x2` INTEGER,
+  `gene` VARCHAR(16),
+  `aa_from_short` VARCHAR(32),
+  `aa_pos` INTEGER,
+  `aa_to_short` VARCHAR(32),
+  `x3` VARCHAR(32),
+  `rsid` BIGINT UNSIGNED,
+  INDEX(omim_id)
 )");
 print "\n";
 
-
-print "Importing data...";
-theDb()->query ("LOAD DATA LOCAL INFILE ? INTO TABLE omim_a FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'",
+print "Importing OmimVarLocusIdSNP...";
+$e = theDb()->query ("LOAD DATA LOCAL INFILE ? INTO TABLE omim_a FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n'",
 		array ($_SERVER["argv"][1]));
-
-theDb()->query ("ALTER TABLE omim_a ADD variant_id BIGINT UNSIGNED");
-theDb()->query ("ALTER TABLE omim_a ADD aa_from CHAR(4)");
-theDb()->query ("ALTER TABLE omim_a ADD aa_to CHAR(4)");
-theDb()->query ("ALTER TABLE omim_a ADD url VARCHAR(255)");
-theDb()->query ("ALTER TABLE omim_a ADD INDEX(gene,aa_from,codon,aa_to)");
+print theDb()->affectedRows();
 print "\n";
 
 
-print "Cleaning up gene/aa encoding...";
+print "Creating omim id -> annotation table...";
+theDb()->query ("CREATE TEMPORARY TABLE omim_annotation (
+  `annotation_text` VARCHAR(128),
+  `x1` VARCHAR(32),
+  `omim_id` BIGINT UNSIGNED,
+  `x2` VARCHAR(32),
+  INDEX(omim_id)
+)");
+print "\n";
+
+print "Importing morbidmap...";
+theDb()->query ("LOAD DATA LOCAL INFILE ? INTO TABLE omim_annotation FIELDS TERMINATED BY '|' LINES TERMINATED BY '\n'",
+		array ($_SERVER["argv"][2]));
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Creating aa_short -> aa_long table...";
+$q = theDb()->query ("CREATE TEMPORARY TABLE aa13 (
+  `short` CHAR(1) PRIMARY KEY,
+  `long` VARCHAR(4)
+)");
+if (theDb()->isError($q)) { die ($q->getMessage()."\n"); }
+foreach ($aa_13 as $short => $long) {
+    theDb()->query ("INSERT INTO aa13 VALUES (?, ?)", array ($short, $long));
+}
+print "\n";
+
+
+print "Adding columns...";
+theDb()->query ("ALTER TABLE omim_a ADD variant_id BIGINT UNSIGNED, ADD INDEX(variant_id)");
+theDb()->query ("ALTER TABLE omim_a ADD aa_from VARCHAR(255)");
+theDb()->query ("ALTER TABLE omim_a ADD aa_to VARCHAR(255)");
+theDb()->query ("ALTER TABLE omim_a ADD url VARCHAR(255)");
+theDb()->query ("ALTER TABLE omim_a ADD INDEX(gene,aa_from,aa_pos,aa_to)");
+print "\n";
+
+
+print "Filling in url field...";
 theDb()->query ("
 UPDATE omim_a
-SET gene = UPPER(gene),
- aa_from = SUBSTRING(amino_acid,1,3),
- aa_to = IF(SUBSTRING(amino_acid,5,4)='TERM','Stop',SUBSTRING(amino_acid,5,3))
+SET url = CONCAT('http://www.ncbi.nlm.nih.gov/omim/',omim_id)
 ");
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Converting short to long AA (from)...";
+$q = theDb()->query ("
+UPDATE omim_a
+ LEFT JOIN aa13 ON aa13.short = omim_a.aa_from_short
+SET gene = UPPER(TRIM(gene)),
+ aa_from = aa13.long
+");
+if (theDb()->isError($q)) { die ($q->getMessage()."\n"); }
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Converting short to long AA (to)...";
+$q = theDb()->query ("
+UPDATE omim_a
+ LEFT JOIN aa13 ON aa13.short = omim_a.aa_to_short
+SET
+ aa_to = aa13.long
+");
+if (theDb()->isError($q)) { die ($q->getMessage()."\n"); }
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Converting gene names to canonical gene names...";
+$q = theDb()->query ("
+UPDATE omim_a
+LEFT JOIN gene_canonical_name ON aka = gene
+SET gene = official
+WHERE official IS NOT NULL
+");
+if (theDb()->isError($q)) { die ($q->getMessage()."\n"); }
 print theDb()->affectedRows();
 print "\n";
 
@@ -64,18 +135,36 @@ SET omim_a.variant_id=variants.variant_id
 WHERE variants.variant_gene = omim_a.gene
  AND variants.variant_aa_from = omim_a.aa_from
  AND variants.variant_aa_to = omim_a.aa_to
- AND variants.variant_aa_pos = omim_a.codon
+ AND variants.variant_aa_pos = omim_a.aa_pos
 ");
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Looking up variant ids by rsid...";
+theDb()->query ("
+UPDATE omim_a, variants
+SET omim_a.variant_id=variants.variant_id
+WHERE omim_a.variant_id IS NULL
+ AND variants.variant_rsid IS NOT NULL
+ AND omim_a.rsid = variants.variant_rsid
+");
+print theDb()->affectedRows();
+print "\n";
+
+
+print "Deleting rows with no/invalid AA change...";
+theDb()->query ("DELETE FROM omim_a WHERE variant_id IS NULL AND (aa_from IS NULL OR aa_to IS NULL OR aa_pos IS NULL OR aa_pos<=0)");
 print theDb()->affectedRows();
 print "\n";
 
 
 print "Adding variants...";
 $q = theDb()->query ("
-SELECT concat(gene,' ',aa_from,codon,aa_to) AS gene_aa_change
+SELECT concat(gene,' ',aa_from,aa_pos,aa_to) AS gene_aa_change
 FROM omim_a
 WHERE variant_id IS NULL
-GROUP BY gene,aa_from,codon,aa_to");
+GROUP BY gene,aa_from,aa_pos,aa_to");
 $n=0;
 $did = array();
 while ($row =& $q->fetchRow())
@@ -91,6 +180,7 @@ while ($row =& $q->fetchRow())
 					     0, 0, 0,
 					     true);
 	$did[$row["gene_aa_change"]] = 1;
+	print "\n".$row["gene_aa_change"]." -> $variant_id $edit_id ...";
 
 	++$n;
 	if ($n % 100 == 0)
@@ -105,21 +195,21 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Editing \"unknown\" variants to \"likely pathogenic\"...";
+print "Editing \"unknown\" variants to \"pathogenic\"...";
 $timestamp = theDb()->getOne("SELECT NOW()");
 $q = theDb()->query ("INSERT INTO edits
-	(variant_id, genome_id, article_pmid, is_draft,
-	 previous_edit_id, variant_dominance, variant_impact,
+	(variant_id, genome_id, article_pmid, disease_id, is_draft,
+	 previous_edit_id, variant_dominance, variant_quality, variant_quality_text,
 	 summary_short, summary_long,
-	 edit_oid, edit_timestamp)
-	SELECT DISTINCT s.variant_id, 0, 0, 0,
-	 edit_id, variant_dominance, ?,
+	 variant_impact, edit_oid, edit_timestamp)
+	SELECT DISTINCT s.variant_id, 0, 0, 0, 0,
+	 edit_id, variant_dominance, variant_quality, variant_quality_text,
 	 summary_short, summary_long,
-	 ?, ?
+	 ?, ?, ?
 	FROM omim_a
-	LEFT JOIN snap_latest s ON omim_a.variant_id=s.variant_id AND s.article_pmid=0 AND s.genome_id=0
+	LEFT JOIN snap_latest s ON omim_a.variant_id=s.variant_id AND s.article_pmid=0 AND s.genome_id=0 AND s.disease_id=0
 	WHERE s.variant_impact='none'",
-		     array ('likely pathogenic',
+		     array ('pathogenic',
 			    getCurrentUser("oid"), $timestamp));
 if (theDb()->isError($q)) { print $q->getMessage(); print "..."; }
 print theDb()->affectedRows();
@@ -133,23 +223,14 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Filling in url field...";
-theDb()->query ("
-UPDATE omim_a
-SET url = CONCAT('http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=',SUBSTRING_INDEX(SUBSTRING_INDEX(allelic_variant_id,'omim:',-1),'.',1))
-WHERE allelic_variant_id LIKE 'omim:%.%'
-");
-print theDb()->affectedRows();
-print "\n";
-
-
 print "Updating variant_external...";
 theDb()->query ("LOCK TABLES variant_external WRITE");
 theDb()->query ("DELETE FROM variant_external WHERE tag='OMIM'");
 theDb()->query ("INSERT INTO variant_external
  (variant_id, tag, content, url, updated)
- SELECT variant_id, 'OMIM', phenotype, url, NOW()
+ SELECT variant_id, 'OMIM', annotation_text, url, NOW()
  FROM omim_a
+ LEFT JOIN omim_annotation ON omim_a.omim_id = omim_annotation.omim_id
  WHERE variant_id > 0");
 print theDb()->affectedRows();
 print "\n";

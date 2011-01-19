@@ -12,7 +12,7 @@ function message_update (newtext)
     }
     else {
 	message_current = { text: newtext };
-	$('message').update('<P>' + newtext.sub(/^<[Pp]>/,"").sub(/<\/[Pp]>$/,"") + '</P>');
+	$('message').update(newtext.sub(/^<[Pp]>/,"").sub(/<\/[Pp]>$/,""));
 	$('message').style.display='block';
     }
 }

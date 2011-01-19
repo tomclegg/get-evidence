@@ -29,11 +29,31 @@ $gOut = array("site_title" => "GET-Evidence");
 
 function go()
 {
-  include "lib/template.php";
+  if (isset($_REQUEST["want_json"])) {
+    header ("Content-type: application/json");
+    $GLOBALS["want_json"] = true;
+    print "{";
+    print_content();
+    print "}\n";
+  }
+  else
+    include "lib/template.php";
 }
 
 if (isset($_COOKIE) && array_key_exists ("PHPSESSID", $_COOKIE))
   session_start();
+
+// Make sure is_admin flag is up-to-date (otherwise users have to
+// logout+login in order to gain or lose admin privileges).
+
+if (isset ($_SESSION) &&
+    array_key_exists ("user", $_SESSION) &&
+    array_key_exists ("oid", $_SESSION["user"])) {
+    $is_admin = theDb()->getOne ("SELECT is_admin FROM eb_users WHERE oid=?",
+				 array ($_SESSION["user"]["oid"]));
+    if ($_SESSION["is_admin"] != $is_admin)
+	$_SESSION["is_admin"] = $is_admin;
+}
 
 function getCurrentUser ($param=null)
 {
