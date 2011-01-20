@@ -43,7 +43,8 @@ def main():
                 if record.attributes["ref_allele"].strip("\"") == ref_seq.upper():
                     continue
         
-        record.attributes["ref_allele"] = ref_seq.upper()
+        if record.attributes and record.feature != "REF":
+            record.attributes["ref_allele"] = ref_seq.upper()
         print record
 
 if __name__ == "__main__":
