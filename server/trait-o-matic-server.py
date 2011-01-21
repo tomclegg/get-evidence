@@ -140,6 +140,7 @@ def main():
              'A': os.path.join(script_dir, "gff_twobit_query.py"),
                  'B': os.path.join(script_dir, "gff_dbsnp_query_from_file.py"),
                  'C': os.path.join(script_dir, "gff_nonsynonymous_filter_from_file.py"),
+                 'coverage_prog': os.path.join(script_dir, "gff_call_uncovered_json.py"),
                  'in': genotype_file,
              'fetch': fetch_command,
                  'reference': REFERENCE_GENOME,
@@ -149,6 +150,7 @@ def main():
                  'sorted': os.path.join(output_dir, "genotype_sorted.gff"),
                  'dbsnp_gff': os.path.join(output_dir, "genotype.dbsnp.gff"),
                  'ns_gff': os.path.join(output_dir, "ns.gff"),
+                 'coverage_json': os.path.join(output_dir, "missing_coding.json"),
              'script_dir': script_dir,
              'output_dir': output_dir,
              'lockfile': os.path.join(output_dir, "lock"),
@@ -166,11 +168,15 @@ def main():
         if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
         then
             echo >&2 "#status 1 sorting input"
-            %(fetch)s '%(in)s' | gzip -cdf | grep -v "^#" | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | egrep 'ref_allele [-ACGTN]' >> '%(sorted)s'.tmp
-            mv '%(sorted)s'.tmp '%(sorted)s'
+            %(fetch)s '%(in)s' | gzip -cdf | perl -ne 'if (/^#/) { print; }' | gzip -c > '%(sorted)s'.tmp.gz
+            %(fetch)s '%(in)s' | gzip -cdf | grep -v "^#" | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | gzip -c >> '%(sorted)s'.tmp.gz
+            mv '%(sorted)s'.tmp.gz '%(sorted)s'.gz
+
+            zcat '%(sorted)s'.gz | python '%(coverage_prog)s' /dev/stdin > '%(coverage_json)s'.tmp
+            mv '%(coverage_json)s'.tmp '%(coverage_json)s'
 
             echo >&2 "#status 2 looking up dbsnp IDs"
-            python '%(B)s' '%(sorted)s' > '%(dbsnp_gff)s'.tmp
+            zcat '%(sorted)s'.gz | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | egrep 'ref_allele [-ACGTN]' | python '%(B)s' /dev/stdin > '%(dbsnp_gff)s'.tmp
             mv '%(dbsnp_gff)s'.tmp '%(dbsnp_gff)s'
 
             echo >&2 "#status 4 computing nsSNPs"
