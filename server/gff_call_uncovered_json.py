@@ -144,25 +144,49 @@ def main():
         sys.stderr.write ("No 'snap_latest' table => empty output")
         sys.exit()
 
-    # open gff file
-    gff_file = gff.input(sys.argv[1])
-    
     # set up transcript file input
     transcript_input = Transcript_file(os.getenv('DATA') + "/" + KNOWNGENE_SORTED)
 
     # check if reference coverage is reported
-    cmd = "head -100 " + sys.argv[1] + " | perl -ne '@data=split(\"\\t\"); if ($data[2] eq \"REF\") { print; }'"
-    out = os.popen(cmd);
+    #cmd = "head -100 " + sys.argv[1] + " | perl -ne '@data=split(\"\\t\"); if ($data[2] eq \"REF\") { print; }'"
+    #out = os.popen(cmd);
 
     # if we got any lines in the first 100 with "REF" in 
     # the third column, we assume coverage data exists
-    if (out.readline()):
+    if (1 == 1): # out.readline()):
         # Store regions being examined, remove or reduce if covered
         # key: Transcript object
         # value: list of tuples (chr (string), start (int), end (int))
         # Note: Start is 1-based, not 0-based as is in transcript files
         examined_regions = {}
+
+        # See "sadly hacky" description below.
+        temp_storage_out = []
+        n = 0;
+        has_ref_lines = False
+
+        # Open GFF
+        gff_file = gff.input(sys.argv[1])
+
         for record in gff_file:
+
+            # This is a sadly hacky check to see if incoming file has coverage.
+            # For first 100 lines, store output. If we haven't seen a "REF" 
+            # line by 100, interpret incoming as lacking coverage and abort. 
+            # Otherwise, print the stored output and proceed.
+            if n < 100:
+                if record.feature == "REF":
+                    has_ref_lines = True
+                n = n + 1
+            else:
+                if has_ref_lines:
+                    if n == 100:
+                        n = n + 1
+                        for line in temp_storage_out:
+                            print "Line: " + line
+                else:
+                    break
+                
             if record.seqname.startswith("chr"):
                 chromosome = record.seqname
             else:
@@ -223,7 +247,11 @@ def main():
                     data = cursor.fetchall()
                     for key in data[0].keys():
                         gene_data[key] = data[0][key]
-                print json.dumps(gene_data)
+                if gene_data["length"] > 0:
+                    if n < 100:
+                        temp_storage_out.append(str(json.dumps(gene_data)))
+                    else:
+                        print json.dumps(gene_data)
 
         # clean up remaining transcripts (if any)
         for ts in transcript_input.transcripts:
@@ -243,7 +271,11 @@ def main():
                 data = cursor.fetchall()
                 for key in data[0].keys():
                     gene_data[key] = data[0][key]
-            print json.dumps(gene_data)
+            if gene_data["length"] > 0:
+                if n < 100:
+                    temp_storage_out.append(str(json.dumps(gene_data)))
+                else:
+                    print json.dumps(gene_data)
 
 
 
