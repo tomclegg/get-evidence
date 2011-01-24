@@ -168,8 +168,7 @@ def main():
         if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
         then
             echo >&2 "#status 1 sorting input"
-            %(fetch)s '%(in)s' | gzip -cdf | perl -ne 'if (/^#/) { print; }' | gzip -c > '%(sorted)s'.tmp.gz
-            %(fetch)s '%(in)s' | gzip -cdf | grep -v "^#" | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | gzip -c >> '%(sorted)s'.tmp.gz
+            %(fetch)s '%(in)s' | gzip -cdf | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | gzip -c >> '%(sorted)s'.tmp.gz
             mv '%(sorted)s'.tmp.gz '%(sorted)s'.gz
 
             zcat '%(sorted)s'.gz | python '%(coverage_prog)s' /dev/stdin > '%(coverage_json)s'.tmp
