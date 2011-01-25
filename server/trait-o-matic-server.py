@@ -26,17 +26,8 @@ def main():
     option, args = doc_optparse.parse(__doc__)
     
     if option.stderr:
-        sysin = sys.stdin.fileno()
-        sysout = sys.stdout.fileno()
-        syserr = sys.stderr.fileno()
-        newout = file(option.stderr,'a+',0)
-        sys.stderr.flush()
-        sys.stdout.flush()
-        os.close(sysin)
-        os.close(sysout)
-        os.dup2(newout.fileno(), sysout)
-        os.close(sys.stderr.fileno())
-        os.dup2(newout.fileno(), syserr)
+        sys.stdout = open(option.stderr,'a+',0)
+        sys.stderr = open(option.stderr,'a+',0)
 
     if option.pidfile:
         file(option.pidfile,'w+').write("%d\n" % os.getpid())
