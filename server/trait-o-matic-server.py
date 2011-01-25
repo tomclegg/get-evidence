@@ -13,11 +13,10 @@ usage: %prog [options]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import base64, hashlib, os, shutil, subprocess, sys, urllib, urllib2, re, warehouse
+import os, sys
 from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
-from tempfile import mkstemp
 from utils import doc_optparse
-from config import UPLOAD_DIR, REFERENCE_GENOME
+from config import REFERENCE_GENOME
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -40,8 +39,9 @@ def main():
     server = xrs((host, port))
     server.register_introspection_functions()
     
-    def submit_local(genotype_file, coverage_file='', trackback_url='', request_token='', reprocess_all=False):
-        print "Create output dir..."
+    def submit_local(genotype_file, reprocess_all=False):
+        print "Calling submit_local with \'genotype_file\': \'" + str(genotype_file) + "\', \'reprocess_all\': \'" + str(reprocess_all) + "\'"
+
         # create output dir
         input_dir = os.path.dirname(genotype_file)
         output_dir = input_dir + "-out"
@@ -51,24 +51,7 @@ def main():
         except:
             print "Unexpected error:", sys.exc_info()[0]
 
-        # cache phenotype/profile data locally if it is a special symlink
-        if (os.path.islink(os.path.join(input_dir,"phenotype"))
-            and
-            re.match('warehouse://.*', os.readlink(os.path.join(input_dir,"phenotype")))):
-            cmd = '''(
-            set -e
-            cd '%s'
-            whget phenotype phenotype.$$
-            mv phenotype phenotype-locator
-            mv --no-target-directory phenotype.$$ phenotype
-            ) &''' % os.path.dirname(genotype_file)
-            subprocess.call (cmd, shell=True)
-
-        # fetch from warehouse if genotype file is special symlink
         fetch_command = "cat"
-        if os.path.islink(genotype_file):
-            if re.match('warehouse://.*', os.readlink(genotype_file)):
-                fetch_command = "whget"
 
         # letters refer to scripts; numbers refer to outputs
         args = { 'reprocess_all': reprocess_all,
@@ -79,8 +62,6 @@ def main():
                  'in': genotype_file,
              'fetch': fetch_command,
                  'reference': REFERENCE_GENOME,
-                 'url': trackback_url,
-                 'token': request_token,
                  '1': os.path.join(output_dir, "genotype.gff"),
                  'sorted': os.path.join(output_dir, "genotype_sorted.gff"),
                  'dbsnp_gff': os.path.join(output_dir, "genotype.dbsnp.gff"),
@@ -129,7 +110,7 @@ def main():
         mv %(lockfile)s %(logfile)s
         echo >&2 "#status 10 finished"
         ) 2>>%(lockfile)s &''' % args
-        subprocess.call(cmd, shell=True)
+        os.system(cmd)
         return output_dir
     server.register_function(submit_local)
 
