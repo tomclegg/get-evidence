@@ -13,12 +13,93 @@ usage: %prog [options]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import os, sys
+import multiprocessing, os, random, sys, time
+import MySQLdb, MySQLdb.cursors
 from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
 from config import REFERENCE_GENOME
 
 script_dir = os.path.dirname(sys.argv[0])
+
+def add_to_log(filename, log_data):
+    log = open(filename, 'a')
+    log.write(str(log_data) + "\n")
+    log.close()
+
+def genome_analyzer(genotype_file):  
+    # Set all the variables we'll use.
+    input_dir = os.path.dirname(genotype_file)
+    output_dir = input_dir + "-out"
+    lockfile = os.path.join(output_dir, "lock")
+    logfile = os.path.join(output_dir, "log")
+    temp_prefix = 'temp' + str(hex(random.randint(4096,65535)))[2:] + "_"
+    args = { 'genotype_input': str(genotype_file),
+                'coverage_out': os.path.join(output_dir, 'missing_coding.json'),
+                'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
+                'getref_out': os.path.join(output_dir, temp_prefix + 'twobit.gff'),
+                'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
+                'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
+                'getev_out': os.path.join(output_dir, 'get-evidence.json'),
+            'coverage_script': os.path.join(script_dir, 'gff_call_uncovered_json.py'),
+                'getref_script': os.path.join(script_dir, 'gff_twobit_query.py'),
+                'dbsnp_script': os.path.join(script_dir, 'gff_dbsnp_query_from_file.py'),
+                'nonsyn_script': os.path.join(script_dir, 'gff_nonsynonymous_filter_from_file.py'),
+                'getev_script': os.path.join(script_dir, 'gff_get-evidence_map.py'),
+            'reference': REFERENCE_GENOME }
+    start_time = time.time()
+    # Make output directory if needed
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+
+    # Sort input genome data
+    add_to_log(lockfile, "#status 0/10 starting (time = %.2f seconds)" % (time.time() - start_time) )
+    add_to_log(lockfile, "#status 1 sorting input (time = %.2f seconds)" % (time.time() - start_time) )
+    sort_source_cmd = '''cat '%(genotype_input)s' | gzip -cdf | grep "^#" | gzip -c > '%(sorted_out)s' 
+                            cat '%(genotype_input)s' | gzip -cdf | grep -v "^#" | sort --key=1,1 --key=4n,4 | \
+                                gzip -c >> '%(sorted_out)s' ''' % args
+    os.system(sort_source_cmd)
+
+    # Report of uncovered blocks in coding
+    add_to_log(lockfile, "#status 2 report uncovered coding (time = %.2f seconds)" % (time.time() - start_time) )
+    coverage_cmd = '''zcat '%(sorted_out)s' | python '%(coverage_script)s' /dev/stdin > '%(coverage_out)s'.tmp
+                        mv '%(coverage_out)s'.tmp '%(coverage_out)s' ''' % args
+    os.system(coverage_cmd)
+
+    # Get reference alleles for non-reference variants
+    add_to_log(lockfile, "#status 3 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
+    getref_cmd = '''zcat '%(sorted_out)s' | python '%(getref_script)s' '%(reference)s' /dev/stdin > '%(getref_out)s'.tmp
+                        mv '%(getref_out)s'.tmp '%(getref_out)s' ''' % args
+    os.system(getref_cmd)
+
+    # Look up dbSNP IDs
+    add_to_log(lockfile, "#status 4 looking up dbsnp IDs (time = %.2f seconds)" % (time.time() - start_time) )
+    dbsnp_cmd = '''cat '%(getref_out)s' | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | \
+                    egrep 'ref_allele [-ACGTN]' | python '%(dbsnp_script)s' /dev/stdin > '%(dbsnp_out)s'.tmp
+                    mv '%(dbsnp_out)s'.tmp '%(dbsnp_out)s' ''' % args
+    os.system(dbsnp_cmd)
+
+    # Check for nonsynonymous SNPs
+    add_to_log(lockfile, "#status 6 computing nsSNPs (time = %.2f seconds)" % (time.time() - start_time) )
+    nonsyn_cmd = '''python '%(nonsyn_script)s' '%(dbsnp_out)s' '%(reference)s' print-all > '%(nonsyn_out)s'.tmp
+                        mv '%(nonsyn_out)s'.tmp '%(nonsyn_out)s' ''' % args
+    os.system(nonsyn_cmd)
+
+    # Match against GET-Evidence database
+    add_to_log(lockfile,"#status 7 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
+    getev_cmd = '''python '%(getev_script)s' '%(nonsyn_out)s' > '%(getev_out)s'.tmp
+                    mv '%(getev_out)s'.tmp '%(getev_out)s' ''' % args
+    os.system(getev_cmd)
+
+    add_to_log(lockfile,"#status 10 Done, cleaning up! (time = %.2f seconds)" % (time.time() - start_time) )
+
+    os.remove(args['getref_out'])
+    os.remove(args['dbsnp_out'])
+    os.rename(lockfile, logfile)
+    print "Done processing " + str(genotype_file)
+
 
 def main():
     # parse options
@@ -39,79 +120,11 @@ def main():
     server = xrs((host, port))
     server.register_introspection_functions()
     
-    def submit_local(genotype_file, reprocess_all=False):
-        print "Calling submit_local with \'genotype_file\': \'" + str(genotype_file) + "\', \'reprocess_all\': \'" + str(reprocess_all) + "\'"
+    def submit_local(genotype_file):
+        p = multiprocessing.Process(target=genome_analyzer, args=(genotype_file,))
+        p.start()
+        print "Job submitted for genotype_file: \'" + str(genotype_file) + "\', process ID: \'" + str(p.pid) + "\'"
 
-        # create output dir
-        input_dir = os.path.dirname(genotype_file)
-        output_dir = input_dir + "-out"
-        try:
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-        except:
-            print "Unexpected error:", sys.exc_info()[0]
-
-        fetch_command = "cat"
-
-        # letters refer to scripts; numbers refer to outputs
-        args = { 'reprocess_all': reprocess_all,
-             'A': os.path.join(script_dir, "gff_twobit_query.py"),
-                 'B': os.path.join(script_dir, "gff_dbsnp_query_from_file.py"),
-                 'C': os.path.join(script_dir, "gff_nonsynonymous_filter_from_file.py"),
-                 'coverage_prog': os.path.join(script_dir, "gff_call_uncovered_json.py"),
-                 'in': genotype_file,
-             'fetch': fetch_command,
-                 'reference': REFERENCE_GENOME,
-                 '1': os.path.join(output_dir, "genotype.gff"),
-                 'sorted': os.path.join(output_dir, "genotype_sorted.gff"),
-                 'dbsnp_gff': os.path.join(output_dir, "genotype.dbsnp.gff"),
-                 'ns_gff': os.path.join(output_dir, "ns.gff"),
-                 'coverage_json': os.path.join(output_dir, "missing_coding.json"),
-             'script_dir': script_dir,
-             'output_dir': output_dir,
-             'lockfile': os.path.join(output_dir, "lock"),
-             'logfile': os.path.join(output_dir, "log")}
-
-        cmd = '''(
-        flock --nonblock --exclusive 2 || exit
-        set -x
-        set -e
-
-        date 1>&2
-        echo >&2 "#status 0/10 starting"
-
-        cd '%(output_dir)s' || exit
-        if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
-        then
-            echo >&2 "#status 1 sorting input"
-            %(fetch)s '%(in)s' | gzip -cdf | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | gzip -c >> '%(sorted)s'.tmp.gz
-            mv '%(sorted)s'.tmp.gz '%(sorted)s'.gz
-
-            zcat '%(sorted)s'.gz | python '%(coverage_prog)s' /dev/stdin > '%(coverage_json)s'.tmp
-            mv '%(coverage_json)s'.tmp '%(coverage_json)s'
-
-            echo >&2 "#status 2 looking up dbsnp IDs"
-            zcat '%(sorted)s'.gz | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | egrep 'ref_allele [-ACGTN]' | python '%(B)s' /dev/stdin > '%(dbsnp_gff)s'.tmp
-            mv '%(dbsnp_gff)s'.tmp '%(dbsnp_gff)s'
-
-            echo >&2 "#status 4 computing nsSNPs"
-            python '%(C)s' '%(dbsnp_gff)s' '%(reference)s' print-all > '%(ns_gff)s'.tmp
-            mv '%(ns_gff)s'.tmp '%(ns_gff)s'
-        fi
-
-        echo >&2 "#status 7 looking up GET-Evidence hits"
-        for filter in get-evidence
-        do
-            python '%(script_dir)s'/gff_${filter}_map.py '%(ns_gff)s' > "$filter.json.tmp"
-            mv "$filter.json.tmp" "$filter.json"
-            date 1>&2
-        done
-
-        mv %(lockfile)s %(logfile)s
-        echo >&2 "#status 10 finished"
-        ) 2>>%(lockfile)s &''' % args
-        os.system(cmd)
-        return output_dir
     server.register_function(submit_local)
 
     # run the server's main loop
