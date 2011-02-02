@@ -19,6 +19,8 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
 from config import REFERENCE_GENOME
 
+import gff_twobit_query
+
 script_dir = os.path.dirname(sys.argv[0])
 
 def add_to_log(filename, log_data):
@@ -41,7 +43,6 @@ def genome_analyzer(genotype_file):
                 'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
                 'getev_out': os.path.join(output_dir, 'get-evidence.json'),
             'coverage_script': os.path.join(script_dir, 'gff_call_uncovered_json.py'),
-                'getref_script': os.path.join(script_dir, 'gff_twobit_query.py'),
                 'dbsnp_script': os.path.join(script_dir, 'gff_dbsnp_query_from_file.py'),
                 'nonsyn_script': os.path.join(script_dir, 'gff_nonsynonymous_filter_from_file.py'),
                 'getev_script': os.path.join(script_dir, 'gff_get-evidence_map.py'),
@@ -70,9 +71,7 @@ def genome_analyzer(genotype_file):
 
     # Get reference alleles for non-reference variants
     add_to_log(lockfile, "#status 3 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
-    getref_cmd = '''zcat '%(sorted_out)s' | python '%(getref_script)s' '%(reference)s' /dev/stdin > '%(getref_out)s'.tmp
-                        mv '%(getref_out)s'.tmp '%(getref_out)s' ''' % args
-    os.system(getref_cmd)
+    gff_twobit_query.match2ref_to_file(args['sorted_out'], args['reference'], args['getref_out'])
 
     # Look up dbSNP IDs
     add_to_log(lockfile, "#status 4 looking up dbsnp IDs (time = %.2f seconds)" % (time.time() - start_time) )
@@ -88,7 +87,7 @@ def genome_analyzer(genotype_file):
     os.system(nonsyn_cmd)
 
     # Match against GET-Evidence database
-    add_to_log(lockfile,"#status 7 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
+    add_to_log(lockfile,"#status 8 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
     getev_cmd = '''python '%(getev_script)s' '%(nonsyn_out)s' > '%(getev_out)s'.tmp
                     mv '%(getev_out)s'.tmp '%(getev_out)s' ''' % args
     os.system(getev_cmd)
