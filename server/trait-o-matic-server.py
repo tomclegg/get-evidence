@@ -14,12 +14,11 @@ usage: %prog [options]
 # This code is part of the Trait-o-matic project and is governed by its license.
 
 import multiprocessing, os, random, sys, time
-import MySQLdb, MySQLdb.cursors
 from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
-from config import KNOWNGENE_SORTED, REFERENCE_GENOME
+from config import DBSNP_SORTED, KNOWNGENE_SORTED, REFERENCE_GENOME
 
-import gff_call_uncovered, gff_twobit_query
+import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -42,10 +41,10 @@ def genome_analyzer(genotype_file):
                 'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
                 'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
                 'getev_out': os.path.join(output_dir, 'get-evidence.json'),
-                'dbsnp_script': os.path.join(script_dir, 'gff_dbsnp_query_from_file.py'),
                 'nonsyn_script': os.path.join(script_dir, 'gff_nonsynonymous_filter_from_file.py'),
                 'getev_script': os.path.join(script_dir, 'gff_get-evidence_map.py'),
-            'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
+            'dbsnp': os.path.join(os.getenv('DATA'), DBSNP_SORTED),
+                'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
                 'transcripts': os.path.join(os.getenv('DATA'), KNOWNGENE_SORTED) }
     start_time = time.time()
     # Make output directory if needed
@@ -73,10 +72,7 @@ def genome_analyzer(genotype_file):
 
     # Look up dbSNP IDs
     add_to_log(lockfile, "#status 4 looking up dbsnp IDs (time = %.2f seconds)" % (time.time() - start_time) )
-    dbsnp_cmd = '''cat '%(getref_out)s' | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | \
-                    egrep 'ref_allele [-ACGTN]' | python '%(dbsnp_script)s' /dev/stdin > '%(dbsnp_out)s'.tmp
-                    mv '%(dbsnp_out)s'.tmp '%(dbsnp_out)s' ''' % args
-    os.system(dbsnp_cmd)
+    gff_dbsnp_query.match2dbSNP_to_file(args['getref_out'], args['dbsnp'], args['dbsnp_out'])
 
     # Check for nonsynonymous SNPs
     add_to_log(lockfile, "#status 6 computing nsSNPs (time = %.2f seconds)" % (time.time() - start_time) )
