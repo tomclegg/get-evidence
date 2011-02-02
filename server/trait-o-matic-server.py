@@ -17,9 +17,9 @@ import multiprocessing, os, random, sys, time
 import MySQLdb, MySQLdb.cursors
 from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
-from config import REFERENCE_GENOME
+from config import KNOWNGENE_SORTED, REFERENCE_GENOME
 
-import gff_twobit_query
+import gff_call_uncovered, gff_twobit_query
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -42,11 +42,11 @@ def genome_analyzer(genotype_file):
                 'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
                 'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
                 'getev_out': os.path.join(output_dir, 'get-evidence.json'),
-            'coverage_script': os.path.join(script_dir, 'gff_call_uncovered_json.py'),
                 'dbsnp_script': os.path.join(script_dir, 'gff_dbsnp_query_from_file.py'),
                 'nonsyn_script': os.path.join(script_dir, 'gff_nonsynonymous_filter_from_file.py'),
                 'getev_script': os.path.join(script_dir, 'gff_get-evidence_map.py'),
-            'reference': REFERENCE_GENOME }
+            'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
+                'transcripts': os.path.join(os.getenv('DATA'), KNOWNGENE_SORTED) }
     start_time = time.time()
     # Make output directory if needed
     try:
@@ -65,9 +65,7 @@ def genome_analyzer(genotype_file):
 
     # Report of uncovered blocks in coding
     add_to_log(lockfile, "#status 2 report uncovered coding (time = %.2f seconds)" % (time.time() - start_time) )
-    coverage_cmd = '''zcat '%(sorted_out)s' | python '%(coverage_script)s' /dev/stdin > '%(coverage_out)s'.tmp
-                        mv '%(coverage_out)s'.tmp '%(coverage_out)s' ''' % args
-    os.system(coverage_cmd)
+    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['coverage_out'])
 
     # Get reference alleles for non-reference variants
     add_to_log(lockfile, "#status 3 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
