@@ -119,6 +119,8 @@ foreach ($_POST as $param => $newvalue)
     $newrow["is_delete"] = 0;
     unset($newrow["edit_timestamp"]);
     unset($newrow["edit_id"]);
+    unset($newrow["signoff_oid"]);
+    unset($newrow["signoff_timestamp"]);
     $columnlist = "";
     $valuelist = array();
     foreach ($newrow as $k => $v) {
@@ -218,6 +220,12 @@ if (!$response["errors"]) {
     evidence_submit ($edit_id);
     $response["please_reload"] = true;
   }
+  if (isset ($_POST["signoff_flag"]) &&
+      $_POST["signoff_flag"] &&
+      $_POST["signoff_flag"] != "false")
+      $response["please_signoff"] = implode (",", array_keys ($edits_to_submit));
+  else
+      unset ($response["please_signoff"]);
 }
 
 header ("Content-type: application/json");

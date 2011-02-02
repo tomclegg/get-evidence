@@ -65,13 +65,13 @@ function evidence_create_tables ()
   UNIQUE(global_human_id))");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS private_genomes (
-  private_genome_id SERIAL,
   oid VARCHAR(255), 
   nickname VARCHAR(64),
   shasum VARCHAR(64),
   upload_date DATETIME,
   notes TEXT,
   INDEX (oid), INDEX (shasum))");
+  theDb()->query ("ALTER TABLE private_genomes ADD private_genome_id SERIAL FIRST");
   theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
@@ -501,31 +501,100 @@ function evidence_update_flat_summary ($variant_id)
   return $flat;
 }
 
-function evidence_signoff ($edit_id)
+function evidence_signoff ($edit_ids)
 {
   // Push this edit to the "release" snapshot.
 
-  if (!$_SESSION["user"]["is_admin"])
+  if (!getCurrentUser("is_admin"))
     {
       // TODO: proper error reporting
       die ("only admin can do this");
     }
 
+  $edit_ids_sql = "";
+  foreach ($edit_ids as $x) {
+    if (strlen($edit_ids_sql)) $edit_ids_sql .= ",?";
+    else $edit_ids_sql .= "?";
+  }
+
+  // Record who signed off on these edits
   theDb()->query ("UPDATE edits SET signoff_oid=?, signoff_timestamp=NOW()
-		   WHERE edit_id=? AND signoff_oid IS NULL",
-		  array ($_SESSION["user"]["oid"], $edit_id));
-  $latest_signedoff_edit =
-    theDb()->getOne ("SELECT edit_id FROM edits
-		      WHERE variant_id = (SELECT variant_id FROM edits WHERE edit_id=?)
-		      ORDER BY edit_timestamp DESC LIMIT 1",
-		     $edit_id);
-  if ($latest_signedoff_edit != $edit_id)
-    {
-      // TODO: proper error reporting
-      die ("A more recent edit ($latest_signedoff_edit) has already been signed off.");
+		   WHERE edit_id IN ($edit_ids_sql) AND signoff_oid IS NULL",
+		  array_merge (array ($_SESSION["user"]["oid"]), $edit_ids));
+
+  $variant_id = theDb()->getOne ("SELECT variant_id FROM edits WHERE edit_id IN $edit_ids_sql", $edit_ids);
+
+  // Push these edits to snap_release
+  theDb()->query ("REPLACE INTO snap_release
+		 SELECT * FROM edits WHERE edit_id IN ($edit_ids_sql)",
+		  $edit_ids);
+
+  // Remove any entries for this variant other than the ones being
+  // signed off now (assume this curator is signing off on deleting
+  // the relevant sub-entries from the variant page)
+  theDb()->query ("DELETE FROM snap_release
+		 WHERE variant_id=? AND edit_id NOT IN ($edit_ids_sql)",
+		  array_merge(array($variant_id), $edit_ids));
+}
+
+function evidence_release_status_html (&$report)
+{
+    if (!$report || !isset($report[0]) || !is_array($report[0]))
+	return "";
+
+    $edit_ids = array();
+    $edit_ids_sql = "";
+    foreach ($report as &$row) {
+	if ($row["edit_id"]) {
+	    if (count($edit_ids))
+		$edit_ids_sql .= ",";
+	    $edit_ids_sql .= "?";
+	    $edit_ids[] = $row["edit_id"];
+	}
     }
-  theDb()->query ("REPLACE INTO snap_release SELECT * FROM edits WHERE edit_id=?",
-		  $edit_id);
+
+    // Have all of the edits in this report been approved by curators?
+    $curation = "<button class='release-status-yes'>Approved</button>";
+    $table = $report[0]["table"];
+    if ($table != "snap_release") {
+	if (theDb()->getOne ("SELECT 1 FROM edits WHERE edit_id IN ($edit_ids_sql) AND signoff_oid IS NULL LIMIT 1", $edit_ids)) {
+	    $curation = "<button class='release-status-no'>Not yet reviewed/approved</button>";
+	    if (theDb()->getOne ("SELECT 1 FROM snap_release WHERE variant_id=? AND article_pmid=0 AND genome_id=0 AND disease_id=0", array ($report[0]["variant_id"]))) {
+		$variant_name = evidence_get_variant_name($report[0],"-");
+		$curation .= "<br />(See <A href='$variant_name?snap=release'>latest approved version</A>)";
+	    }
+
+	    if (getCurrentUser("is_admin"))
+	      $GLOBALS["signoff_edit_ids"] = implode(",", $edit_ids);
+	}
+    }
+
+    // Is this the latest version, or does snap_latest contain newer edits?
+    $latest = "<button class='release-status-yes'>This is the latest version</button>";
+    if ($table != "snap_latest") {
+	if ($newer = theDb()->getOne
+	    ("SELECT edit_id FROM snap_latest
+		 WHERE variant_id=?
+		 AND edit_id NOT IN ($edit_ids_sql)
+		 LIMIT 1",
+	     array_merge (array($report[0]["variant_id"]),
+			  $edit_ids))) {
+	    $variant_name = evidence_get_variant_name($report[0],"-");
+	    $latest = "<button class='release-status-no'>This is not the latest version</button><br />(See the <A href='$variant_name?snap=latest'>latest version</A>)";
+	    $GLOBALS["gDisableEditing"] = true;
+	}
+    }
+
+    return "
+<div style='display:table-cell; padding: 10px'>
+Curation:<br />
+$curation
+</div>
+<div style='display:table-cell; padding: 10px'>
+Currentness:<br />
+$latest
+</div>
+";
 }
 
 function evidence_get_report ($snap, $variant_id)
@@ -759,6 +828,8 @@ function evidence_get_report ($snap, $variant_id)
 
     $row["autoscore"] = $autoscore;
     $row["autoscore_flags"] = implode(", ",$why);
+
+    $row["table"] = $table;
   }
 
   return $v;

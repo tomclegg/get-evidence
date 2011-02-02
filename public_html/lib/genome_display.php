@@ -165,7 +165,7 @@ function genome_display($shasum, $oid) {
         foreach ($variants[0] as $variant) {
 	    ++$rownumber;
 	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
-		. "<TD><A HREF=\"http://evidence.personalgenomes.org/"
+		. "<TD><A HREF=\""
 		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
 		. $variant["clinical"] . "</TD><TD>"
 		. $variant["evidence"] . "</TD><TD>"
@@ -193,7 +193,7 @@ function genome_display($shasum, $oid) {
         foreach ($variants[1] as $variant) {
 	    ++$rownumber;
 	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
-		. "<TD><A HREF=\"http://evidence.personalgenomes.org/"
+		. "<TD><A HREF=\""
 		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
 		. $variant["autoscore"]. "</TD><TD>"
 		. $variant["allele_freq"] . "</TD><TD>"

@@ -12,7 +12,7 @@
 body {
 	background: #0094D6 url(img/bg.gif) repeat-x;
 	/* color: #466; */
-	font: normal 62.5% "Lucida Sans Unicode",sans-serif;
+	font: normal 10px "Lucida Sans Unicode",sans-serif;
 	margin: 0;
 }
 input,textarea {
@@ -313,16 +313,18 @@ ul.tipped {
 	font-size: 8pt;
 }
 
-.unsubmitted_message {
-	border: 1px dashed #000;
-	margin-top: 20px;
-	margin-bottom: 20px;
+.sidebar_message {
+	margin: 20px 20px 20px 0;
 	padding: 10px;
 	background-color: #ffb;
+	border: 1px solid #999;
 	position: fixed;
 }
-.unsubmitted_message_container {
-	height: 300px;
+.sidebar_message_container {
+	height: 150px;
+}
+.sidebar_message .ui-button {
+	border: 1px solid #999;
 }
 
 /* search results */
@@ -368,11 +370,14 @@ ul.tipped {
 /* inline alert */
 
 .redalert {
-	outline: 1px dashed #300;
+	border: 1px solid #600;
 	background-color: #fdd;
 	color: #300;
 	padding: 20px;
 	margin: 0 0 10px 0;
+	-moz-border-radius: 6px;
+	-webkit-border-radius:  6px;
+	border-radius: 6px;
 }
 .redalert>p {
 	margin: 0;

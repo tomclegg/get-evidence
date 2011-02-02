@@ -166,7 +166,7 @@ def main():
         if [ ! -e '%(ns_gff)s' -o ! -e '%(1)s' -o '%(reprocess_all)s' != False ]
         then
             echo >&2 "#status 1 sorting input"
-            %(fetch)s '%(in)s' | gzip -cdf | grep -v "^#" | perl -ne '@data=split("\\\\t"); if ($data[2] ne "REF") { print; }' | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | egrep 'ref_allele [-ACGTN]' >> '%(sorted)s'.tmp
+            %(fetch)s '%(in)s' | gzip -cdf | perl -ne '@data=split("\\\\t"); if (/^#/ || $data[2] ne "REF") { print; }' | sort --key=1,1 --key=4n,4 | python '%(A)s' '%(reference)s' /dev/stdin | egrep '^#|ref_allele [-ACGTN]' >> '%(sorted)s'.tmp
             mv '%(sorted)s'.tmp '%(sorted)s'
 
             echo >&2 "#status 2 looking up dbsnp IDs"
