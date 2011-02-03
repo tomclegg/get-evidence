@@ -18,7 +18,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
 from config import DBSNP_SORTED, KNOWNGENE_SORTED, REFERENCE_GENOME
 
-import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter
+import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -41,7 +41,6 @@ def genome_analyzer(genotype_file):
                 'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
                 'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
                 'getev_out': os.path.join(output_dir, 'get-evidence.json'),
-                'getev_script': os.path.join(script_dir, 'gff_get-evidence_map.py'),
             'dbsnp': os.path.join(os.getenv('DATA'), DBSNP_SORTED),
                 'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
                 'transcripts': os.path.join(os.getenv('DATA'), KNOWNGENE_SORTED) }
@@ -79,10 +78,9 @@ def genome_analyzer(genotype_file):
 
     # Match against GET-Evidence database
     add_to_log(lockfile,"#status 8 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
-    
-    getev_cmd = '''python '%(getev_script)s' '%(nonsyn_out)s' > '%(getev_out)s'.tmp
-                    mv '%(getev_out)s'.tmp '%(getev_out)s' ''' % args
-    os.system(getev_cmd)
+    gff_getevidence_map.match_getev_to_file(args['nonsyn_out'], args['getev_out'] + ".tmp")
+    # Using .tmp because this is slow to generate & is used for the genome report web page display
+    os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
 
     add_to_log(lockfile,"#status 10 Done, cleaning up! (time = %.2f seconds)" % (time.time() - start_time) )
 
