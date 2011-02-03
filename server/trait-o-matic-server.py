@@ -18,7 +18,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
 from config import DBSNP_SORTED, KNOWNGENE_SORTED, REFERENCE_GENOME
 
-import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query
+import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -41,7 +41,6 @@ def genome_analyzer(genotype_file):
                 'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
                 'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
                 'getev_out': os.path.join(output_dir, 'get-evidence.json'),
-                'nonsyn_script': os.path.join(script_dir, 'gff_nonsynonymous_filter_from_file.py'),
                 'getev_script': os.path.join(script_dir, 'gff_get-evidence_map.py'),
             'dbsnp': os.path.join(os.getenv('DATA'), DBSNP_SORTED),
                 'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
@@ -76,12 +75,11 @@ def genome_analyzer(genotype_file):
 
     # Check for nonsynonymous SNPs
     add_to_log(lockfile, "#status 6 computing nsSNPs (time = %.2f seconds)" % (time.time() - start_time) )
-    nonsyn_cmd = '''python '%(nonsyn_script)s' '%(dbsnp_out)s' '%(reference)s' print-all > '%(nonsyn_out)s'.tmp
-                        mv '%(nonsyn_out)s'.tmp '%(nonsyn_out)s' ''' % args
-    os.system(nonsyn_cmd)
+    gff_nonsynonymous_filter.predict_nonsynonymous_to_file(args['dbsnp_out'], args['reference'], args['transcripts'], args['nonsyn_out'])
 
     # Match against GET-Evidence database
     add_to_log(lockfile,"#status 8 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
+    
     getev_cmd = '''python '%(getev_script)s' '%(nonsyn_out)s' > '%(getev_out)s'.tmp
                     mv '%(getev_out)s'.tmp '%(getev_out)s' ''' % args
     os.system(getev_cmd)
