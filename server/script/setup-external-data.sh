@@ -54,6 +54,12 @@ fi
 
 echo Attaching gene names to knownGene and sorting
 if [ ! -f ucsc_sort.stamp ]; then
-  perl $CORE/script/getCanonicalWithName.pl knownGene.txt knownCanonical.txt kgXref.txt refFlat.txt hgnc_genenames.txt | sort --key=3,3 --key=5n,5 > knownGene_sorted.txt
+  perl $CORE/script/getCanonicalWithName.pl knownGene.txt knownCanonical.txt kgXref.txt refFlat.txt hgnc_genenames.txt | \
+    grep -v "chr[0-9MXY]*_.*" | awk '{ if ( !( ($3 == "chrY") && (($7 >= 0 && $8 <= 2709520) || ($7 >= 57443437 && $8 <= 57772954 )) )) print }' | \
+    sort --key=3,3 --key=5n,5 > knownGene_sorted.txt
+    # Some command line stuff is added afterwards:
+    # grep removes alternate assemblies and unplaced scaffolds
+    # awk removes the chrY pseudoautosomal region (coordinates based on Complete Genomics data, 
+    # Complete Genomics reports these as chrX and UCSC's transcripts have duplicate annotation)
   touch ucsc_sort.stamp
 fi

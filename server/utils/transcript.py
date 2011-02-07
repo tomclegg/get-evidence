@@ -63,17 +63,21 @@ class Transcript_file:
         self.data = self.f.readline().split()
         self.transcripts = [ Transcript(self.data) ]
 
-    def cover_next_position(self, position):
+    def cover_next_position(self, region):
+        position_start = (region[0], region[1])
+        position_end = (region[0], region[1])
+        if (len(region) > 2):
+            position_end = (region[0], region[2])
         if (self.data):
             last_start_position = (self.transcripts[-1].data["chr"], int(self.transcripts[-1].data["start"]))
         # Move ahead until empty or start of newest transcript is after given position
-        while (self.data and self.comp_position(last_start_position, position) < 0):
+        while (self.data and self.comp_position(last_start_position, position_end) < 0):
             self.data = self.f.readline().split()
             if (self.data):
                 self.transcripts.append(Transcript(self.data))
                 last_start_position = (self.transcripts[-1].data["chr"], int(self.transcripts[-1].data["start"]))
         # return all transcripts removed in this step
-        return self._remove_uncovered_transcripts(position)
+        return self._remove_uncovered_transcripts(position_start)
 
     def _remove_uncovered_transcripts(self, position):
         covered_transcripts = []

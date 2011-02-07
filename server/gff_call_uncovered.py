@@ -34,30 +34,7 @@ def report_uncovered(gff_input, transcript_filename):
     # Note: Start is 1-based, not 0-based as is in transcript files
     examined_regions = {}
 
-    # See "sadly hacky" description below.
-    temp_storage_out = []
-    n = 0;
-    has_ref_lines = False
-
     for record in gff_data:
-        # This is a sadly hacky check to see if incoming file has coverage.
-        # For first 100 lines, store output. If we haven't seen a "REF" 
-        # line by 100, interpret incoming as lacking coverage and abort. 
-        # Otherwise, print the stored output and proceed.
-        # We can't close and reopen the input because it may be a generator.
-        # I tried using itertools.tee but had memory problems. --Madeleine
-        if n < 100:
-            if record.feature == "REF":
-                has_ref_lines = True
-            n = n + 1
-        else:
-            if has_ref_lines:
-                if n == 100:
-                    n = n + 1
-                    for line in temp_storage_out:
-                        yield line
-            else:
-                break
 
         # Add "chr" to chromosome ID if needed
         if record.seqname.startswith("chr"):
@@ -69,16 +46,13 @@ def report_uncovered(gff_input, transcript_filename):
                 chromosome = "chr" + record.seqname
 
         # Move forward in transcripts until past record end
-        record_end = (chromosome, record.end)
-        removed_transcripts = transcript_input.cover_next_position(record_end)
+        next_region = (chromosome, record.start, record.end)
+        removed_transcripts = transcript_input.cover_next_position(next_region)
 
         for ts in transcript_input.transcripts:
 
-            #print "Examining transcript at: " + str(ts.data["coding_start"]) + "-" + str(ts.data["coding_end"])
-            
             # Add to examined_regions if new
             if (not ts in examined_regions):
-                #print "Transcript is new! Adding to examined regions..."
                 regions = [] 
                 for i in range(len(ts.data["coding_starts"])):
                     regions.append( (ts.data["chr"], (ts.data["coding_starts"][i] + 1), ts.data["coding_ends"][i]) )
@@ -87,7 +61,6 @@ def report_uncovered(gff_input, transcript_filename):
             # examine regions and remove any covered by the record
             updated_regions = []
             for region in examined_regions[ts]:
-                #print "Examining region at: " + str(region)
                 # if overlaps...
                 if (chromosome == region[0] and record.start <= region[2] and record.end >= region[1]):
                     if record.start <= region[1]:
@@ -109,28 +82,24 @@ def report_uncovered(gff_input, transcript_filename):
 
         for ts in removed_transcripts:
             gene_data = {}
+            gene_data["chr"] = ts.data["chr"]
             gene_data["gene"] = ts.data["name"]
             gene_data["length"] = ts.get_coding_length()
             total_uncovered = 0
             missing_regions = []
-            if ts in examined_regions and examined_regions[ts]:
-                #print "Not skipped: " + str(ts)
+            if ts in examined_regions:
                 for region in examined_regions[ts]:
-                    missing_regions.append(region[0] + ":" + str(region[1]) + "-" + str(region[2]))
+                    missing_regions.append(str(region[1]) + "-" + str(region[2]))
                     total_uncovered += region[2] - (region[1] - 1)
             else:  # must have been skipped entirely: it's all missing
-                #print "Skipped: " + str(ts)
                 regions = []
                 for i in range(len(ts.data["coding_starts"])):
-                    missing_regions.append(ts.data["chr"] + ":" + str(ts.data["coding_starts"][i] + 1) + "-" + str(ts.data["coding_ends"][i]))
+                    missing_regions.append(str(ts.data["coding_starts"][i] + 1) + "-" + str(ts.data["coding_ends"][i]))
                     total_uncovered += ts.data["coding_ends"][i] - ts.data["coding_starts"][i]
             gene_data["missing"] = total_uncovered
             gene_data["missing_regions"] = ", ".join(missing_regions)
             if gene_data["length"] > 0:
-                if n <= 100:        # see "sadly hacky"
-                    temp_storage_out.append(str(json.dumps(gene_data)))
-                else:
-                    yield str(json.dumps(gene_data))
+                yield str(json.dumps(gene_data))
 
     # Move through any remaining transcripts
     record_beyond_end_hack = ("chrZ", 999999999)
@@ -138,9 +107,8 @@ def report_uncovered(gff_input, transcript_filename):
 
     # clean up remaining transcripts (if any)
     for ts in removed_transcripts + transcript_input.transcripts:
-        if not has_ref_lines:
-                break
         gene_data = {}
+        gene_data["chr"] = ts.data["chr"]
         gene_data["gene"] = ts.data["name"]
         gene_data["length"] = ts.get_coding_length()
         total_uncovered = 0
@@ -151,7 +119,7 @@ def report_uncovered(gff_input, transcript_filename):
                 total_uncovered += region[2] - (region[1] - 1)
         else: # must have been skipped entirely: it's all missing   
             for i in range(len(ts.data["coding_starts"])):
-                missing_regions.append(ts.data["chr"] + ":" + str(ts.data["coding_starts"][i] + 1) + "-" + str(ts.data["coding_ends"][i]))
+                missing_regions.append(str(ts.data["coding_starts"][i] + 1) + "-" + str(ts.data["coding_ends"][i]))
                 total_uncovered += ts.data["coding_ends"][i] - ts.data["coding_starts"][i]
         gene_data["missing"] = total_uncovered
         gene_data["missing_regions"] = ", ".join(missing_regions)
