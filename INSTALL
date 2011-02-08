@@ -87,9 +87,10 @@ NOTE (MPB 2010-09-19): Why aren't dbSNP and GeneTests data in the SQL dump?
 Add GeneTests data:
  cd ~/get-evidence
  mkdir tmp
- wget -O./tmp/genetests-data.txt \
+ sudo wget -O/home/trait/data/genetests-data.txt \
       ftp://ftp.ncbi.nih.gov/pub/GeneTests/data_to_build_custom_reports.txt
- ./import_genetests_data.php ./tmp/genetests-data.txt
+ sudo chown www-data /home/trait/data/genetests-data.txt
+ ./import_genetests_data.php /home/trait/data/genetests-data.txt
 
 Add dbSNP data (newer versions of dbSNP should work just as well):
 

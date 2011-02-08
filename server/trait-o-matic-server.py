@@ -16,7 +16,7 @@ usage: %prog [options]
 import multiprocessing, os, random, sys, time
 from SimpleXMLRPCServer import SimpleXMLRPCServer as xrs
 from utils import doc_optparse
-from config import DBSNP_SORTED, KNOWNGENE_SORTED, REFERENCE_GENOME
+from config import DBSNP_SORTED, GENETESTS_DATA, KNOWNGENE_SORTED, REFERENCE_GENOME
 
 import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
 
@@ -43,7 +43,8 @@ def genome_analyzer(genotype_file):
                 'getev_out': os.path.join(output_dir, 'get-evidence.json'),
             'dbsnp': os.path.join(os.getenv('DATA'), DBSNP_SORTED),
                 'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
-                'transcripts': os.path.join(os.getenv('DATA'), KNOWNGENE_SORTED) }
+                'transcripts': os.path.join(os.getenv('DATA'), KNOWNGENE_SORTED),
+                'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA) }
     start_time = time.time()
     # Make output directory if needed
     try:
@@ -62,7 +63,7 @@ def genome_analyzer(genotype_file):
 
     # Report of uncovered blocks in coding
     add_to_log(lockfile, "#status 2 report uncovered coding (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['coverage_out'])
+    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'])
 
     # Get reference alleles for non-reference variants
     add_to_log(lockfile, "#status 3 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )

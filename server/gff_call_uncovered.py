@@ -13,7 +13,7 @@ import gzip, os, re, sys
 import simplejson as json
 from utils import doc_optparse, gff, transcript
 
-def report_uncovered(gff_input, transcript_filename):
+def report_uncovered(gff_input, transcript_filename, genetests_filename):
     # Set up GFF input
     # Iff gff_filename is a string ending with ".gz", assume gzip compressed
     gff_data = None
@@ -27,6 +27,22 @@ def report_uncovered(gff_input, transcript_filename):
     
     # set up transcript file input
     transcript_input = transcript.Transcript_file(transcript_filename)
+
+    # grab genetests gene names
+    genetests_input = open(genetests_filename)
+    genetests_names = set()
+    for line in genetests_input:
+        if (re.match("#", line)):
+            continue
+        data = line.split("\t")
+        if data[4] == "na":
+            continue
+        if not (re.match(".*Clinical", data[5])):
+            # currently we require "clinical testing available"
+            continue
+        names = data[4].split("|")
+        for name in names:
+            genetests_names.add(name)
 
     # Store regions being examined, remove or reduce if covered
     # key: Transcript object
@@ -85,6 +101,8 @@ def report_uncovered(gff_input, transcript_filename):
             gene_data["chr"] = ts.data["chr"]
             gene_data["gene"] = ts.data["name"]
             gene_data["length"] = ts.get_coding_length()
+            if gene_data["gene"] in genetests_names:
+                gene_data["clin_test"] = True
             total_uncovered = 0
             missing_regions = []
             if ts in examined_regions:
@@ -126,7 +144,7 @@ def report_uncovered(gff_input, transcript_filename):
         if gene_data["length"] > 0:
             yield str(json.dumps(gene_data))
 
-def report_uncovered_to_file(gff_input, transcript_filename, output_file):
+def report_uncovered_to_file(gff_input, transcript_filename, genetests_filename, output_file):
     f_out = None
     if isinstance(output_file, str):
         f_out = open(output_file, 'w')
@@ -134,7 +152,7 @@ def report_uncovered_to_file(gff_input, transcript_filename, output_file):
         # assume writeable file object
         f_out = output_file
     has_data = False
-    out = report_uncovered(gff_input, transcript_filename)
+    out = report_uncovered(gff_input, transcript_filename, genetests_filename)
     for line in out:
         f_out.write(line + "\n")
         has_data = True
@@ -146,14 +164,14 @@ def main():
     # parse options
     option, args = doc_optparse.parse(__doc__)
 
-    if len(args) < 2:
+    if len(args) < 3:
         doc_optparse.exit()  # Error
-    elif len(args) < 3:
-        out = report_uncovered(args[0], args[1])
+    elif len(args) < 4:
+        out = report_uncovered(args[0], args[1], args[2])
         for line in out:
             print line
     else:
-        report_uncovered_to_file(args[0], args[1], args[2])
+        report_uncovered_to_file(args[0], args[1], args[2], args[3])
 
 if __name__ == "__main__":
     main()
