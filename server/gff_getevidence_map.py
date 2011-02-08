@@ -418,6 +418,7 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
         data["nonsense"] = True
     elif (aa_from and aa_to and len(aa_from) != len(aa_to)):
         score_comp = 1
+        data["indel"] = True
     elif (aa_from and aa_to):
         for i in range(len(aa_from)):
             if blosum.value(aa_from[i], aa_to[i]) <= -4:

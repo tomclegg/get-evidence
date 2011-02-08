@@ -186,7 +186,7 @@ function genome_display($shasum, $oid) {
 	    . "<TH>Variant</TH>"
 	    . "<TH class='SortNumeric SortDescFirst'>Autoscore</TH>"
 	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
-	    . "<TH class='Unsortable'>Summary</TH>"
+	    . "<TH class='Unsortable'>Autoscore Reasons</TH>"
 	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
 	    . "</TR></THEAD><TBODY>\n";
 	$rownumber = 0;
@@ -197,7 +197,7 @@ function genome_display($shasum, $oid) {
 		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
 		. $variant["autoscore"]. "</TD><TD>"
 		. $variant["allele_freq"] . "</TD><TD>"
-		. $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
+        . autoscore_evidence($variant) . "</TD><TD class='ui-helper-hidden'>"
 		. $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
@@ -259,6 +259,12 @@ function autoscore_evidence($variant) {
     }
     if (array_key_exists("nonsense", $variant) and $variant["nonsense"]) {
         $items[] = "Nonsense mutation";
+    }
+    if (array_key_exists("frameshift", $variant) and $variant["frameshift"]) {
+        $items[] = "Frameshift";
+    }
+    if (array_key_exists("indel", $variant) and $variant["indel"]) {
+        $items[] = "Frame-preserving indel";
     }
     if (array_key_exists("testable", $variant) and $variant["testable"] == 1) {
         if (array_key_exists("reviewed", $variant) and $variant["reviewed"] == 1) {
