@@ -52,12 +52,21 @@ function &genome_coverage_results($shasum, $oid) {
     if (!$fh) { $out = false; return $out; }
     $missing = 0;
     $length = 0;
+    $Ymissing = 0;
+    $Ylength = 0;
     $out = array();
     while (($injson = fgets($fh)) !== false) {
-	if (!preg_match('{clin_test}', $injson))
-	    continue;
 	$gene = json_decode($injson, true);
+
+	// In case _random etc. are not already filtered out upstream...
+	if (strpos($gene['chr'], '_') !== false)
+	    continue;
+
 	$length += $gene['length'];
+	if ($gene['chr'] == 'chrY') {
+	    $Ylength += $gene['length'];
+	    $Ymissing += $gene['missing'];
+	}
 	if ($gene['missing'] == 0)
 	    continue;
 	$missing += $gene['missing'];
@@ -66,6 +75,17 @@ function &genome_coverage_results($shasum, $oid) {
 	$out[] = $gene;
     }
     fclose ($fh);
+    // Until we have metadata at hand to tell us whether this person
+    // has a chrY, we're assuming that "zero coverage of Y chromosome"
+    // means "no Y chromosome".
+    if ($Ymissing == $Ylength) {
+	$missing -= $Ymissing;
+	$length -= $Ylength;
+	$i=count($out);
+	while ($i>0)
+	    if ($out[--$i]['chr'] == 'chrY')
+		array_splice ($out, $i, 1);
+    }
     $out = array ('genes' => $out,
 		  'missing' => $missing,
 		  'length' => $length);
