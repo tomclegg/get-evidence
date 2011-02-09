@@ -46,6 +46,52 @@ function genome_get_results ($shasum, $oid) {
     return $ret;
 }
 
+function &genome_coverage_results($shasum, $oid) {
+    $coverage_file = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}-out/missing_coding.json";
+    $fh = fopen ($coverage_file, "r");
+    if (!$fh) { $out = false; return $out; }
+    $missing = 0;
+    $length = 0;
+    $Ymissing = 0;
+    $Ylength = 0;
+    $out = array();
+    while (($injson = fgets($fh)) !== false) {
+	$gene = json_decode($injson, true);
+
+	// In case _random etc. are not already filtered out upstream...
+	if (strpos($gene['chr'], '_') !== false)
+	    continue;
+
+	$length += $gene['length'];
+	if ($gene['chr'] == 'chrY') {
+	    $Ylength += $gene['length'];
+	    $Ymissing += $gene['missing'];
+	}
+	if ($gene['missing'] == 0)
+	    continue;
+	$missing += $gene['missing'];
+	if (!$gene['clin_test'])
+	    continue;
+	$out[] = $gene;
+    }
+    fclose ($fh);
+    // Until we have metadata at hand to tell us whether this person
+    // has a chrY, we're assuming that "zero coverage of Y chromosome"
+    // means "no Y chromosome".
+    if ($Ymissing == $Ylength) {
+	$missing -= $Ymissing;
+	$length -= $Ylength;
+	$i=count($out);
+	while ($i>0)
+	    if ($out[--$i]['chr'] == 'chrY')
+		array_splice ($out, $i, 1);
+    }
+    $out = array ('genes' => $out,
+		  'missing' => $missing,
+		  'length' => $length);
+    return $out;
+}
+
 function genome_display($shasum, $oid) {
     $results = genome_get_results ($shasum, $oid);
     $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=? AND oid=?",
@@ -138,11 +184,16 @@ function genome_display($shasum, $oid) {
 	    else
 		$variants[1][] = $variant_data;
         }
+	$coverage =& genome_coverage_results ($shasum, $oid);
 
 	$returned_text .= "<div id='variant_table_tabs'><ul>\n"
 	    . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
-	    . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n"
-	    . "</ul>\n"
+	    . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n";
+	if ($coverage)
+	    $returned_text .=
+		"<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
+	$returned_text .=
+	    "</ul>\n"
 	    . "<div id='variant_table_tab_0'>";
 
 	$returned_text .= "<div style='float:right; margin-bottom: 3px' id='variant_filter_radio'>
@@ -201,6 +252,41 @@ function genome_display($shasum, $oid) {
 		. $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
+
+	if ($coverage) {
+	    $returned_text .= "</div>\n<div id='variant_table_tab_2'>\n";
+
+	    $returned_text .= '<P>Exome coverage: '
+		. ($coverage['length'] - $coverage['missing'])
+		. ' / '
+		. $coverage['length']
+		. ' = '
+		. sprintf ('%.2f', 100*(1-($coverage['missing'] / $coverage['length'])))
+		. '%</P>';
+	    $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_coverage' style='width: 100%'><THEAD><TR>"
+		. "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
+		. "<TH>Gene</TH>"
+		. "<TH class='SortChromosome'>Chromosome</TH>"
+		. "<TH class='RenderFreq'>Coverage</TH>"
+		. "<TH class='SortNumeric'>Missing</TH>"
+		. "<TH class='SortNumeric'>Length</TH>"
+		. "<TH class='Unsortable'>Missing regions</TH>"
+		. "</TR></THEAD><TBODY>\n";
+	    $rownumber = 0;
+	    foreach ($coverage['genes'] as $gene) {
+		++$rownumber;
+		$returned_text .= '<TR><TD class="ui-helper-hidden">'
+		    . $rownumber . '</TD><TD><A HREF="report?type=search&q='
+		    . $gene['gene'] . '">' . $gene['gene'] . '</A></TD><TD>'
+		    . str_replace('chr','',$gene['chr']) . '</TD><TD>'
+		    . ($gene['length']>0 ? (1-($gene['missing']/$gene['length'])) : '-')
+		    . '</TD><TD>'
+		    . $gene['missing'] . '</TD><TD>'
+		    . $gene['length'] . '</TD><TD>'
+		    . preg_replace('{\b(\d+)-(\1)\b}', '\1', $gene['missing_regions']) . '</TD></TR>' . "\n";
+	    }
+	    $returned_text .= '</TBODY></TABLE>' . "\n";
+	}
 
 	$returned_text .= "</div></div>\n";
     }
