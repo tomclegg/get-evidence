@@ -270,6 +270,7 @@ function genome_display($shasum, $oid) {
 		. "<TH class='RenderFreq'>Coverage</TH>"
 		. "<TH class='SortNumeric'>Missing</TH>"
 		. "<TH class='SortNumeric'>Length</TH>"
+		. "<TH class='Unsortable'>Missing regions</TH>"
 		. "</TR></THEAD><TBODY>\n";
 	    $rownumber = 0;
 	    foreach ($coverage['genes'] as $gene) {
@@ -281,7 +282,8 @@ function genome_display($shasum, $oid) {
 		    . ($gene['length']>0 ? (1-($gene['missing']/$gene['length'])) : '-')
 		    . '</TD><TD>'
 		    . $gene['missing'] . '</TD><TD>'
-		    . $gene['length'] . '</TD></TR>' . "\n";
+		    . $gene['length'] . '</TD><TD>'
+		    . preg_replace('{\b(\d+)-(\1)\b}', '\1', $gene['missing_regions']) . '</TD></TR>' . "\n";
 	    }
 	    $returned_text .= '</TBODY></TABLE>' . "\n";
 	}
