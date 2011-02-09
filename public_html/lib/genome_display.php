@@ -255,7 +255,7 @@ function genome_display($shasum, $oid) {
 	    foreach ($coverage['genes'] as $gene) {
 		++$rownumber;
 		$returned_text .= '<TR><TD class="ui-helper-hidden">'
-		    . $rownumber . '</TD><TD><A HREF="'
+		    . $rownumber . '</TD><TD><A HREF="report?type=search&q='
 		    . $gene['gene'] . '">' . $gene['gene'] . '</A></TD><TD>'
 		    . str_replace('chr','',$gene['chr']) . '</TD><TD>'
 		    . ($gene['length']>0 ? (1-($gene['missing']/$gene['length'])) : '-')
