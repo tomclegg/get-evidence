@@ -14,6 +14,13 @@ var datatables_options = {
 	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
 	'iDisplayLength': -1,
 	'aoColumnDefs': [{'aTargets': [1,2,3], 'sWidth': '15%'}]
+    },
+    'variant_table_coverage': {
+	'bProcessing': true,
+	'bAutoWidth': false,
+	'aaSorting': [[3,'asc']],
+	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
+	'iDisplayLength': -1
     }
 };
 var datatables_objects = {};
@@ -38,6 +45,7 @@ jQuery(document).ready(function($){
 	}
 	var enum_importance = ['Low', 'Moderate', 'High'];
 	var enum_evidence = ['Uncertain', 'Likely', 'Well-established'];
+	var enum_chromosome = ['1','chr1','2','chr2','3','chr3','4','chr4','5','chr5','6','chr6','7','chr7','8','chr8','9','chr9','10','chr10','11','chr11','12','chr12','13','chr13','14','chr14','15','chr15','16','chr16','17','chr17','18','chr18','19','chr19','20','chr20','21','chr21','22','chr22','X','Y'];
 	jQuery.fn.dataTableExt.oSort['importance-asc'] = function(a,b) {
 	    return datatable_sort_enum (a,b,enum_importance);
 	};
@@ -49,6 +57,12 @@ jQuery(document).ready(function($){
 	};
 	jQuery.fn.dataTableExt.oSort['evidence-desc'] = function(a,b) {
 	    return datatable_sort_enum (b,a,enum_evidence);
+	};
+	jQuery.fn.dataTableExt.oSort['chromosome-asc'] = function(a,b) {
+	    return datatable_sort_enum (a,b,enum_chromosome);
+	};
+	jQuery.fn.dataTableExt.oSort['chromosome-desc'] = function(a,b) {
+	    return datatable_sort_enum (b,a,enum_chromosome);
 	};
 	function datatable_render_freq(oObj){
 	    var x = oObj.aData[oObj.iDataColumn];
@@ -71,6 +85,7 @@ jQuery(document).ready(function($){
 		    opts.aoColumnDefs = [];
 		opts.aoColumnDefs.push({'aTargets': ['Invisible'], 'bVisible': false});
 		opts.aoColumnDefs.push({'aTargets': ['SortNumeric'], 'sType': 'numeric'});
+		opts.aoColumnDefs.push({'aTargets': ['SortChromosome'], 'sType': 'chromosome'});
 		opts.aoColumnDefs.push({'aTargets': ['SortImportance'], 'sType': 'importance'});
 		opts.aoColumnDefs.push({'aTargets': ['SortEvidence'], 'sType': 'evidence'});
 		opts.aoColumnDefs.push({'aTargets': ['SortDescFirst'], 'asSorting': ['desc','asc']});
