@@ -1,20 +1,18 @@
 #!/usr/bin/python
-# Filename: gff_get-evidence_map.py
+# Filename: gff_getevidence_map.py
 
 """
-usage: %prog nssnp.gff non-nssnp.gff
+usage: %prog nssnp.gff [output_file]
 """
 
-# Output GET-Evidence information in JSON format
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
+# Match to GET-Evidence, output in JSON format
 
-import os, string, sys, re
+import gzip, re, sys
 import MySQLdb, MySQLdb.cursors
 import simplejson as json
-from codon import codon_321, codon_123
+from codon import codon_123
 from copy import copy
-from utils import gff
+from utils import doc_optparse, gff, intervals
 from utils.biopython_utils import reverse_complement
 from utils.bitset import *
 from config import DB_HOST, GETEVIDENCE_USER, GETEVIDENCE_PASSWD, GETEVIDENCE_DATABASE
@@ -118,11 +116,7 @@ FROM genetests
 WHERE (genetests.gene=%s)
 '''
 
-def main():
-    # return if we don't have the correct arguments
-    if len(sys.argv) != 2:
-        raise SystemExit(__doc__.replace("%prog", sys.argv[0]))
-    
+def match_getev(gff_input):
     # first, try to connect to the databases
     try:
         connection = MySQLdb.connect(cursorclass=MySQLdb.cursors.DictCursor, host=DB_HOST, user=GETEVIDENCE_USER, passwd=GETEVIDENCE_PASSWD, db=GETEVIDENCE_DATABASE)
@@ -130,7 +124,7 @@ def main():
     except MySQLdb.OperationalError, message:
         sys.stderr.write ("Error %d while connecting to database: %s" % (message[0], message[1]))
         sys.exit()
-    
+
     # make sure the required table is really there
     try:
         cursor.execute ('DESCRIBE snap_latest')
@@ -138,10 +132,20 @@ def main():
         sys.stderr.write ("No 'snap_latest' table => empty output")
         sys.exit()
 
-    blosum_matrix = blosum100()    
+    blosum_matrix = blosum100()
 
-    gff_file = gff.input(sys.argv[1])
-    for record in gff_file:
+    # Set up gff_data
+    gff_data = None
+    if isinstance(gff_input, str) and re.match(".*\.gz",gff_input):
+        gff_data = gff.input(gzip.open(gff_input))
+    else:
+        gff_data = gff.input(gff_input)
+
+    for record in gff_data:
+
+        if record.feature == "REF":
+            continue
+
         # lightly parse to find the alleles and rs number
         alleles = record.attributes["alleles"].strip("\"").split("/")
         ref_allele = record.attributes["ref_allele"].strip("\"")
@@ -176,7 +180,7 @@ def main():
             genotype = alleles[0]
         else:
             genotype = '/'.join(sorted(alleles))
-            
+
         # Store output here, add GET-Evidence or other findings if available
         output = {
                     "chromosome": record.seqname,
@@ -248,12 +252,12 @@ def main():
                             output_splice_variant["in_gwas"] = True
                         if d["tag"] == "PharmGKB":
                             output_splice_variant["in_pharmgkb"] = True
- 
+
                     output_splice_variant["autoscore"] = autoscore(output_splice_variant, \
-                                                            blosum_matrix, aa_from, aa_to)               
+                                                            blosum_matrix, aa_from, aa_to)
 
                     if (output_splice_variant["autoscore"] >= 2 or suff_eval(output_splice_variant)):
-                        print json.dumps(output_splice_variant, ensure_ascii=False)
+                        yield str(json.dumps(output_splice_variant, ensure_ascii=False))
 
             # If no splice variants had a GET-Evidence hit, analyze using first splice variant
             if (not output["GET-Evidence"]):
@@ -267,7 +271,7 @@ def main():
                 # store gene and amino acid change in output_splice_variant
                 output["gene"] = gene
                 output["amino_acid_change"] = x[1]
-                
+
                 cursor.execute(query_gene, (output["gene"]))
                 if cursor.rowcount > 0:
                     #print "Found a gene match for " + output["gene"]
@@ -283,7 +287,7 @@ def main():
                         cursor.execute(query_rsid, (dbsnp_id))
                         data = cursor.fetchall()
                         if cursor.rowcount > 0:
-                            print "Found match for rs" + dbsnp_id + "!"
+                            #print "Found match for rs" + dbsnp_id + "!"
                             for key in data[0].keys():
                                 if key != "tag":
                                     output[key] = data[0][key]
@@ -300,8 +304,8 @@ def main():
                 output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
 
                 if (output["autoscore"] >= 2 or suff_eval(output)):
-                    print json.dumps(output, ensure_ascii=False)               
-                    
+                    yield str(json.dumps(output, ensure_ascii=False))
+
         else:
             # Not handling splices for now, but might in the future.
             #   -- Madeleine 11/29/2010
@@ -346,10 +350,42 @@ def main():
             # Autoscore bar is lower here because you can only get points if 
             # the dbSNP ID is in one of the variant specific databases (max 2)
             if (output["autoscore"] >= 1 or suff_eval(output)):
-                print json.dumps(output, ensure_ascii=False)
+                yield str(json.dumps(output, ensure_ascii=False))
 
+    # Close MySQL connections
     cursor.close()
     connection.close()
+
+def match_getev_to_file(gff_input, output_file):
+    # Set up output file
+    f_out = None
+    if isinstance(output_file, str):
+        # Treat as path
+        if (re.match(".*\.gz", output_file)):
+            f_out = gzip.open("f_out", 'w')
+        else:
+            f_out = open(output_file, 'w')
+    else:
+        # Treat as writeable file object
+        f_out = output_file
+
+    out = match_getev(gff_input)
+    for line in out:
+        f_out.write(line + "\n")
+    f_out.close()
+
+def main():
+    # parse options
+    option, args = doc_optparse.parse(__doc__)
+
+    if len(args) < 1:
+        doc_optparse.exit()  # Error
+    elif len(args) < 2:
+        out = match_getev(args[0])
+        for line in out:
+            print line
+    else:
+        match_getev_to_file(args[0], args[1])
 
 def autoscore(data, blosum=None, aa_from=None, aa_to=None):
     score_var_database = 0;
@@ -382,6 +418,7 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
         data["nonsense"] = True
     elif (aa_from and aa_to and len(aa_from) != len(aa_to)):
         score_comp = 1
+        data["indel"] = True
     elif (aa_from and aa_to):
         for i in range(len(aa_from)):
             if blosum.value(aa_from[i], aa_to[i]) <= -4:
