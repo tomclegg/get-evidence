@@ -7,7 +7,7 @@ usage: %prog gff_file dbsnp_file [output_file]
 # Append db_xref (or, for GFF3, Dbxref) attribute with dbSNP information, if available
 # ---
 
-import gzip, re
+import datetime, gzip, re
 from utils import doc_optparse, gff
 
 class dbSNP:
@@ -43,7 +43,18 @@ def match2dbSNP(gff_input_file, dbsnp_file):
     else:
         gff_data = gff.input(gff_input_file)
 
+    header_done = False
+
     for record in gff_data:  
+        # Have to do this after calling the first record to
+        # get the iterator to read through the header data
+        if not header_done:
+            yield "##gff-version " + gff_data.data[0]
+            yield "##genome-build " + gff_data.data[1]
+            yield "# Produced by: gff_dbsnp_query.py"
+            yield "# Date: " + datetime.datetime.now().isoformat(' ')
+            header_done = True
+
         if record.feature == "REF":
             yield str(record)
             continue

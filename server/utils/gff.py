@@ -10,6 +10,7 @@ from intervals import Interval, IntervalFile
 
 # for maximum compatibility, we assume GFF files are version 2 unless otherwise specified
 DEFAULT_GFF_VERSION = 2
+DEFAULT_BUILD = "b36"
 
 class GFFRecord(Interval):
     def __init__(self, seqname, source, feature, start, end,
@@ -57,11 +58,20 @@ class GFFRecord(Interval):
         """Returns a key useful for meaningful sorting, required for batched sorts."""
         return (self.seqname, self.start, self.end, self.strand, self.feature)
 
-def _gff_iterator(f, version=DEFAULT_GFF_VERSION):
+def _gff_iterator(f, data = [str(DEFAULT_GFF_VERSION), str(DEFAULT_BUILD)]):
     """
     Deep parser that returns information in GFFRecord format; faithful to the textual
     representation, (start, end) is one-based and inclusive.
     """
+    version = DEFAULT_GFF_VERSION
+    build = DEFAULT_BUILD
+    if len(data) > 1:
+        try:
+            version = int(data[0])
+        except ValueError:
+            raise Exception("file version passed to _gff_iterator is invalid")
+        build = data[1]
+        
     linenumber = 0
     for line in f:
         linenumber += 1
@@ -86,11 +96,24 @@ def _gff_iterator(f, version=DEFAULT_GFF_VERSION):
                 # we don't want to interpret future versions incorrectly
                 if version > 3:
                     raise Exception("file version unsupported")
-            
+                data[0] = str(version)            
+
             # RNA or Protein
             elif line.startswith("##RNA") or line.startswith("##Protein"):
                 raise Exception("RNA or protein files not supported") # we only do DNA
             
+            elif line.startswith("##genome-build"):
+                build_data = line.split()
+                if len(build_data) < 2:
+                    raise Exception("no genome build specified?")
+                elif build_data[1] in ["hg18", "36", "b36", "build36", "NCBI36"]:
+                    build = "b36"
+                elif build_data[1] in ["hg19", "37", "b37", "build37", "GRCh37"]:
+                    build = "b37"
+                else:
+                    raise Exception("genome build uninterpretable")
+                data[1] = str(build)
+
             # whatever else we've done with the meta comment
             # we're now done with the line--don't try to parse it
             continue
@@ -177,12 +200,14 @@ def _gff_interval_iterator(f):
         yield Interval(chrom, start, end, strand, line.strip())
 
 class GFFFile(IntervalFile):
-    def __init__(self, src, length_src=[], version=DEFAULT_GFF_VERSION):
+    def __init__(self, src, length_src=[], version=DEFAULT_GFF_VERSION, build=DEFAULT_BUILD):
         # call the superclass
         IntervalFile.__init__(self, src, length_src)
+        # list to store version & build - this allows passing to and updating by iterator
+        self.data = [str(version), str(build)]
         # set our deep and shallow iterators
         # (self.file is determined automatically by the superclass from the src argument)
-        self.iterator = _gff_iterator(self.file, version)
+        self.iterator = _gff_iterator(self.file, self.data)
         self.interval_iterator = _gff_interval_iterator(self.file)
     
     def __getitem__(self, key):
@@ -192,5 +217,5 @@ class GFFFile(IntervalFile):
                 return record
         return None
 
-def input(src, version=DEFAULT_GFF_VERSION):
-    return GFFFile(src, version=version)
+def input(src, version=DEFAULT_GFF_VERSION, build=DEFAULT_BUILD):
+    return GFFFile(src, version=version, build=build)

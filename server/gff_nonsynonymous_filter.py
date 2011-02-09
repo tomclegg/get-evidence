@@ -10,7 +10,7 @@ usage: %prog gff_file twobit_file transcript_file [output_file]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import gzip, re, sys
+import datetime, gzip, re, sys
 from utils import doc_optparse, gff, twobit
 from utils.biopython_utils import reverse_complement, translate
 from codon import codon_123
@@ -29,7 +29,17 @@ def predict_nonsynonymous(gff_input, twobit_path, transcript_path):
         # (e.g. file object) with GFF-formatted strings
         gff_data = gff.input(gff_input)
 
+    header_done = False
+
     for record in gff_data:
+        # Have to do this after calling the first record to
+        # get the iterator to read through the header data
+        if not header_done:
+            yield "##gff-version " + gff_data.data[0]
+            yield "##genome-build " + gff_data.data[1]
+            yield "# Produced by: gff_nonsynonymous_filter.py"
+            yield "# Date: " + datetime.datetime.now().isoformat(' ')
+            header_done = True
         
         if record.feature == "REF":
             yield str(record)
