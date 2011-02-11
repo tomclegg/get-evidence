@@ -52,12 +52,9 @@ def genome_analyzer(server, genotype_file):
     os.dup2(log_handle.fileno(), sys.stderr.fileno())
     os.dup2(log_handle.fileno(), sys.stdout.fileno())
 
-    temp_prefix = 'temp' + str(hex(random.randint(4096,65535)))[2:] + "_"
     args = { 'genotype_input': str(genotype_file),
              'coverage_out': os.path.join(output_dir, 'missing_coding.json'),
              'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
-             'getref_out': os.path.join(output_dir, temp_prefix + 'twobit.gff'),
-             'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
              'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
              'metadata_out': os.path.join(output_dir, 'metadata.json'),
@@ -112,17 +109,18 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --key=1,1 --key=4n,4
     f.write(json.dumps(genome_data) + "\n")
     f.close()
 
+    # Generator chaining...
     # Get reference alleles for non-reference variants
-    add_to_log(log_handle, "#status 4 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_twobit_query.match2ref_to_file(args['sorted_out'], args['reference'], args['getref_out'])
-
+    twobit_gen = gff_twobit_query.match2ref(args['sorted_out'], args['reference'])
     # Look up dbSNP IDs
-    add_to_log(log_handle, "#status 5 looking up dbsnp IDs (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_dbsnp_query.match2dbSNP_to_file(args['getref_out'], args['dbsnp'], args['dbsnp_out'])
+    dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
+    # Check for nonsynonymous SNP
+    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'])
 
-    # Check for nonsynonymous SNPs
-    add_to_log(log_handle, "#status 6 computing nsSNPs (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_nonsynonymous_filter.predict_nonsynonymous_to_file(args['dbsnp_out'], args['reference'], args['transcripts'], args['nonsyn_out'])
+    ns_out = open(args['nonsyn_out'], 'w')
+    for line in nonsyn_gen:
+        ns_out.write(line + "\n")
+    ns_out.close()
 
     # Match against GET-Evidence database
     add_to_log(log_handle,"#status 8 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
@@ -132,8 +130,6 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --key=1,1 --key=4n,4
 
     add_to_log(log_handle,"#status 10 Done, cleaning up! (time = %.2f seconds)" % (time.time() - start_time) )
 
-    os.remove(args['getref_out'])
-    os.remove(args['dbsnp_out'])
     os.rename(lockfile, logfile)
     log_handle.close()
     print "Done processing " + str(genotype_file)
