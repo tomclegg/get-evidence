@@ -6,8 +6,14 @@ import re
 def main():
     file = sys.stdin
     buffer = ""
+    build = "b36"
+    header_done = False
     for line in file:
-        if re.search("^#", line): # skip commented lines
+        if re.search("^#", line): # handle commented lines
+            if re.match("#GENOME_REFERENCE.*NCBI build 37", line):
+                build = "b37"
+            elif re.match("#GENOME_REFERENCE.*NCBI build 36", line):
+                build = "b36"
             continue
         if re.search("^\W*$", line): # skip empty lines
             continue
@@ -20,6 +26,9 @@ def main():
         else:
             data = buffer.rstrip('\n').split("\t")
             buffer = line
+        if not header_done:
+            print "##genome-build " + build
+            header_done = True
         if data[2] == "all" or data[1] == "1":
             start_onebased = str(int(data[4]) + 1)
             if data[6] == "ref":
