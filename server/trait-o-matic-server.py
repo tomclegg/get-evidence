@@ -13,12 +13,13 @@ usage: %prog [options]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import multiprocessing, os, random, sys, time, socket, fcntl
+import json, multiprocessing, os, random, sys, time, socket, fcntl
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from utils import doc_optparse
-from config import DBSNP_SORTED, GENETESTS_DATA, KNOWNGENE_SORTED, REFERENCE_GENOME
+from config import DBSNP_B36_SORTED, GENETESTS_DATA, KNOWNGENE_HG18_SORTED, REFERENCE_GENOME_HG18
+from config import DBSNP_B37_SORTED, KNOWNGENE_HG19_SORTED, REFERENCE_GENOME_HG19
 
-import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
+import get_metadata, gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -59,9 +60,8 @@ def genome_analyzer(server, genotype_file):
              'dbsnp_out': os.path.join(output_dir, temp_prefix + 'dbsnp.gff'),
              'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
-             'dbsnp': os.path.join(os.getenv('DATA'), DBSNP_SORTED),
-             'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
-             'transcripts': os.path.join(os.getenv('DATA'), KNOWNGENE_SORTED),
+             'metadata_out': os.path.join(output_dir, 'metadata.json'),
+             'genome_stats': os.path.join(script_dir, 'genome_stats.txt'),
              'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA) }
     start_time = time.time()
     # Make output directory if needed
@@ -80,16 +80,44 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --key=1,1 --key=4n,4
 ) | gzip -c > '%(sorted_out)s' ''' % args
     os.system(sort_source_cmd)
 
+    # Get metadata from whole genome
+    add_to_log(log_handle, "#status 2 getting metadata (time = %.2f seconds)" % (time.time() - start_time) )
+    genome_data = get_metadata.genome_metadata(args['sorted_out'], args['genome_stats'])
+    # Print metadata because we're impatient for stats
+    f = open(args['metadata_out'], 'w')
+    f.write(json.dumps(genome_data) + "\n")
+    f.close()
+
+    # Set up build-dependent file locations
+    if (genome_data['build'] == "b36"):
+        args['dbsnp'] = os.path.join(os.getenv('DATA'), DBSNP_B36_SORTED)
+        args['reference'] = os.path.join(os.getenv('DATA'), REFERENCE_GENOME_HG18)
+        args['transcripts'] = os.path.join(os.getenv('DATA'), KNOWNGENE_HG18_SORTED)
+    elif (genome_data['build'] == "b37"):
+        args['dbsnp'] = os.path.join(os.getenv('DATA'), DBSNP_B37_SORTED)
+        args['reference'] = os.path.join(os.getenv('DATA'), REFERENCE_GENOME_HG19)
+        args['transcripts'] = os.path.join(os.getenv('DATA'), KNOWNGENE_HG19_SORTED)
+    else:
+        raise Exception("genome build data is invalid")
+
     # Report of uncovered blocks in coding
-    add_to_log(log_handle, "#status 2 report uncovered coding (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'])
+    add_to_log(log_handle, "#status 3 report uncovered coding (time = %.2f seconds)" % (time.time() - start_time) )
+    if (genome_data['has_ref']):
+        gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'])
+        exome_data = get_metadata.coding_metadata(args['coverage_out'], genome_data['chromosomes'])
+        for key in exome_data.keys():
+            genome_data[key] = exome_data[key]
+    # Print metadata again
+    f = open(args['metadata_out'], 'w')
+    f.write(json.dumps(genome_data) + "\n")
+    f.close()
 
     # Get reference alleles for non-reference variants
-    add_to_log(log_handle, "#status 3 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
+    add_to_log(log_handle, "#status 4 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
     gff_twobit_query.match2ref_to_file(args['sorted_out'], args['reference'], args['getref_out'])
 
     # Look up dbSNP IDs
-    add_to_log(log_handle, "#status 4 looking up dbsnp IDs (time = %.2f seconds)" % (time.time() - start_time) )
+    add_to_log(log_handle, "#status 5 looking up dbsnp IDs (time = %.2f seconds)" % (time.time() - start_time) )
     gff_dbsnp_query.match2dbSNP_to_file(args['getref_out'], args['dbsnp'], args['dbsnp_out'])
 
     # Check for nonsynonymous SNPs
