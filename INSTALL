@@ -18,7 +18,7 @@ your apt source list.
 
 Clone get-evidence from github:
 
- git clone git://github.com/madprime/get-evidence.git
+ git clone git://git.clinicalfuture.com/get-evidence.git
 
 Download and extract php-openid-2.1.3 and textile-2.0.0 and apply patch(es):
 
