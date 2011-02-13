@@ -73,7 +73,7 @@ def genome_analyzer(server, genotype_file):
     add_to_log(log_handle, "#status 1 sorting input (time = %.2f seconds)" % (time.time() - start_time) )
     sort_source_cmd = '''(
 cat '%(genotype_input)s' | gzip -cdf | egrep "^#";
-cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --key=1,1 --key=4n,4
+cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% --key=1,1 --key=4n,4
 ) | gzip -c > '%(sorted_out)s' ''' % args
     os.system(sort_source_cmd)
 
