@@ -91,17 +91,14 @@ function list_uploaded_genomes($user_oid) {
     global $pgp_data_user, $public_data_user, $user;
     $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY private_genome_id", array("$user_oid"));
     if ($db_query) {
-        $returned_text = "<TABLE class=\"report_table\">\n";
+        $returned_text = "<TABLE class=\"report_table genome_list_table\">\n";
         $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";
         foreach ($db_query as $result) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
-            if ($user_oid == $public_data_user and $user['oid'] != $public_data_user) {
+            if ($user_oid != $user['oid'])
                 $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
-            } elseif ($user_oid == $pgp_data_user and $user['oid'] != $pgp_data_user) {
-                $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
-            } else {
+	    else
                 $returned_text .= uploaded_genome_actions($result) . "</TD></TR>\n";
-            }
         }
         $returned_text .= "</TABLE>\n";
         return $returned_text;
@@ -129,13 +126,13 @@ function uploaded_genome_actions($result) {
     $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
                     . $result['shasum'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Get report\" "
-                        . "class=\"button\" \/></form><br>\n";
+                        . "class=\"button\" \/></form>\n";
     # Reprocess data button
     $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\""
                     . $result['shasum'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Reprocess data\" "
-                        . "class=\"button\" \/></form><br>\n";
+                        . "class=\"button\" \/></form>\n";
     # Delete file button
     $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"delete_genome_id\" value=\""
@@ -145,7 +142,7 @@ function uploaded_genome_actions($result) {
     $returned_text .= "<input type=\"hidden\" name=\"user_oid\" value=\"" 
                     . $user['oid'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Delete data\" "
-                        . "class=\"button\" \/></form><br>\n";
+                        . "class=\"button\" \/></form>\n";
     return($returned_text);
 }
 
