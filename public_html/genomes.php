@@ -89,7 +89,16 @@ go();
 
 function list_uploaded_genomes($user_oid) {
     global $pgp_data_user, $public_data_user, $user;
-    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY private_genome_id", array("$user_oid"));
+    if ($user_oid != $pgp_data_user &&
+	$user_oid != $public_data_user &&
+	getCurrentUser('is_admin')) {
+	$condition = 'oid NOT IN (?,?)';
+	$param = array ($pgp_data_user, $public_data_user);
+    } else {
+	$condition = 'oid=?';
+	$param = array ($user_oid);
+    }
+    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE $condition ORDER BY private_genome_id", $param);
     if ($db_query) {
         $returned_text = "<TABLE class=\"report_table genome_list_table\">\n";
         $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";
