@@ -104,10 +104,17 @@ function list_uploaded_genomes($user_oid) {
         $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";
         foreach ($db_query as $result) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
-            if ($user_oid != $user['oid'])
-                $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
-	    else
-                $returned_text .= uploaded_genome_actions($result) . "</TD></TR>\n";
+            if ($result['oid'] != $user['oid'])
+                $returned_text .= public_genome_actions($result);
+	    else {
+                $returned_text .= uploaded_genome_actions($result);
+		$results = genome_get_results ($result['shasum'], $user['oid']);
+		if (isset($results['progress']) &&
+		    $results['progress'] < 1 &&
+		    $results['logmtime'] > time() - 86400)
+		    $returned_text .= "processing, ".floor($results['progress']*100)."% complete";
+		$returned_text .=  "</TD></TR>\n";
+	    }
         }
         $returned_text .= "</TABLE>\n";
         return $returned_text;
