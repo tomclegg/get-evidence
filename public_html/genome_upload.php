@@ -91,6 +91,8 @@ if (isset($_POST['reprocess_genome_id'])) {
     if (file_exists($location) && strpos ($location, $GLOBALS["gBackendBaseDir"] . "/upload/") === 0) {
       $shasum = sha1_file($location);
       $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype.gff";
+      if (preg_match ('{\.gz$}', $location))
+	  $permname = $permname . ".gz";
       // Attempt to move the uploaded file to its new place
       @mkdir ($GLOBALS["gBackendBaseDir"] . "/upload/$shasum");
       if (copy($location,$permname)) {
