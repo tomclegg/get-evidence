@@ -152,12 +152,10 @@ function uploaded_genome_actions($result) {
     # Delete file button
     $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"delete_genome_id\" value=\""
-                    . $result['shasum'] . "\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"delete_genome_nickname\" value=\""
-                    . $result['nickname'] . "\">\n";
+                    . $result['private_genome_id'] . "\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"user_oid\" value=\"" 
                     . $user['oid'] . "\">\n";
-    $returned_text .= "<input type=\"submit\" value=\"Delete data\" "
+    $returned_text .= "<input type=\"submit\" value=\"Delete\" "
                         . "class=\"button\" \/></form>\n";
     return($returned_text);
 }

@@ -25,37 +25,31 @@ if (isset($_POST['reprocess_genome_id'])) {
             . "original file for " . $reprocess_genome_ID . "</P>";
     }
 } elseif (isset($_POST['delete_genome_id'])) {
-    $delete_genome_ID = $_POST['delete_genome_id'];
-    $delete_genome_nickname = $_POST['delete_genome_nickname'];
-    if (!preg_match ('{^[0-9a-f]+$}', $delete_genome_ID)) {
-	$page_content .= "Invalid delete_genome_id supplied: $delete_genome_ID";
+    $delete_genome_id = $_POST['delete_genome_id'];
+    if (!preg_match ('{^[0-9]+$}', $delete_genome_id)) {
+	$page_content .= "<P>Invalid delete_genome_id supplied: $delete_genome_id</P>";
     } else {
-        $page_content .= "Deleting " . $user["oid"] . " " . $delete_genome_nickname 
-                        . " " . $delete_genome_ID . "<br>\n";
-        theDb()->query ("DELETE FROM private_genomes WHERE oid=? AND nickname=? AND shasum=?", 
-                            array ($user["oid"], $delete_genome_nickname, $delete_genome_ID));
-        $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE shasum=?", array($delete_genome_ID));
-        if ($db_query) {
-            $page_content .= "Your usage of this data instance (Nickname \""
-                            . $delete_genome_nickname . "\", ID \"" . $delete_genome_ID
-                            . "\") has been removed, but the underlying data remains because "
-                            . "another user has uploaded a duplicate, or you have a duplicate "
-                            . "of this genome under a different nickname.";
-        } else {
-            $dir1 = $GLOBALS["gBackendBaseDir"] . "/upload/" . $delete_genome_ID;
-            $dir2 = $GLOBALS["gBackendBaseDir"] . "/upload/" . $delete_genome_ID . "-out";
-            if (delete_directory($dir1) &&
-		delete_directory($dir2)) {
-                $page_content .= "All original data for this genome has been removed."
-                    . " Genome ID: " . $delete_genome_ID . "<br>\n";
-            } else {
-                $page_content .= "ERROR: For some reason we are unable to delete this genome!<br>\n";
-                $page_content .= "Please SAVE A COPY of this genome ID: " . $delete_genome_ID . "<br>\n";
-                $page_content .= "This ID is important for later identification of the data. "
-                                . "The maintainers of this database might be able to help you. <br>\n";
-            }
-            
-        }
+	$shasum = theDb()->getOne
+	    ("SELECT shasum FROM private_genomes WHERE private_genome_id=? AND oid=?",
+	     array($delete_genome_id, $user['oid']));
+	theDb()->query
+	    ("DELETE FROM private_genomes WHERE private_genome_id=? AND oid=?", 
+	     array ($delete_genome_id, $user['oid']));
+	$keeping_data = theDb()->getOne ("SELECT 1 FROM private_genomes WHERE shasum=? LIMIT 1",
+					 array($shasum));
+	if ($keeping_data) {
+	    $page_content .= "<P>This entry has been removed from your \"uploaded genomes\" list, but the underlying data has not been deleted because it is referenced by other processing jobs.  Either you uploaded it more than once, or another user uploaded an identical file.</P>";
+	} else {
+	    $dir1 = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum;
+	    $dir2 = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out";
+	    if (delete_directory($dir2) &&
+		delete_directory($dir1)) {
+		$page_content .= "<P>Data and results for this job (input data hash $shasum) have been removed.</P>";
+	    } else {
+		$page_content .= "<P><B>OOPS.</B>  For some reason we are unable to delete your data.</P><P>Please <B>save a copy</B> of this hash: $shasum.</P><P>This may help the site admin track down and fix the problem.</P>";
+		error_log ("Failed to delete id=$delete_genome_id sha1=$shasum");
+	    }
+	}
     }
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
@@ -68,12 +62,18 @@ if (isset($_POST['reprocess_genome_id'])) {
         if ($ext == "gz") {
             $permname = $permname . ".gz";
         }
+	$already_have = (file_exists($permname) &&
+			 sha1_file($permname) == $shasum);
         // Attempt to move the uploaded file to its new place
-        @mkdir ($GLOBALS["gBackendBaseDir"] . "/upload/$shasum");
-        if (move_uploaded_file($tempname, $permname)) {
+	if ($already_have)
+	  unlink ($tempname);
+	else
+	  @mkdir ($GLOBALS["gBackendBaseDir"] . "/upload/$shasum");
+        if ($already_have || move_uploaded_file($tempname, $permname)) {
             $nickname = $_POST['nickname'];
             $oid = $user['oid'];
-            send_to_server($permname);
+	    if (!$already_have)
+	      send_to_server($permname);
             theDB()->query ("INSERT IGNORE INTO private_genomes SET
                                 oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
                                 array ($oid,$nickname,$shasum));
@@ -95,10 +95,13 @@ if (isset($_POST['reprocess_genome_id'])) {
 	  $permname = $permname . ".gz";
       // Attempt to move the uploaded file to its new place
       @mkdir ($GLOBALS["gBackendBaseDir"] . "/upload/$shasum");
-      if (copy($location,$permname)) {
+      $already_have = (file_exists($permname) &&
+		       sha1_file($permname) == $shasum);
+      if ($already_have || copy($location,$permname)) {
         $nickname = $_POST['nickname'];
         $oid = $user['oid'];
-        send_to_server($permname);
+	if (!$already_have)
+	  send_to_server($permname);
         theDB()->query ("INSERT IGNORE INTO private_genomes SET
                             oid=?, nickname=?, shasum=?, upload_date=SYSDATE()",
                             array ($oid,$nickname,$shasum));
@@ -130,6 +133,8 @@ function send_to_server($permname) {
 
 // Delete all files in a directory recursively, then delete directory
 function delete_directory($dirname) {
+    if (preg_match ('{/$}', $dirname)) // don't accidentally delete /foo/$ttypo
+	return false;
     if (is_dir($dirname))
         $dir_handle = opendir($dirname);
     if (!$dir_handle)
