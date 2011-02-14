@@ -25,16 +25,18 @@ $user = getCurrentUser();
 
 if (strlen($display_genome_ID) > 0) {
     $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?", 
-                                            array($display_genome_ID));
-    # check you should have permission
-    $permission = false;
+				 array($display_genome_ID));
+    // check you should have permission
+    $permission = getCurrentUser('is_admin');
     $request_ID = "";
-    # First check if logged in use has access
-    foreach ($db_query as $result) {
-        if ($result['oid'] == $user['oid']) {
-            $permission = true;
-            $request_ID = $user['oid'];
-        }
+    // First check if logged in use has access
+    if (!$permission) {
+	foreach ($db_query as $result) {
+	    if ($result['oid'] == $user['oid']) {
+		$permission = true;
+		$request_ID = $user['oid'];
+	    }
+	}
     }
     # Check if PGP or Public data, display as that if that user
     if (!$permission) {
