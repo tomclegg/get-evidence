@@ -21,10 +21,11 @@ function genome_get_results ($shasum, $oid) {
 	    $still_processing = true;
 	    $total_steps = 100;
 	    foreach (file($lockfile) as $logline) {
-		if (preg_match ('{^#status (\d*)/?(\d*) (.+)}', $logline, $regs)) {
+		if (preg_match ('{^#status (\d*)/?(\d*)( (.+))?}', $logline, $regs)) {
 		    if ($regs[2] > 0) $total_steps = $regs[2];
 		    $ret["progress"] = $regs[1] / $total_steps;
-		    $ret["status"] = $regs[3];
+		    if ($regs[4])
+			$ret["status"] = $regs[4];
 		}
 	    }
 	}
@@ -38,7 +39,7 @@ function genome_get_results ($shasum, $oid) {
     if (!file_exists ($logfile) || !is_readable ($logfile))
 	$logfile = "/dev/null";
 
-    $ret["log"] = file_get_contents ($logfile);
+    $ret["log"] = preg_replace ('{(\n#status \d+)+(\n#status \d+\n)}', "\n[...]\\2", file_get_contents ($logfile));
     $ret["logmtime"] = filemtime ($logfile);
     $ret["logfilename"] = $logfile;
     $ret["log"] .= "\n\nLog file ends: ".date("r",$ret["logmtime"]);
