@@ -15,7 +15,7 @@ from utils import doc_optparse, gff, twobit
 from utils.biopython_utils import reverse_complement, translate
 from codon import codon_123
 
-def predict_nonsynonymous(gff_input, twobit_path, transcript_path):
+def predict_nonsynonymous(gff_input, twobit_path, transcript_path, progresstracker=False):
     twobit_file = twobit.input(twobit_path)
     transcript_input = transcript_file(transcript_path)
 
@@ -42,6 +42,7 @@ def predict_nonsynonymous(gff_input, twobit_path, transcript_path):
                 chromosome = "chr" + record.seqname[3:]
             else:
                 chromosome = "chr" + record.seqname
+        if progresstracker: progresstracker.saw(chromosome)
         
         # record.start is 1-based, but UCSC annotation starts are 0-based, so subtract 1
         record_position = (chromosome, record.start - 1)
@@ -418,7 +419,7 @@ class transcript_file:
         else:
             return cmp(position1[1],position2[1])
 
-def predict_nonsynonymous_to_file(gff_file_input, twobit_path, transcript_path, output_file):
+def predict_nonsynonymous_to_file(gff_file_input, twobit_path, transcript_path, output_file, progresstracker=False):
     # Set up output file
     f_out = None
     if isinstance(output_file, str):
@@ -431,7 +432,7 @@ def predict_nonsynonymous_to_file(gff_file_input, twobit_path, transcript_path, 
         # Treat as writeable file object
         f_out = output_file
 
-    out = predict_nonsynonymous(gff_file_input, twobit_path, transcript_path)
+    out = predict_nonsynonymous(gff_file_input, twobit_path, transcript_path, progresstracker=progresstracker)
     for line in out:
         f_out.write(line + "\n")
     f_out.close()

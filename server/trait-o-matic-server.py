@@ -17,13 +17,19 @@ import multiprocessing, os, random, sys, time, socket, fcntl
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from utils import doc_optparse
 from config import DBSNP_SORTED, GENETESTS_DATA, KNOWNGENE_SORTED, REFERENCE_GENOME
+from progresstracker import ProgressTracker
 
 import gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
 
-def add_to_log(log_handle, log_data):
-    log_handle.write(str(log_data) + "\n")
+class Logger:
+    def __init__(self, outfile):
+        self.outfile = outfile
+        self.start_time = time.time()
+    def put(self, s):
+        self.outfile.write("%s @ %.2f s\n" %
+                           (str(s), time.time() - self.start_time))
 
 def genome_analyzer(server, genotype_file):
     server.server_close()
@@ -44,6 +50,7 @@ def genome_analyzer(server, genotype_file):
         return
     log_handle.seek(0)
     log_handle.truncate(0)
+    log = Logger(log_handle)
 
     os.close(sys.stderr.fileno())
     os.close(sys.stdout.fileno())
@@ -69,26 +76,30 @@ def genome_analyzer(server, genotype_file):
         print "Unexpected error:", sys.exc_info()[0]
 
     # Sort input genome data
-    add_to_log(log_handle, "#status 0/10 starting (time = %.2f seconds)" % (time.time() - start_time) )
-    add_to_log(log_handle, "#status 1 sorting input (time = %.2f seconds)" % (time.time() - start_time) )
+    log.put ('#status 0/100 sorting input file')
     sort_source_cmd = '''(
 cat '%(genotype_input)s' | gzip -cdf | egrep "^#";
 cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% --key=1,1 --key=4n,4
 ) | gzip -c > '%(sorted_out)s' ''' % args
     os.system(sort_source_cmd)
 
+    # It might be more elegant to extract this from metadata.
+    chrlist = map (lambda x: 'chr'+str(x), range(1,22)+['X','Y'])
+
     # Report of uncovered blocks in coding
-    add_to_log(log_handle, "#status 2 report uncovered coding (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'])
+    log.put ('#status 4 report uncovered coding')
+    pt = ProgressTracker(log_handle, [5,24], chrlist)
+    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'], progresstracker=pt)
 
     # Generator chaining...
     # Get reference alleles for non-reference variants
-    add_to_log(log_handle, "#status 3 looking up reference alleles (time = %.2f seconds)" % (time.time() - start_time) )
+    log.put('#status 24 looking up reference alleles and dbSNP IDs, and computing nsSNPs')
+    pt = ProgressTracker(log_handle, [24,66], chrlist)
     twobit_gen = gff_twobit_query.match2ref(args['sorted_out'], args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP
-    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'])
+    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'], progresstracker=pt)
 
     ns_out = open(args['nonsyn_out'], 'w')
     for line in nonsyn_gen:
@@ -96,16 +107,17 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     ns_out.close()
 
     # Match against GET-Evidence database
-    add_to_log(log_handle,"#status 8 looking up GET-Evidence hits (time = %.2f seconds)" % (time.time() - start_time) )
-    gff_getevidence_map.match_getev_to_file(args['nonsyn_out'], args['getev_out'] + ".tmp")
+    log.put('#status 66 looking up GET-Evidence hits')
+    pt = ProgressTracker(log_handle, [66,99], chrlist)
+    gff_getevidence_map.match_getev_to_file(args['nonsyn_out'], args['getev_out'] + ".tmp", progresstracker=pt)
     # Using .tmp because this is slow to generate & is used for the genome report web page display
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
 
-    add_to_log(log_handle,"#status 10 Done, cleaning up! (time = %.2f seconds)" % (time.time() - start_time) )
+    log.put ('#status 100 finished')
 
     os.rename(lockfile, logfile)
     log_handle.close()
-    print "Done processing " + str(genotype_file)
+    print "Finished processing file " + str(genotype_file)
 
 
 def main():

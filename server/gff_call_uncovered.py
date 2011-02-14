@@ -13,7 +13,7 @@ import gzip, os, re, sys
 import simplejson as json
 from utils import doc_optparse, gff, transcript
 
-def report_uncovered(gff_input, transcript_filename, genetests_filename):
+def report_uncovered(gff_input, transcript_filename, genetests_filename, progresstracker=False):
     # Set up GFF input
     # Iff gff_filename is a string ending with ".gz", assume gzip compressed
     gff_data = None
@@ -60,6 +60,7 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename):
                 chromosome = "chr" + record.seqname[3:]
             else:
                 chromosome = "chr" + record.seqname
+        if progresstracker: progresstracker.saw(chromosome)
 
         # Move forward in transcripts until past record end
         next_region = (chromosome, record.start, record.end)
@@ -144,7 +145,7 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename):
         if gene_data["length"] > 0:
             yield str(json.dumps(gene_data))
 
-def report_uncovered_to_file(gff_input, transcript_filename, genetests_filename, output_file):
+def report_uncovered_to_file(gff_input, transcript_filename, genetests_filename, output_file, progresstracker=False):
     f_out = None
     if isinstance(output_file, str):
         f_out = open(output_file, 'w')
@@ -152,7 +153,7 @@ def report_uncovered_to_file(gff_input, transcript_filename, genetests_filename,
         # assume writeable file object
         f_out = output_file
     has_data = False
-    out = report_uncovered(gff_input, transcript_filename, genetests_filename)
+    out = report_uncovered(gff_input, transcript_filename, genetests_filename, progresstracker=progresstracker)
     for line in out:
         f_out.write(line + "\n")
         has_data = True
