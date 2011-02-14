@@ -186,6 +186,11 @@ h1,h2,h3 {
 	background: #ddd;
 }
 
+/* public/private genomes table */
+.genome_list_table form {
+    display: inline;
+}
+
 /* "editable" toolbar */
 .toolbar {
 	border-bottom: 3px solid #ddd;

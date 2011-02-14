@@ -116,7 +116,7 @@ FROM genetests
 WHERE (genetests.gene=%s)
 '''
 
-def match_getev(gff_input):
+def match_getev(gff_input, progresstracker=False):
     # first, try to connect to the databases
     try:
         connection = MySQLdb.connect(cursorclass=MySQLdb.cursors.DictCursor, host=DB_HOST, user=GETEVIDENCE_USER, passwd=GETEVIDENCE_PASSWD, db=GETEVIDENCE_DATABASE)
@@ -145,6 +145,8 @@ def match_getev(gff_input):
 
         if record.feature == "REF":
             continue
+
+        if progresstracker: progresstracker.saw(record.seqname)
 
         # lightly parse to find the alleles and rs number
         alleles = record.attributes["alleles"].strip("\"").split("/")
@@ -356,7 +358,7 @@ def match_getev(gff_input):
     cursor.close()
     connection.close()
 
-def match_getev_to_file(gff_input, output_file):
+def match_getev_to_file(gff_input, output_file, progresstracker=False):
     # Set up output file
     f_out = None
     if isinstance(output_file, str):
@@ -369,7 +371,7 @@ def match_getev_to_file(gff_input, output_file):
         # Treat as writeable file object
         f_out = output_file
 
-    out = match_getev(gff_input)
+    out = match_getev(gff_input, progresstracker=progresstracker)
     for line in out:
         f_out.write(line + "\n")
     f_out.close()
