@@ -9,7 +9,7 @@ usage: %prog gff_file twobit_file [output_file]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import gzip, re
+import datetime, gzip, re
 from utils import doc_optparse, gff, twobit
 
 def match2ref(gff_input, twobit_filename):
@@ -26,8 +26,19 @@ def match2ref(gff_input, twobit_filename):
     
     twobit_file = twobit.input(twobit_filename)
 
-    # Process input data to ge
+    header_done = False
+    
+    # Process input data to get ref allele
     for record in gff_file:
+        # Have to do this after calling the first record to
+        # get the iterator to read through the header data
+        if not header_done:
+            yield "##gff-version " + gff_file.data[0]
+            yield "##genome-build " + gff_file.data[1]
+            yield "# Produced by: gff_twobit_query.py"
+            yield "# Date: " + datetime.datetime.now().isoformat(' ')
+            header_done = True
+        
         # Skip REF lines and do not output
         if record.feature == "REF":     # Skip REF, no output
             continue
