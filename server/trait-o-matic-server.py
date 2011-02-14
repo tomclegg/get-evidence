@@ -13,7 +13,7 @@ usage: %prog [options]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import multiprocessing, os, random, sys, time, socket, fcntl
+import multiprocessing, os, random, sys, time, socket, fcntl, gzip
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from utils import doc_optparse
 from config import DBSNP_SORTED, GENETESTS_DATA, KNOWNGENE_SORTED, REFERENCE_GENOME
@@ -61,7 +61,7 @@ def genome_analyzer(server, genotype_file):
     args = { 'genotype_input': str(genotype_file),
              'coverage_out': os.path.join(output_dir, 'missing_coding.json'),
              'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
-             'nonsyn_out': os.path.join(output_dir, 'ns.gff'),
+             'nonsyn_out': os.path.join(output_dir, 'ns.gff.gz'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
              'dbsnp': os.path.join(os.getenv('DATA'), DBSNP_SORTED),
              'reference': os.path.join(os.getenv('DATA'), REFERENCE_GENOME),
@@ -101,7 +101,7 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     # Check for nonsynonymous SNP
     nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'], progresstracker=pt)
 
-    ns_out = open(args['nonsyn_out'], 'w')
+    ns_out = gzip.open(args['nonsyn_out'], 'w')
     for line in nonsyn_gen:
         ns_out.write(line + "\n")
     ns_out.close()
