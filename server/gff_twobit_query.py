@@ -11,6 +11,7 @@ usage: %prog gff_file twobit_file [output_file]
 
 import datetime, gzip, re
 from utils import doc_optparse, gff, twobit
+import sys
 
 def match2ref(gff_input, twobit_filename):
 
@@ -52,6 +53,9 @@ def match2ref(gff_input, twobit_filename):
         ref_seq = "-"  # represents variant with length zero
         if (record.end - (record.start - 1)) > 0:
             ref_seq = twobit_file[chr][(record.start - 1):record.end]
+        if ref_seq == '':
+            sys.stderr.write ("ERROR: this read does not exist in the reference geneme. Start: %d, end: %d. Was this genome aligned against this version of the reference genome?\n" % (record.start, record.end))
+            sys.exit() 
 
         if record.attributes:
             record.attributes["ref_allele"] = ref_seq.upper()
