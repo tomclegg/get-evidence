@@ -89,13 +89,9 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
 ) | gzip -c > '%(sorted_out)s' ''' % args
     os.system(sort_source_cmd)
 
-    # Get metadata from whole genome
-    log.put ('#status 4 getting metadata')
-    genome_data = get_metadata.genome_metadata(args['sorted_out'], args['genome_stats'])
-    # Print metadata because we're impatient for stats
-    f = open(args['metadata_out'], 'w')
-    f.write(json.dumps(genome_data) + "\n")
-    f.close()
+    # Get header metadata from whole genome before processing (to get build)
+    log.put ('#status 4 getting header metadata')
+    genome_data = get_metadata.header_data(args['sorted_out'], check_ref=100)
 
     # Set up build-dependent file locations
     if (genome_data['build'] == "b36"):
@@ -117,7 +113,7 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     pt = ProgressTracker(log_handle, [16,24], chrlist)
     gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'], progresstracker=pt)
 
-    # Print metadata again
+    # Print metadata.
     f = open(args['metadata_out'], 'w')
     f.write(json.dumps(genome_data) + "\n")
     f.close()

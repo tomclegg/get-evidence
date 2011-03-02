@@ -11,6 +11,34 @@ usage: %prog genome_gff_file json_coverage_report
 import json, gzip, os, re, sys
 from utils import doc_optparse, gff, transcript
 
+def header_data(gff_in, metadata=dict(), check_ref=0):
+    """Read GFF header data from file, store or return metadata
+    
+    Optionally also checks the first N lines for records where the type is 
+    "REF" (third column). (Our genome processing treats these as regions where 
+    the genotype is "called" as matching the reference genome.)
+    """
+    # Set up GFF data
+    if isinstance(gff_in, str) and re.search(r'\.gz$', gff_in):
+        gff_data = gff.input(gzip.open(gff_in))
+    else:
+        gff_data = gff.input(gff_in)
+
+    # Pull record to force GFFFile to read through header, then store metadata.
+    record = gff_data.next()
+    metadata['gff-format'], metadata['build'] = gff_data.data[0:2]
+    
+    # Check for REF lines if we asked to do this. False unless we see some.
+    if check_ref > 0:
+        metadata['has_ref'] = False
+        for i in range(check_ref):
+            if record.feature == "REF":
+                metadata['has_ref'] = True
+                break
+            record = gff_data.next()
+
+    return metadata
+
 def get_genome_stats(build, filename):
     ref_genome = dict()
     stats = open(filename)
@@ -135,7 +163,8 @@ def coding_metadata(json_coverage, chromosomes):
     return genome
 
 def main():
-    out = genome_metadata(sys.argv[1])
+    out = header_data(sys.argv[1], check_ref=100)
+    print "header data:"
     print out
 
 if __name__ == "__main__":
