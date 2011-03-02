@@ -164,6 +164,15 @@ Build python extensions:
 Start trait-o-matic server:
  sudo /etc/init.d/trait-o-matic start
 
+Set up cron job to run "make" periodically.
+
+ echo "12 3 * * * $USER cd $HOME/get-evidence && make daily" | sudo tee /etc/cron.d/get-evidence
+
+Run through the daily make once to set up the flat files, some of which 
+GET-Evidence will expect to find.
+
+ cd ~/get-evidence
+ make daily
 
 ------
 
@@ -176,10 +185,6 @@ version of GET-Evidence.
 Run "make" to import genomes from Trait-o-matic.
 
  make
-
-Set up a cron job to run "make" periodically.
-
- echo "12 3 * * * $USER cd $HOME && make" | tee /etc/cron.d/get-evidence
 
 Import dbSNP:
 

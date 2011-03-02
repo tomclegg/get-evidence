@@ -12,6 +12,7 @@ REFFLAT_HG19_SORTED = "refFlat_hg19_sorted.txt"
 KNOWNGENE_HG18_SORTED = "knownGene_hg18_sorted.txt"
 KNOWNGENE_HG19_SORTED = "knownGene_hg19_sorted.txt"
 GENETESTS_DATA = "genetests-data.txt"
+GETEV_FLAT = "getev-latest.json.gz"
 
 GETEVIDENCE_USER = "evidence"
 GETEVIDENCE_PASSWD = "shakespeare"

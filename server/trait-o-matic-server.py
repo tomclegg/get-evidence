@@ -16,7 +16,8 @@ usage: %prog [options]
 import json, multiprocessing, os, random, sys, time, socket, fcntl, gzip
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from utils import doc_optparse
-from config import DBSNP_B36_SORTED, GENETESTS_DATA, KNOWNGENE_HG18_SORTED, REFERENCE_GENOME_HG18
+from config import GENETESTS_DATA, GETEV_FLAT
+from config import DBSNP_B36_SORTED, KNOWNGENE_HG18_SORTED, REFERENCE_GENOME_HG18
 from config import DBSNP_B37_SORTED, KNOWNGENE_HG19_SORTED, REFERENCE_GENOME_HG19
 from progresstracker import ProgressTracker
 
@@ -59,6 +60,10 @@ def genome_analyzer(server, genotype_file):
     os.dup2(log_handle.fileno(), sys.stderr.fileno())
     os.dup2(log_handle.fileno(), sys.stdout.fileno())
 
+    # Set up arguments used by processing commands and scripts.
+    # TODO: Fix getev_flat so it's stored somewhere more consistent with the
+    # other data files. Probably "make daily" stuff should be going to 'DATA'
+    # instead or in addition to public_html, but www-data would need to own it.
     args = { 'genotype_input': str(genotype_file),
              'coverage_out': os.path.join(output_dir, 'missing_coding.json'),
              'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
@@ -66,7 +71,8 @@ def genome_analyzer(server, genotype_file):
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
              'metadata_out': os.path.join(output_dir, 'metadata.json'),
              'genome_stats': os.path.join(script_dir, 'genome_stats.txt'),
-             'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA) }
+             'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA),
+             'getev_flat': os.path.join(os.getenv('CORE'), '../public_html/', GETEV_FLAT) }
     start_time = time.time()
     # Make output directory if needed
     try:
@@ -84,6 +90,7 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     os.system(sort_source_cmd)
 
     # Get metadata from whole genome
+    log.put ('#status 4 getting metadata')
     genome_data = get_metadata.genome_metadata(args['sorted_out'], args['genome_stats'])
     # Print metadata because we're impatient for stats
     f = open(args['metadata_out'], 'w')
@@ -106,8 +113,8 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     chrlist = map (lambda x: 'chr'+str(x), range(1,22)+['X','Y'])
 
     # Report of uncovered blocks in coding
-    log.put ('#status 4 report uncovered coding')
-    pt = ProgressTracker(log_handle, [5,24], chrlist)
+    log.put ('#status 15 report uncovered coding')
+    pt = ProgressTracker(log_handle, [16,24], chrlist)
     gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'], progresstracker=pt)
 
     # Print metadata again
@@ -117,25 +124,29 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
 
     # Generator chaining...
     # Get reference alleles for non-reference variants
-    log.put('#status 24 looking up reference alleles and dbSNP IDs, and computing nsSNPs')
-    pt = ProgressTracker(log_handle, [24,66], chrlist)
+    log.put('#status 43 looking up reference alleles and dbSNP IDs, computing nsSNPs, and getting GET-Ev matches')
+    pt = ProgressTracker(log_handle, [44,99], chrlist)
     twobit_gen = gff_twobit_query.match2ref(args['sorted_out'], args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP
     nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'], progresstracker=pt)
+    # Pull off GET-Evidence hits
+    nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, args['getev_flat'], output_file=args['getev_out'] + ".tmp", progresstracker=pt)
 
+    # Printing to output, pulls data through the generator chain.
     ns_out = gzip.open(args['nonsyn_out'], 'w')
-    for line in nonsyn_gen:
+    for line in nonsyn_gen2:
         ns_out.write(line + "\n")
     ns_out.close()
+    os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
 
     # Match against GET-Evidence database
-    log.put('#status 66 looking up GET-Evidence hits')
-    pt = ProgressTracker(log_handle, [66,99], chrlist)
-    gff_getevidence_map.match_getev_to_file(args['nonsyn_out'], args['getev_out'] + ".tmp", progresstracker=pt)
+    #log.put('#status 66 looking up GET-Evidence hits')
+    #pt = ProgressTracker(log_handle, [66,99], chrlist)
+    #gff_getevidence_map.match_getev_to_file(args['nonsyn_out'], args['getev_flat'], args['getev_out'] + ".tmp", progresstracker=pt)
     # Using .tmp because this is slow to generate & is used for the genome report web page display
-    os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+    #os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
 
     log.put ('#status 100 finished')
 

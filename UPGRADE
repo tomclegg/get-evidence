@@ -29,6 +29,13 @@ Run install-user.sh -- it might need to download new data files.
   sudo -u $USER ./install-user.sh
  )
 
+Run make daily -- there may be new regularly updated files the server expects.
+
+ (
+  cd ~/get-evidence/
+  make daily
+ )
+
 Restart the back-end server.
 
  sudo /etc/init.d/trait-o-matic restart

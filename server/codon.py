@@ -24,7 +24,9 @@ one_letter_alphabet = {
     "Asx": "B",
     "Glx": "Z",
     "Xaa": "X",
-    "TERM": "*"
+    "TERM": "*",
+    "Stop": "*",
+    "Frameshift": "Shift"
 }
 
 three_letter_alphabet = {

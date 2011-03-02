@@ -71,6 +71,41 @@ if ($snap &&
     exit;
 }
 
+// Output text for flat file with json-formatted data for each variant
+$want_type_json = ($_SERVER['argc'] > 2 && $_SERVER['argv'][2] == 'json');
+if ($snap and $want_type_json) {
+    ini_set ('memory_limit', 67108864);
+    // Get flat_summary for variants from MySQL, contains most of what we want.
+    // variant_quality in flat_summary is missing 'penetrance', get it from snap
+    // summary_short isn't in flat_summary, get it too
+    // Don't bother getting snapshot rows with article, genome, or disease data.
+    $q = theDb()->query (
+            "SELECT snap_$snap.variant_id as variant_id, 
+                snap_$snap.variant_quality as variant_quality,
+                snap_$snap.summary_short as summary_short,
+                flat_summary.flat_summary as flat_summary
+            FROM snap_$snap 
+            LEFT JOIN flat_summary 
+                ON flat_summary.variant_id=snap_$snap.variant_id
+            WHERE snap_$snap.article_pmid=0 AND snap_$snap.genome_id=0 
+                AND snap_$snap.disease_id=0 
+            ORDER BY snap_$snap.variant_id"
+            );
+    header ('Content-type: text/plain');
+    while ($row =& $q->fetchRow()) {
+        if ($flat_summary = $row['flat_summary']) {
+            // Pull JSON formatted data from flat_summary
+            $flat_data = json_decode ($flat_summary, true);
+            $flat_data['variant_quality'] = $row['variant_quality'];
+            if ($row['summary_short']) {
+                $flat_data['summary_short'] = $row['summary_short'];
+            }
+            print json_encode($flat_data) . "\n";
+        } 
+    }
+    exit;  // Break out of this program, we've done what we wanted.
+}
+
 if ($snap) {
 
   $q = theDb()->query ("SELECT v.*, s.*,
