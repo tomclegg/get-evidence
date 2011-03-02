@@ -12,7 +12,8 @@ from utils import doc_optparse, gff
 
 class dbSNP:
     def __init__(self, filename):
-        self.f = open(filename)
+        opener = gzip.open if re.search(r'\.gz$', filename) else open
+        self.f = opener(filename)
         self.data = self.f.readline().split()
         self.position = (self.data[1], int(self.data[2]))
 

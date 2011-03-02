@@ -2,10 +2,15 @@
 
 include "lib/setup.php";
 
+$ext = '.gff';
 $genome_id = $_REQUEST['download_genome_id'];
-$fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/genotype.gff";
+if (@$_REQUEST['download_type'] == 'ns') {
+    $ext = '.ns.gff';
+    $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "-out/ns.gff";
+} else
+    $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/genotype.gff";
 $nickname = $_REQUEST['download_nickname'];
-$nickname = preg_replace('/ +/', '_', $nickname) . ".gff";
+$nickname = preg_replace('/ +/', '_', $nickname) . $ext;
 
 $user = getCurrentUser();
 $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?",

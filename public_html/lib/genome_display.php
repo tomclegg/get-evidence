@@ -95,8 +95,8 @@ function &genome_coverage_results($shasum, $oid) {
 
 function genome_display($shasum, $oid) {
     $results = genome_get_results ($shasum, $oid);
-    $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=? AND oid=?",
-                                            array($shasum, $oid));
+    $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=?",
+				 array($shasum));
     $ds = array ("Name" => false,
 		 "Public profile" => false,
 		 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
@@ -119,14 +119,19 @@ function genome_display($shasum, $oid) {
     if (! file_exists($sourcefile)) $sourcefile = $sourcefile . ".gz";
     $data_size = filesize ($sourcefile);
     if ($data_size) {
-	if ($data_size > 1000000) $data_size = (floor($data_size / 1000000) . " MB");
-	else if ($data_size > 1000) $data_size = (floor($data_size / 1000) . " KB");
-	else $data_size = $data_size . " B";
-	$ds["Source data"] = "<a href=\"/genome_download.php?download_genome_id=$shasum&amp;download_nickname=".urlencode($db_query[0]['nickname'])."\">download GFF</a> ($data_size)";
+	$ds["Download"] = "<a href=\"/genome_download.php?download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">source data</a> (".humanreadable_size($data_size).")";
+    }
+    $outdir = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}-out";
+    if (file_exists ($nsfile = $outdir."/ns.gff.gz") ||
+	file_exists ($nsfile = $outdir."/ns.gff")) {
+	if (isset($ds["Download"]))
+	    $ds["Download"] .= ", ";
+	else $ds["Download"] = "";
+	$ds["Download"] .= "<a href=\"/genome_download.php?download_type=ns&amp;download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">dbSNP and nsSNP report</a> (".humanreadable_size(filesize($nsfile)).")";
     }
     $qrealname = htmlspecialchars($ds["Name"], ENT_QUOTES, "UTF-8");
     $GLOBALS["gOut"]["title"] = $qrealname." - GET-Evidence variant report";
-    $returned_text = "<h1>Variant report for ".htmlspecialchars($db_query[0]['nickname'],ENT_QUOTES,"UTF-8")."</h1><ul>";
+    $returned_text = "<h1>Variant report for ".htmlspecialchars($realname,ENT_QUOTES,"UTF-8")."</h1><ul>";
     foreach ($ds as $k => $v)
 	if ($v)
 	    $returned_text .= "<li>$k: $v</li>\n";
