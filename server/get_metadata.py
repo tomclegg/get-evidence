@@ -2,7 +2,7 @@
 # Filename: get_metadata.py
 
 """
-usage: %prog genome_gff_file json_coverage_report
+usage: %prog genome_gff_file
 """
 
 # Process the sorted genome GFF data and the json report of coding region 
@@ -52,78 +52,83 @@ def get_genome_stats(build, filename):
     stats.close()
     return ref_genome
 
-def genome_metadata(gff_input, genome_stats_file):
-    # Return 'genome', a dict storing the following data:
-    # genome['has_ref']: whether a genome has REF lines (boolean)
-    # genome['chromosomes']: chromosome names (list of str)
-    # genome['called_num']: # of reference positions called (int)
-    # genome['called_frac']: fraction of reference called (float)
-    # genome['called_frac_placeable'] = fraction of nogap reference called (float)
-    # genome['coding_num']: # of coding positions called (int)
-    # genome['coding_frac']: fraction of coding psotiions called (float)
-    
-    # Set up variables
-    genome = dict()
-    chromosomes = list()
-    chromosomes_raw = list()
-    has_ref = False
-    called_num = 0          # Total positions called
-    match_num = 0           # Only if we can match the chromosome ID
-    ref_all_num = 0         # Grows based on whether a chromosome is...
-    ref_nogap_num = 0       #       ...present in gff_input (e.g. chrY or chrM)
+def genome_metadata(gff_input, genome_stats_file, metadata):
+    """Take GFF, track and record associated metadata, yield same GFF lines
 
-    # Set up gff_data
-    gff_data = None
+    Requires three inputs: gff_input (file or GFF-formatted string generator),
+    genome_stats_file (str, path to a text file containing chromosome sizes), 
+    and genome_metadata object (dict into which metadata will be stored).
+
+    Updates genome_metadata after GFF-input in fully processed with:
+    genome_metadata['chromosomes']: chromosome names (list of str)
+    genome_metadata['called_num']: # of positions called (int)
+    genome_metadata['match_num']: # of positions called w/chr matching ref (int)
+    genome_metadata['called_frac']: fraction of reference called (float)
+    genome_metadata['called_frac_placeable']: frac of nogap ref called (float)
+    genome_metadata['coding_num']: # of coding positions called (int)
+    genome_metadata['coding_frac']: fraction of coding psotiions called (float)
+
+    Returns a generator, yielding same GFF-formatted strings as were inputed.
+    """
+    # 'chromosomes_raw' is a list of all the raw chromosome sequences seen.
+    # 'chromosomes' has the same names edited, if needed, to match ref_genome.
+    chromosomes_raw = list()
+    chromosomes = list()
+
+    # 'called_num' counts total positions called, while 'match_num' only counts
+    # positions which match a chromosome ID in the ref_genome data.
+    called_num = 0
+    match_num = 0
+
+    # 'ref_all_num' and 'ref_nogap_num' increment total and placeable genome 
+    # sizes (respectively) when new chromosomes are seen (for example, the 
+    # lengths for chrY are only added if chrY was seen).
+    ref_all_num = 0
+    ref_nogap_num = 0
+
+    # Set up gff_data.
     if isinstance(gff_input, str) and (re.match(".*\.gz$", gff_input)):
         gff_data = gff.input(gzip.open(gff_input))
     else:
         gff_data = gff.input(gff_input)
     
-    ref_genome = None
-    build = None
-    header_read = False
+    # Get chromosome lengths (total and placeable) for reference genome.
+    ref_genome = get_genome_stats(metadata['build'], genome_stats_file)
+    
     for record in gff_data:
-        # Header won't be read until iterator is called
-        if not header_read:
-            build = gff_data.data[1]
-            ref_genome = get_genome_stats(build, genome_stats_file)
-            header_read = True
         dist = (record.end - (record.start - 1))
         called_num += dist
-        if record.seqname in ref_genome \
-                or "chr" + record.seqname in ref_genome \
-                or "chr" + record.seqname[3:] in ref_genome:
+        is_in_ref_genome = (record.seqname in ref_genome
+                            or "chr" + record.seqname in ref_genome
+                            or "chr" + record.seqname[3:] in ref_genome)
+        if is_in_ref_genome:
             match_num += dist
-        if not has_ref and record.feature == "REF":
-            has_ref = True
+
+        # If we haven't seen this chromosome before, add it to our lists and
+        # increase total & placeable reference sequences using ref_genome data.
         if record.seqname not in chromosomes_raw:
             chromosomes_raw.append(record.seqname)
+            chr_name = ""
             if record.seqname in ref_genome:
-                chromosomes.append(record.seqname)
-                ref_all_num = ref_all_num + ref_genome[record.seqname]['seq_all']
-                ref_nogap_num = ref_nogap_num + ref_genome[record.seqname]['seq_nogap']
+                chr_name = record.seqname
             elif "chr" + record.seqname in ref_genome:
-                chromosomes.append("chr" + record.seqname)
-                ref_all_num += ref_genome["chr" + record.seqname]['seq_all']
-                ref_nogap_num += ref_genome["chr" + record.seqname]['seq_nogap']
-            elif "chr" + record.seqname[3:] in ref_genome:
-                chromosomes.append("chr" + record.seqname[3:])
-                ref_all_num += ref_genome["chr" + record.seqname[3:]]['seq_all']
-                ref_nogap_num += ref_genome["chr" + record.seqname[3:]]['seq_nogap']
-            else:
-                print "Possible error, chromosome name unmatchable: \'" + record.seqname + "\'"
-                break
+                chr_name = "chr" + record.seqname
+            elif "chr" + record.seqname[3:]:
+                chr_name = "chr" + record.seqname[3:]
+            if chr_name:
+                chromosomes.append(chr_name)
+                ref_all_num += ref_genome[record.seqname]['seq_all']
+                ref_nogap_num += ref_genome[record.seqname]['seq_nogap']
+        
+        yield str(record)
     
-    genome['build'] = build
-    genome['has_ref'] = has_ref
-    genome['chromosomes'] = chromosomes
-    genome['called_num'] = called_num
-    genome['match_num'] = match_num
-    genome['called_frac'] = match_num * 1.0 / ref_all_num
-    genome['called_frac_placeable'] = match_num * 1.0 / ref_nogap_num
-    genome['called_ref_all'] = ref_all_num
-    genome['called_ref_nogap'] = ref_nogap_num
-    return genome
+    metadata['chromosomes'] = chromosomes
+    metadata['called_num'] = called_num
+    metadata['match_num'] = match_num
+    metadata['called_frac'] = match_num * 1.0 / ref_all_num
+    metadata['called_frac_placeable'] = match_num * 1.0 / ref_nogap_num
+    metadata['called_ref_all'] = ref_all_num
+    metadata['called_ref_nogap'] = ref_nogap_num
 
 def coding_metadata(json_coverage, chromosomes):
     genome = dict()
@@ -163,6 +168,7 @@ def coding_metadata(json_coverage, chromosomes):
     return genome
 
 def main():
+    """Return GFF header metadata"""
     out = header_data(sys.argv[1], check_ref=100)
     print "header data:"
     print out

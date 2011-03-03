@@ -73,7 +73,7 @@ def genome_analyzer(server, genotype_file):
              'genome_stats': os.path.join(script_dir, 'genome_stats.txt'),
              'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA),
              'getev_flat': os.path.join(os.getenv('CORE'), '../public_html/', GETEV_FLAT) }
-    start_time = time.time()
+
     # Make output directory if needed
     try:
         if not os.path.exists(output_dir):
@@ -113,16 +113,12 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     pt = ProgressTracker(log_handle, [16,24], chrlist)
     gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'], progresstracker=pt)
 
-    # Print metadata.
-    f = open(args['metadata_out'], 'w')
-    f.write(json.dumps(genome_data) + "\n")
-    f.close()
-
     # Generator chaining...
     # Get reference alleles for non-reference variants
     log.put('#status 43 looking up reference alleles and dbSNP IDs, computing nsSNPs, and getting GET-Ev matches')
     pt = ProgressTracker(log_handle, [44,99], chrlist)
-    twobit_gen = gff_twobit_query.match2ref(args['sorted_out'], args['reference'])
+    metadata_gen = get_metadata.genome_metadata(args['sorted_out'], args['genome_stats'], genome_data) 
+    twobit_gen = gff_twobit_query.match2ref(metadata_gen, args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP
@@ -136,6 +132,11 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
         ns_out.write(line + "\n")
     ns_out.close()
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+
+    # Print metadata
+    f = open(args['metadata_out'], 'w')
+    f.write(json.dumps(genome_data) + "\n")
+    f.close()
 
     # Match against GET-Evidence database
     #log.put('#status 66 looking up GET-Evidence hits')
