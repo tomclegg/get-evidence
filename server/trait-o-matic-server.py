@@ -65,7 +65,7 @@ def genome_analyzer(server, genotype_file):
     # other data files. Probably "make daily" stuff should be going to 'DATA'
     # instead or in addition to public_html, but www-data would need to own it.
     args = { 'genotype_input': str(genotype_file),
-             'coverage_out': os.path.join(output_dir, 'missing_coding.json'),
+             'miss_out': os.path.join(output_dir, 'missing_coding.json'),
              'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
              'nonsyn_out': os.path.join(output_dir, 'ns.gff.gz'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
@@ -90,7 +90,6 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     os.system(sort_source_cmd)
 
     # Get header metadata from whole genome before processing (to get build)
-    log.put ('#status 4 getting header metadata')
     genome_data = get_metadata.header_data(args['sorted_out'], check_ref=100)
 
     # Set up build-dependent file locations
@@ -108,16 +107,23 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     # It might be more elegant to extract this from metadata.
     chrlist = map (lambda x: 'chr'+str(x), range(1,22)+['X','Y'])
 
-    # Report of uncovered blocks in coding
-    log.put ('#status 15 report uncovered coding')
-    pt = ProgressTracker(log_handle, [16,24], chrlist)
-    gff_call_uncovered.report_uncovered_to_file(args['sorted_out'], args['transcripts'], args['genetests'], args['coverage_out'], progresstracker=pt)
-
     # Generator chaining...
-    # Get reference alleles for non-reference variants
-    log.put('#status 43 looking up reference alleles and dbSNP IDs, computing nsSNPs, and getting GET-Ev matches')
-    pt = ProgressTracker(log_handle, [44,99], chrlist)
-    metadata_gen = get_metadata.genome_metadata(args['sorted_out'], args['genome_stats'], genome_data) 
+    log.put('#status 4 processing genome data (get reference alleles, '
+            + 'dbSNP IDs, nonsynonymous changes, etc.)')
+    pt = ProgressTracker(log_handle, [5,99], chrlist)
+    # Pass through get_metadata to record chromosomes seen, coverage, etc.
+    metadata_gen = get_metadata.genome_metadata(args['sorted_out'],
+                                                args['genome_stats'],
+                                                metadata=genome_data
+                                                )
+    # Report coding regions that lack coverage.
+    uncov_gen = gff_call_uncovered.report_uncovered(metadata_gen,
+                                                    args['transcripts'], 
+                                                    args['genetests'], 
+                                                    output_file=args['miss_out'], 
+                                                    progresstracker=pt
+                                                    )
+    # Find reference allele.
     twobit_gen = gff_twobit_query.match2ref(metadata_gen, args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])

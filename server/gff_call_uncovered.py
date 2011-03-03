@@ -13,10 +13,9 @@ import gzip, os, re, sys
 import simplejson as json
 from utils import doc_optparse, gff, transcript
 
-def report_uncovered(gff_input, transcript_filename, genetests_filename, progresstracker=False):
-    # Set up GFF input
-    # Iff gff_filename is a string ending with ".gz", assume gzip compressed
-    gff_data = None
+def report_uncovered(gff_input, transcript_filename, genetests_filename, 
+                     output_file=False, progresstracker=False):
+    # Set up GFF input. If it ends with '.gz', assume gzip compressed.
     if isinstance(gff_input, str) and (re.match(".*\.gz$", gff_input)):
         gff_data = gff.input(gzip.open(gff_input))
     else:
@@ -44,6 +43,14 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename, progres
         for name in names:
             genetests_names.add(name)
 
+    # Set up optional output.
+    f_out = False
+    if output_file:
+        if re.match(r'\.gz$', output_file):
+            f_out = gzip.open(output_file, 'w')
+        else:
+            f_out = open(output_file, 'w')
+
     # Store regions being examined, remove or reduce if covered
     # key: Transcript object
     # value: list of tuples (chr (string), start (int), end (int))
@@ -51,6 +58,8 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename, progres
     examined_regions = {}
 
     for record in gff_data:
+        if f_out:
+            yield str(record)
 
         # Add "chr" to chromosome ID if needed
         if record.seqname.startswith("chr"):
@@ -118,7 +127,10 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename, progres
             gene_data["missing"] = total_uncovered
             gene_data["missing_regions"] = ", ".join(missing_regions)
             if gene_data["length"] > 0:
-                yield str(json.dumps(gene_data))
+                if f_out:
+                    f_out.write(json.dumps(gene_data))
+                else:
+                    yield json.dumps(gene_data)
 
     # Move through any remaining transcripts
     record_beyond_end_hack = ("chrZ", 999999999)
@@ -143,7 +155,10 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename, progres
         gene_data["missing"] = total_uncovered
         gene_data["missing_regions"] = ", ".join(missing_regions)
         if gene_data["length"] > 0:
-            yield str(json.dumps(gene_data))
+            if f_out:
+                f_out.write(json.dumps(gene_data))
+            else:
+                yield json.dumps(gene_data)
 
 def report_uncovered_to_file(gff_input, transcript_filename, genetests_filename, output_file, progresstracker=False):
     f_out = None
