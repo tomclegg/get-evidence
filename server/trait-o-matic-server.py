@@ -19,19 +19,11 @@ from utils import doc_optparse
 from config import GENETESTS_DATA, GETEV_FLAT
 from config import DBSNP_B36_SORTED, KNOWNGENE_HG18_SORTED, REFERENCE_GENOME_HG18
 from config import DBSNP_B37_SORTED, KNOWNGENE_HG19_SORTED, REFERENCE_GENOME_HG19
-from progresstracker import ProgressTracker
+from progresstracker import Logger, ProgressTracker
 
 import get_metadata, gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
-
-class Logger:
-    def __init__(self, outfile):
-        self.outfile = outfile
-        self.start_time = time.time()
-    def put(self, s):
-        self.outfile.write("%s @ %.2f s\n" %
-                           (str(s), time.time() - self.start_time))
 
 def genome_analyzer(server, genotype_file):
     server.server_close()
