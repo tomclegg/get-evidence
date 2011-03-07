@@ -128,7 +128,7 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename,
             gene_data["missing_regions"] = ", ".join(missing_regions)
             if gene_data["length"] > 0:
                 if f_out:
-                    f_out.write(json.dumps(gene_data))
+                    f_out.write(json.dumps(gene_data) + '\n')
                 else:
                     yield json.dumps(gene_data)
 
@@ -156,7 +156,7 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename,
         gene_data["missing_regions"] = ", ".join(missing_regions)
         if gene_data["length"] > 0:
             if f_out:
-                f_out.write(json.dumps(gene_data))
+                f_out.write(json.dumps(gene_data) + '\n')
             else:
                 yield json.dumps(gene_data)
 

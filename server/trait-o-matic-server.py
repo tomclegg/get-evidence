@@ -124,7 +124,7 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
                                                     progresstracker=pt
                                                     )
     # Find reference allele.
-    twobit_gen = gff_twobit_query.match2ref(metadata_gen, args['reference'])
+    twobit_gen = gff_twobit_query.match2ref(uncov_gen, args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP
