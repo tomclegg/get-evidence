@@ -99,28 +99,28 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     # It might be more elegant to extract this from metadata.
     chrlist = map (lambda x: 'chr'+str(x), range(1,22)+['X','Y'])
 
-    # Generator chaining...
+    # Process genome through a series of GFF-formatted string generators.
     log.put('#status 4 processing genome data (get reference alleles, '
             + 'dbSNP IDs, nonsynonymous changes, etc.)')
-    pt = ProgressTracker(log_handle, [5,99], chrlist)
-    # Pass through get_metadata to record chromosomes seen, coverage, etc.
+    pt = ProgressTracker(log_handle, [5,99], expected=chrlist, 
+                         metadata=genome_data)
+    # Record chromosomes seen and genome coverage.
     metadata_gen = get_metadata.genome_metadata(args['sorted_out'],
                                                 args['genome_stats'],
-                                                metadata=genome_data
+                                                progresstracker=pt
                                                 )
     # Report coding regions that lack coverage.
     uncov_gen = gff_call_uncovered.report_uncovered(metadata_gen,
                                                     args['transcripts'], 
                                                     args['genetests'], 
-                                                    output_file=args['miss_out'], 
-                                                    progresstracker=pt
+                                                    output_file=args['miss_out']
                                                     )
     # Find reference allele.
     twobit_gen = gff_twobit_query.match2ref(uncov_gen, args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP
-    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'], progresstracker=pt)
+    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'])
     # Pull off GET-Evidence hits
     nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, args['getev_flat'], output_file=args['getev_out'] + ".tmp", progresstracker=pt)
 
@@ -132,16 +132,9 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
 
     # Print metadata
-    f = open(args['metadata_out'], 'w')
-    f.write(json.dumps(genome_data) + "\n")
-    f.close()
-
-    # Match against GET-Evidence database
-    #log.put('#status 66 looking up GET-Evidence hits')
-    #pt = ProgressTracker(log_handle, [66,99], chrlist)
-    #gff_getevidence_map.match_getev_to_file(args['nonsyn_out'], args['getev_flat'], args['getev_out'] + ".tmp", progresstracker=pt)
-    # Using .tmp because this is slow to generate & is used for the genome report web page display
-    #os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+    metadata_f_out = open(args['metadata_out'], 'w')
+    pt.write_metadata(metadata_f_out)
+    metadata_f_out.close()
 
     log.put ('#status 100 finished')
 

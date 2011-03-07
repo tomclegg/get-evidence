@@ -1,5 +1,6 @@
 """Tracking and logging progress and reporting metadata during processing"""
 
+import json
 import time
 
 class Logger:
@@ -31,6 +32,7 @@ class ProgressTracker:
                     sequence (e.g. list or tuple) where the first two items
                     are numeric, representing a range onto which progress is 
                     mapped.
+    self.metadata: dict in which metadata is stored.
     self.n_expected: integer or numeric representing how many total items 
                      are expected to be seen. 
     self.seen: dict that records when an item (used as key) has been seen.
@@ -39,7 +41,7 @@ class ProgressTracker:
     self.n_seen: integer counting how many items have been seen.
     """
 
-    def __init__(self, log_handle, map_range, expected=False):
+    def __init__(self, log_handle, map_range, expected=False, metadata=dict()):
         """Initialize ProgressTracker object with output log and map range.
 
         Arguments:
@@ -52,10 +54,13 @@ class ProgressTracker:
                   matches are logged. Otherwise, it is assumed to be a number 
                   ('n_expected'); items are recorded and each new item 
                   increments a counter which is compared against 'n_expected'.
+        metadata: Optional argument. If provided, expected to be a dict already 
+                  populated with some metadata.
         """
         # Set up initialized data attributes
         self.log_handle = log_handle
         self.map_range = map_range
+        self.metadata = metadata
         # Handle 'expected' argument, use it to set more data attributes.
         self.seen = {}
         try:
@@ -84,3 +89,7 @@ class ProgressTracker:
             cur = self.map_range[0] + self.n_seen * \
                 (self.map_range[1] - self.map_range[0]) / self.n_expected
             self.log_handle.write("#status %d\n" % cur)
+
+    def write_metadata(self, output):
+        """Write JSON-formatted metadata to file-like object"""
+        output.write(json.dumps(self.metadata) + '\n')

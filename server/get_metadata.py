@@ -8,8 +8,14 @@ usage: %prog genome_gff_file
 # Process the sorted genome GFF data and the json report of coding region 
 # coverage to get and return meta data.
 
-import json, gzip, os, re, sys
+import json
+import gzip
+import os
+import re
+import sys
 from utils import doc_optparse, gff, transcript
+
+DEFAULT_BUILD = "b36"
 
 def header_data(gff_in, metadata=dict(), check_ref=0):
     """Read GFF header data from file, store or return metadata
@@ -52,28 +58,28 @@ def get_genome_stats(build, filename):
     stats.close()
     return ref_genome
 
-def genome_metadata(gff_input, genome_stats_file, metadata):
+def genome_metadata(gff_input, genome_stats_file, progresstracker):
     """Take GFF, track and record associated metadata, yield same GFF lines
 
-    Requires three inputs: gff_input (file or GFF-formatted string generator),
-    genome_stats_file (str, path to a text file containing chromosome sizes), 
-    and genome_metadata object (dict into which metadata will be stored).
+    Required arguments:
+    gff_input: file or GFF-formatted string generator
+    genome_stats_file: str, path to a text file containing chromosome sizes 
+    progresstracker: ProgressTracker object
 
-    Updates genome_metadata after GFF-input in fully processed with:
-    genome_metadata['chromosomes']: chromosome names (list of str)
-    genome_metadata['called_num']: # of positions called (int)
-    genome_metadata['match_num']: # of positions called w/chr matching ref (int)
-    genome_metadata['called_frac']: fraction of reference called (float)
-    genome_metadata['called_frac_placeable']: frac of nogap ref called (float)
-    genome_metadata['coding_num']: # of coding positions called (int)
-    genome_metadata['coding_frac']: fraction of coding psotiions called (float)
+    The following keys will store metadata in progresstracker.metadata:
+    chromosomes: list of str, chromosome names
+    called_num: int, # of positions called
+    match_num: int, # of positions called w/chr matching ref
+    ref_all_num: int, # of positions in reference genome (includes unplaceable)
+    ref_nogap_num: int, # of placeable positions in reference genome
+    called_frac_all: float, fraction of reference called (includes unplaceable)
+    called_frac_nogap: float, fraction of placeable reference called
 
     Returns a generator, yielding same GFF-formatted strings as were inputed.
     """
     # 'chromosomes_raw' is a list of all the raw chromosome sequences seen.
     # 'chromosomes' has the same names edited, if needed, to match ref_genome.
     chromosomes_raw = list()
-    chromosomes = list()
 
     # 'called_num' counts total positions called, while 'match_num' only counts
     # positions which match a chromosome ID in the ref_genome data.
@@ -93,9 +99,18 @@ def genome_metadata(gff_input, genome_stats_file, metadata):
         gff_data = gff.input(gff_input)
     
     # Get chromosome lengths (total and placeable) for reference genome.
-    ref_genome = get_genome_stats(metadata['build'], genome_stats_file)
-    
+    try:
+        ref_genome = get_genome_stats(progresstracker.metadata['build'], 
+                                      genome_stats_file)
+    except KeyError:
+        ref_genome = get_genome_stats(DEFAULT_BUILD, genome_stats_file)
+
+    # Initialize chromosomes list, we'll add them as we see them.
+    progresstracker.metadata['chromosomes'] = list()
+
+    # Progress through GFF input.
     for record in gff_data:
+        # Record number of positions called.
         dist = (record.end - (record.start - 1))
         called_num += dist
         is_in_ref_genome = (record.seqname in ref_genome
@@ -104,31 +119,36 @@ def genome_metadata(gff_input, genome_stats_file, metadata):
         if is_in_ref_genome:
             match_num += dist
 
-        # If we haven't seen this chromosome before, add it to our lists and
-        # increase total & placeable reference sequences using ref_genome data.
+        # If this is a new chromosome: (1) Add it to our chromosomes list,
+        # (2) increase genome size variables (ref_all_num and ref_nogap_num)
+        # (3) call progresstracker.saw().
         if record.seqname not in chromosomes_raw:
             chromosomes_raw.append(record.seqname)
+            # Standardize chromosome name for metadata storage.
             chr_name = ""
             if record.seqname in ref_genome:
                 chr_name = record.seqname
             elif "chr" + record.seqname in ref_genome:
                 chr_name = "chr" + record.seqname
-            elif "chr" + record.seqname[3:]:
+            elif "chr" + record.seqname[3:] in ref_genome:
                 chr_name = "chr" + record.seqname[3:]
             if chr_name:
-                chromosomes.append(chr_name)
+                progresstracker.metadata['chromosomes'].append(chr_name)
                 ref_all_num += ref_genome[record.seqname]['seq_all']
                 ref_nogap_num += ref_genome[record.seqname]['seq_nogap']
+                progresstracker.saw(chr_name)
         
         yield str(record)
     
-    metadata['chromosomes'] = chromosomes
-    metadata['called_num'] = called_num
-    metadata['match_num'] = match_num
-    metadata['called_frac'] = match_num * 1.0 / ref_all_num
-    metadata['called_frac_placeable'] = match_num * 1.0 / ref_nogap_num
-    metadata['called_ref_all'] = ref_all_num
-    metadata['called_ref_nogap'] = ref_nogap_num
+    progresstracker.metadata['called_num'] = called_num
+    progresstracker.metadata['match_num'] = match_num
+    progresstracker.metadata['ref_all_num'] = ref_all_num
+    progresstracker.metadata['ref_nogap_num'] = ref_nogap_num
+    called_frac_all = match_num * 1.0 / ref_all_num
+    progresstracker.metadata['called_frac_all'] = called_frac_all
+    called_frac_nogap = match_num * 1.0 / ref_nogap_num
+    progresstracker.metadata['called_frac_nogap'] = called_frac_nogap
+
 
 def coding_metadata(json_coverage, chromosomes):
     genome = dict()
