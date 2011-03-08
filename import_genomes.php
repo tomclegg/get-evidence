@@ -143,8 +143,8 @@ foreach ($public_genomes as $g) {
     print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
     fclose ($fh);
 
-    $fh = fopen ("$datadir/ns.gff", "r");
-    if (!$fh) { print "open($datadir/ns.gff) failed.\n"; continue; }
+    $fh = gzopen ("$datadir/ns.gff.gz", "r");
+    if (!$fh) { print "open($datadir/ns.gff.gz) failed.\n"; continue; }
     if (file_exists ("$datadir/lock")) { print "Skipping because backend is still processing.\n"; continue; }
     $ops = 0;
     $count_existing_variants = 0;
