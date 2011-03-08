@@ -6,7 +6,7 @@ $gDbUser = "evidence";
 $gDbPassword = "shakespeare";
 $gBackendBaseDir = "/home/trait";
 
-$pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
-$public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
+$pgp_data_user = "https://profiles.google.com/PGP.uploader";
+$public_data_user = "https://profiles.google.com/Public.Genome.Uploader";
 
 ?>
