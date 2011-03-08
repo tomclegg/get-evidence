@@ -1,0 +1,19 @@
+diff --git a/Auth/Yadis/Yadis.php b/Auth/Yadis/Yadis.php
+index 9ea2db7..45bb0c4 100644
+--- a/Auth/Yadis/Yadis.php
++++ b/Auth/Yadis/Yadis.php
+@@ -358,6 +358,14 @@ class Auth_Yadis_Yadis {
+             }
+ 
+             if ($yadis_location) {
++
++		// X-XRDS-Location: www.google.com/accounts/o8/id?source=profiles&id=...
++		if (!preg_match ('{^[a-z]+:}i', $yadis_location) &&
++		    preg_match ('{^[-_\.a-z\d]+\.[a-z]+(/.*)?$}i', $yadis_location))
++		    $yadis_location =
++			(preg_match('{^https://}i', $uri) ? 'https://' : 'http://')
++			. $yadis_location;
++
+                 $result->xrds_uri = $yadis_location;
+ 
+                 $response = $fetcher->get($yadis_location);
