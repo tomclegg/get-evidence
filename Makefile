@@ -7,6 +7,7 @@ php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
 	cd php-openid && git fetch --tags http://github.com/openid/php-openid.git
 	cd php-openid && git checkout 2.2.2
+	cd php-openid && patch -p1 <../patch-yadis-noprotocol
 
 textile-2.0.0:
 	wget -c http://textile.thresholdstate.com/file_download/2/textile-2.0.0.tar.gz
