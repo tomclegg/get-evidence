@@ -18,8 +18,8 @@ import os
 import sys
 import fcntl
 import gzip
+from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
-from utils import doc_optparse
 from config import GENETESTS_DATA, GETEV_FLAT
 from config import DBSNP_B36_SORTED, DBSNP_B37_SORTED
 from config import KNOWNGENE_HG18_SORTED, KNOWNGENE_HG19_SORTED
@@ -34,8 +34,9 @@ import gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
 
-def genome_analyzer(server, genotype_file):
-    server.server_close()
+def genome_analyzer(genotype_file, server=None):
+    if server:
+        server.server_close()
     # Set all the variables we'll use.
     input_dir = os.path.dirname(genotype_file)
     output_dir = input_dir + "-out"
@@ -154,38 +155,62 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
 
 
 def main():
-    # parse options
-    option, args = doc_optparse.parse(__doc__)
+    """Genome analysis XMLRPC server, or submit analysis on command line"""
+    # Parse options.
+    usage = ("To run as XMLRPC server:\n%prog [--pidfile=PID_PATH " +
+             "--stderr=STDERR_PATH --host=HOST_STRING --port=PORT_NUM\n"
+             "To run on command line:\n%prog -g GENOME_DATA")
+    parser = OptionParser(usage=usage)
+    parser.add_option("--pidfile", dest="pidfile",
+                      help="store PID in PID_FILE",
+                      metavar="PID_FILE")
+    parser.add_option("--stderr", dest="stderr",
+                      help="write progress to LOG_FILE",
+                      metavar="LOG_FILE")
+    parser.add_option("--host", dest="host",
+                      help="HOST on which to listen",
+                      metavar="HOST")
+    parser.add_option("-p", "--port", dest="port",
+                      help="PORT on which to listen",
+                      metavar="PORT")
+    parser.add_option("-g", "--genome", dest="genome_data",
+                      help="GENOME_DATA to process",
+                      metavar="GENOME_DATA")
+    option, args = parser.parse_args()
     
-    if option.stderr:
-        errout = open(option.stderr,'a+',0)
-        os.dup2 (errout.fileno(), sys.stdout.fileno())
-        os.dup2 (errout.fileno(), sys.stderr.fileno())
+    if option.genome_data:
+        genome_analyzer(option.genome_data)
+    else:
+        if option.stderr:
+            errout = open(option.stderr,'a+',0)
+            os.dup2 (errout.fileno(), sys.stdout.fileno())
+            os.dup2 (errout.fileno(), sys.stderr.fileno())
 
-    if option.pidfile:
-        file(option.pidfile,'w+').write("%d\n" % os.getpid())
+        if option.pidfile:
+            file(option.pidfile,'w+').write("%d\n" % os.getpid())
 
-    # figure out the host and port
-    host = option.host or "localhost"
-    port = int(option.port or 8080)
-    
-    # create server
-    server = SimpleXMLRPCServer((host, port))
-    server.register_introspection_functions()
-    
-    def submit_local(genotype_file):
-        p = multiprocessing.Process(target=genome_analyzer, args=(server,genotype_file,))
-        p.start()
-        print "Job submitted for genotype_file: \'" + str(genotype_file) + "\', process ID: \'" + str(p.pid) + "\'"
-        return str(p.pid)
+        # figure out the host and port
+        host = option.host or "localhost"
+        port = int(option.port or 8080)
+        
+        # create server
+        server = SimpleXMLRPCServer((host, port))
+        server.register_introspection_functions()
+        
+        def submit_local(genotype_file):
+            p = multiprocessing.Process(target=genome_analyzer, args=(genotype_file,server,))
+            p.start()
+            print "Job submitted for genotype_file: \'" + str(genotype_file) + "\', process ID: \'" + str(p.pid) + "\'"
+            return str(p.pid)
 
-    server.register_function(submit_local)
+        server.register_function(submit_local)
 
-    # run the server's main loop
-    try:
-        server.serve_forever()
-    except:
-        server.server_close()
+        # run the server's main loop
+        # run the server's main loop
+        try:
+            server.serve_forever()
+        except:
+            server.server_close()
 
 if __name__ == "__main__":
     main()
