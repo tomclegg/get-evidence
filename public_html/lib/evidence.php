@@ -305,7 +305,7 @@ function evidence_get_variant_id ($gene,
   }
 
   if ($aa_pos === false) {
-    if (ereg ("^([-A-Za-z0-9_]+)[- ]+([A-Za-z]+)([0-9]+)([A-Za-z\\*]+)$", $gene, $regs)) {
+    if (ereg ("^([-A-Za-z0-9_]+)[- ]+([A-Za-z\\*]+)([0-9]+)([A-Za-z\\*]+)$", $gene, $regs)) {
       $gene = $regs[1];
       $aa_from = $regs[2];
       $aa_pos = $regs[3];
