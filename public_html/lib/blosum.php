@@ -43,7 +43,7 @@ function blosum100 ($aa1, $aa2)
   if (strstr($aa1, "X") && strstr($aa2, "X"))
     return 10; // this should never happen anyway.
 
-  if (strlen($aa1) != strlen($aa2))
+  if (strlen($aa1) != strlen($aa2) || strstr($aa2, "del"))
     return -4;
   if (strlen($aa1) > 1) {
     $min = 10;

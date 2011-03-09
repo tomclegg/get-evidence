@@ -5,8 +5,6 @@ include "lib/genome_display.php";
 $gOut["title"] = "GET-Evidence: Genomes";
 
 $page_content = "";  // all html output stored here
-$pgp_data_user = "http://www.google.com/profiles/PGP.uploader";
-$public_data_user = "http://www.google.com/profiles/Public.Genome.Uploader";
 
 $display_genome_ID = "";
 if (isset ($_REQUEST['display_genome_id']))
