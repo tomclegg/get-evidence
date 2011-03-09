@@ -13,15 +13,24 @@ usage: %prog [options]
 # ---
 # This code is part of the Trait-o-matic project and is governed by its license.
 
-import json, multiprocessing, os, random, sys, time, socket, fcntl, gzip
+import multiprocessing
+import os
+import sys
+import fcntl
+import gzip
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from utils import doc_optparse
 from config import GENETESTS_DATA, GETEV_FLAT
-from config import DBSNP_B36_SORTED, KNOWNGENE_HG18_SORTED, REFERENCE_GENOME_HG18
-from config import DBSNP_B37_SORTED, KNOWNGENE_HG19_SORTED, REFERENCE_GENOME_HG19
+from config import DBSNP_B36_SORTED, DBSNP_B37_SORTED
+from config import KNOWNGENE_HG18_SORTED, KNOWNGENE_HG19_SORTED
+from config import REFERENCE_GENOME_HG18, REFERENCE_GENOME_HG19
 from progresstracker import Logger, ProgressTracker
-
-import get_metadata, gff_call_uncovered, gff_twobit_query, gff_dbsnp_query, gff_nonsynonymous_filter, gff_getevidence_map
+import get_metadata 
+import call_missing 
+import gff_twobit_query
+import gff_dbsnp_query
+import gff_nonsynonymous_filter
+import gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
 
@@ -110,13 +119,14 @@ cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% -
                                                 progresstracker=pt
                                                 )
     # Report coding regions that lack coverage.
-    uncov_gen = gff_call_uncovered.report_uncovered(metadata_gen,
-                                                    args['transcripts'], 
-                                                    args['genetests'], 
-                                                    output_file=args['miss_out']
-                                                    )
+    missing_gen = call_missing.report_uncovered(metadata_gen,
+                                                args['transcripts'], 
+                                                args['genetests'], 
+                                                output_file=args['miss_out'],
+                                                progresstracker=pt
+                                                )
     # Find reference allele.
-    twobit_gen = gff_twobit_query.match2ref(uncov_gen, args['reference'])
+    twobit_gen = gff_twobit_query.match2ref(missing_gen, args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP

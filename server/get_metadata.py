@@ -8,12 +8,10 @@ usage: %prog genome_gff_file
 # Process the sorted genome GFF data and the json report of coding region 
 # coverage to get and return meta data.
 
-import json
 import gzip
-import os
 import re
 import sys
-from utils import doc_optparse, gff, transcript
+from utils import gff
 
 DEFAULT_BUILD = "b36"
 
@@ -46,6 +44,7 @@ def header_data(gff_in, metadata=dict(), check_ref=0):
     return metadata
 
 def get_genome_stats(build, filename):
+    """Get chromosome sizes from genome stats file"""
     ref_genome = dict()
     stats = open(filename)
     for line in stats:
@@ -148,44 +147,6 @@ def genome_metadata(gff_input, genome_stats_file, progresstracker):
     progresstracker.metadata['called_frac_all'] = called_frac_all
     called_frac_nogap = match_num * 1.0 / ref_nogap_num
     progresstracker.metadata['called_frac_nogap'] = called_frac_nogap
-
-
-def coding_metadata(json_coverage, chromosomes):
-    genome = dict()
-    # Set up coverage_data and variables
-    coverage_file = open(json_coverage)
-    ref_coding = 0      # Add only if in gene is in chromosome file (ignore random/other)
-    ref_coding_clintest = 0
-    called_coding = 0
-    called_coding_clintest = 0
-    for line in coverage_file:
-        coverage_data = json.loads(line)
-        if "chr" in coverage_data:
-            if coverage_data["chr"] in chromosomes:
-                called_length = coverage_data["length"] - coverage_data["missing"]
-                if called_length >= 0 and called_length <= coverage_data["length"]: # sanity check
-                    ref_coding += coverage_data["length"]
-                    called_coding += called_length
-                    if "clin_test" in coverage_data and coverage_data["clin_test"]:
-                        ref_coding_clintest += coverage_data["length"]
-                        called_coding_clintest += called_length
-        else:
-            print "Error, no 'chr' in: " + line
-    if ref_coding > 0:
-        genome['coding_num'] = called_coding
-        genome['coding_frac'] = called_coding * 1.0 / ref_coding
-        if ref_coding_clintest > 0:
-            genome['coding_clintest_num'] = called_coding_clintest
-            genome['coding_clintest_frac'] = called_coding_clintest * 1.0 / ref_coding_clintest
-        else:
-            genome['coding_clintest_num'] = 0
-            genome['coding_clintest_frac'] = 0
-    else:
-        genome['coding_num'] = 0
-        genome['coding_frac'] = 0
-    genome['coding_ref'] = ref_coding
-    genome['coding_clintest_ref'] = ref_coding_clintest
-    return genome
 
 def main():
     """Return GFF header metadata"""
