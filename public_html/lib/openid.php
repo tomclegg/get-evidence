@@ -44,6 +44,7 @@ function openid_try ($url)
     {
       $_SESSION["auth_error"] = "Error: not a valid OpenID.";
       header ("Location: ./");
+      exit;
     }
   $sreg_request = Auth_OpenID_SRegRequest::build(array('email'),
 						 array('nickname', 'fullname'));
