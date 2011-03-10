@@ -266,8 +266,8 @@ def infer_function(twobit_file, record, geneName, strand, cdsStart, cdsEnd, exon
                     ref_allele = ""
                 if (len(ref_allele) != record.end + 1 - record.start):
                     sys.exit("Reference allele length doesn't match GFF positions! ref_allele: \""  \
-                        + record.attributes["ref_allele"] + "\", start: " + record.start + " end: " \
-                        + record.end)
+                        + record.attributes["ref_allele"] + "\", start: " + str(record.start) + " end: " \
+                        + str(record.end))
                 try:
                     alleles.remove(ref_allele)
                 except ValueError:
