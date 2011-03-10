@@ -9,9 +9,7 @@ usage: %prog [options]
   -p, --port=NUMBER: the port on which to listen
 """
 
-# Start an XMLRPC server for Trait-o-matic
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
+# Start an XMLRPC server for genome analysis.
 
 import multiprocessing
 import os
@@ -161,6 +159,8 @@ def main():
              "--stderr=STDERR_PATH --host=HOST_STRING --port=PORT_NUM\n"
              "To run on command line:\n%prog -g GENOME_DATA")
     parser = OptionParser(usage=usage)
+    parser.add_option("-s", "--server", action="store_true", dest="is_server",
+                      default=False, help="run as XML-RPC server")
     parser.add_option("--pidfile", dest="pidfile",
                       help="store PID in PID_FILE",
                       metavar="PID_FILE")
@@ -178,9 +178,9 @@ def main():
                       metavar="GENOME_DATA")
     option, args = parser.parse_args()
     
-    if option.genome_data:
+    if option.genome_data and not option.is_server:
         genome_analyzer(option.genome_data)
-    else:
+    elif option.is_server:
         if option.stderr:
             errout = open(option.stderr,'a+',0)
             os.dup2 (errout.fileno(), sys.stdout.fileno())
@@ -211,6 +211,8 @@ def main():
             server.serve_forever()
         except:
             server.server_close()
+    else:
+        parser.print_help()
 
 if __name__ == "__main__":
     main()
