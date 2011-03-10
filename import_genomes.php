@@ -103,7 +103,7 @@ foreach ($public_genomes as $g) {
 	foreach ($variant_names as $variant_name) {
 	    $rsid = null;
 	    if (preg_match ('/^rs(\d+)$/', $variant_name, $regs) ||
-		(isset ($jvariant["dbsnp"]) && preg_match ('/^rs(\d+)/', $jvariant["dbsnp"], $regs)))
+		(isset ($jvariant["dbsnp"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbsnp"], $regs)))
 		$rsid = $regs[1];
 	    $variant_id = evidence_get_variant_id ($variant_name);
 	    if ($variant_id)
@@ -152,6 +152,7 @@ foreach ($public_genomes as $g) {
     print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
     fclose ($fh);
 
+    print "\nReading ns.gff[.gz].\n";
     if (file_exists ("$datadir/ns.gff.gz"))
 	$fh = gzopen ($nsfile = "$datadir/ns.gff.gz", "r");
     else
@@ -162,6 +163,8 @@ foreach ($public_genomes as $g) {
     $count_existing_variants = 0;
     $count_new_variants = 0;
     while (($line = fgets ($fh)) !== false) {
+	if ($line[0] == "#")
+	    continue;
 	++$ops;
 	if ($ops % 100000 == 0)
 	    print $ops;
@@ -169,15 +172,15 @@ foreach ($public_genomes as $g) {
 	    print ".";
 	$gff = explode ("\t", $line);
 
-	$dbSNP = null;
-	if (preg_match ('{db_xref dbsnp:rs(\d+)}', $gff[8], $regs))
-	    $dbSNP = $regs[1];
+	$rsid = null;
+	if (preg_match ('{db_xref dbsnp(?:\.\d+)?:rs(\d+)}', $gff[8], $regs))
+	    $rsid = $regs[1];
 
 	if (preg_match ('{amino_acid ([^;\n]+)}', $gff[8], $regs))
 	    $variant_names = explode ("/", $regs[1]);
-	else if ($dbSNP)
+	else if ($rsid)
 	    // If we wanted to add all dbsnp variants, we would do...
-	    // $variant_names = array ("rs$dbSNP");
+	    // $variant_names = array ("rs$rsid");
 	    // ...but we don't.
 	    continue;
 	else
@@ -226,7 +229,7 @@ foreach ($public_genomes as $g) {
 					 $position,
 					 $trait_allele,
 					 $taf,
-					 $dbSNP,
+					 $rsid,
 					 $dataset_id,
 					 $zygosity));
 	    if (theDb()->isError($ok)) die ($line."\n".$ok->getMessage());
