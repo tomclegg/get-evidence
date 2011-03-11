@@ -9,14 +9,14 @@ usage: %prog [options]
   -p, --port=NUMBER: the port on which to listen
 """
 
-# Start an XMLRPC server for Trait-o-matic
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
+# Start an XMLRPC server for genome analysis.
 
 import multiprocessing
+import re
 import os
 import sys
 import fcntl
+import bz2
 import gzip
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
@@ -33,6 +33,104 @@ import gff_nonsynonymous_filter
 import gff_getevidence_map
 
 script_dir = os.path.dirname(sys.argv[0])
+
+def detect_format(genome_in):
+    """Look at genome data and make a best guess for the file format."""
+    if re.search(r'\.bz2$', genome_in):
+        print "BZIP2 detected"
+        f_in = bz2.BZ2File(genome_in, 'r')
+    elif re.search(r'\.gz$', genome_in):
+        print "GZIP detected"
+        f_in = gzip.GzipFile(genome_in, 'r')
+    else:
+        print "No compression suffix, assumed to be flat"
+        f_in = open(genome_in, 'r')
+    try:
+        line = f_in.next()
+    except StopIteration:
+        print "No lines in file?"
+        return "UNKNOWN"
+    # First check for header lines for clues.
+    while re.match('#', line):
+        if re.match(r'#TYPE.*VAR-ANNOTATION', line):
+            print "CGIVAR detected"
+            return "CGIVAR"
+        if re.match(r'##gff-version', line):
+            print "GFF detected"
+            return "GFF"
+        try:
+            line = f_in.next()
+        except StopIteration:
+            print "Nothing but header?"
+            return "UNKNOWN"
+    # Look at other lines and decide based on their format.
+    for i in range(100):
+        data = line.split('\t')
+        if len(data) < 7:
+            try:
+                line = f_in.next()
+            except StopIteration:
+                print "Less than 100 lines?"
+                return "UNKNOWN"
+            continue
+        cgi_like = ( re.match(r'chr', data[3]) and 
+                     re.match(r'[0-9]', data[4]) and 
+                     re.match(r'[0-9]', data[5]) and
+                     (data[6] == "no-call" or data[6] == "ref") )
+        gff_like = ( re.match(r'[0-9]', data[3]) and
+                     re.match(r'[0-9]', data[4]) and
+                     data[6] == "+" )
+        #print str(cgi_like) + " " + str(gff_like) + " " + str(data)
+        if cgi_like:
+            print "CGIVAR guessed"
+            return "CGIVAR"
+        elif gff_like:
+            print "GFF guessed"
+            return "GFF"
+        try:
+            line = f_in.next()
+        except StopIteration:
+            break
+    print "Giving up after 100 lines..."
+    return "UNKNOWN"
+
+
+def process_source(genome_in, sorted_out, log):
+    """
+    Sort genome input (flat, gzip, or bzip2), converting first to GFF if needed.
+    """
+    in_type = detect_format(genome_in)
+    args = { 'genome_in': genome_in,
+          'sorted_out': sorted_out,
+          'cat_command': 'cat'
+          }
+    if re.search(r'\.gz', genome_in):
+        args['cat_command'] = 'zcat'
+    elif re.search(r'\.bz2$', genome_in):
+        args['cat_command'] = 'bzcat'
+
+    if in_type == "GFF":
+        proc_source_cmd = ("(%(cat_command)s %(genome_in)s | egrep '^#'; "
+                           "%(cat_command)s %(genome_in)s | egrep -v '^#' | "
+                           "sort --buffer-size=20%% --key=1,1 --key=4n,4) | "
+                           "gzip -c > %(sorted_out)s" % args
+                           )
+        log.put(proc_source_cmd)
+        os.system(proc_source_cmd)
+    elif in_type == "CGIVAR":
+        args['cgivar_conv'] = "python " + os.path.join(script_dir, "conversion/cgivar_to_gff.py")
+        proc_source_cmd = ("(%(cat_command)s %(genome_in)s | "
+                           "%(cgivar_conv)s | egrep '^#'; "
+                           "%(cat_command)s %(genome_in)s | "
+                           "%(cgivar_conv)s | egrep -v '^#' | "
+                           "sort --buffer-size=20%% --key=1,1 --key=4n,4) | "
+                           "gzip -c > %(sorted_out)s" % args
+                           )
+        os.system(proc_source_cmd)
+    else:
+        print "Unable to sort - not GFF or CGIVAR?"
+
+
 
 def genome_analyzer(genotype_file, server=None):
     if server:
@@ -83,13 +181,9 @@ def genome_analyzer(genotype_file, server=None):
     except:
         print "Unexpected error:", sys.exc_info()[0]
 
-    # Sort input genome data
-    log.put ('#status 0/100 sorting input file')
-    sort_source_cmd = '''(
-cat '%(genotype_input)s' | gzip -cdf | egrep "^#";
-cat '%(genotype_input)s' | gzip -cdf | egrep -v "^#" | sort --buffer-size=20%% --key=1,1 --key=4n,4
-) | gzip -c > '%(sorted_out)s' ''' % args
-    os.system(sort_source_cmd)
+    # Process and sort input genome data
+    log.put ('#status 0/100 calling process_source to process and sorting input file')
+    process_source(args['genotype_input'], args['sorted_out'], log)
 
     # Get header metadata from whole genome before processing (to get build)
     genome_data = get_metadata.header_data(args['sorted_out'], check_ref=100)
@@ -161,6 +255,8 @@ def main():
              "--stderr=STDERR_PATH --host=HOST_STRING --port=PORT_NUM\n"
              "To run on command line:\n%prog -g GENOME_DATA")
     parser = OptionParser(usage=usage)
+    parser.add_option("-s", "--server", action="store_true", dest="is_server",
+                      default=False, help="run as XML-RPC server")
     parser.add_option("--pidfile", dest="pidfile",
                       help="store PID in PID_FILE",
                       metavar="PID_FILE")
@@ -178,9 +274,9 @@ def main():
                       metavar="GENOME_DATA")
     option, args = parser.parse_args()
     
-    if option.genome_data:
+    if option.genome_data and not option.is_server:
         genome_analyzer(option.genome_data)
-    else:
+    elif option.is_server:
         if option.stderr:
             errout = open(option.stderr,'a+',0)
             os.dup2 (errout.fileno(), sys.stdout.fileno())
@@ -211,6 +307,8 @@ def main():
             server.serve_forever()
         except:
             server.server_close()
+    else:
+        parser.print_help()
 
 if __name__ == "__main__":
     main()

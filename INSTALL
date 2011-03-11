@@ -105,7 +105,7 @@ Add OMIM data:
 Make sure genome analysis server is executable:
 
  cd ~/get-evidence/server/
- chmod +x trait-o-matic-server.py 
+ chmod +x genome_analyzer.py
 
 Modify php.ini settings to enable genome uploads. In ubuntu you can
 either edit /etc/php5/apache2/php.ini or create
@@ -126,17 +126,18 @@ Populate the upload directory with its initial directory structure:
  source ~/get-evidence/server/script/config-local.sh
  sudo -u $USER mkdir -p $TMP $UPLOAD $LOG $CONFIG $DATA
 
-Log in as root, load environment variables and set up trait-o-matic server:
+Log in as root, load environment variables and set up genome analysis server:
+
  cd ~/get-evidence/server/script
  sudo su
  source defaults.sh
  perl -p -e 's/%([A-Z]+)%/$ENV{$1}/g' \
-   < $SOURCE/server/script/trait-o-matic.in \
-   > /etc/init.d/trait-o-matic.tmp
- chmod 755 /etc/init.d/trait-o-matic.tmp
- chown 0:0 /etc/init.d/trait-o-matic.tmp
- mv /etc/init.d/trait-o-matic.tmp /etc/init.d/trait-o-matic
- update-rc.d trait-o-matic start 20 2 3 4 5 . stop 80 0 1 6 .
+   < $SOURCE/server/script/genome-analyzer.in \
+   > /etc/init.d/genome-analyzer.tmp
+ chmod 755 /etc/init.d/genome-analyzer.tmp
+ chown 0:0 /etc/init.d/genome-analyzer.tmp
+ mv /etc/init.d/genome-analyzer.tmp /etc/init.d/genome-analyzer
+ update-rc.d genome-analyzer start 20 2 3 4 5 . stop 80 0 1 6 .
  exit
 
 Run install-user.sh as www-data (this includes some file downloads):
@@ -161,8 +162,8 @@ Build python extensions:
  cd ~/get-evidence/server
  python setup.py build_ext --inplace
 
-Start trait-o-matic server:
- sudo /etc/init.d/trait-o-matic start
+Start genome analysis server:
+ sudo /etc/init.d/genome-analyzer start
 
 Set up cron job to run "make" periodically.
 
