@@ -1,0 +1,39 @@
+#!/bin/bash
+# 
+# chkconfig: 2345 20 80 
+# description: Genome analysis server
+
+export USER="%USER%"
+export LOG="%LOG%"
+export CORE="%CORE%"
+export DATA="%DATA%"
+SERVER="$CORE/genome_analyzer.py"
+SERVER_PID="%TMP%/server.pid"
+
+start() {
+    echo Starting genome analysis server.
+    start-stop-daemon --pidfile $SERVER_PID --user $USER --exec `which python` --background --chuid $USER --startas $SERVER --start -- -s --pidfile=$SERVER_PID --stderr=$LOG/server.log
+}
+
+stop() {
+    echo Stopping genome analysis server.
+    start-stop-daemon --pidfile $SERVER_PID --user $USER --exec `which python` --stop --retry 2
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    restart)
+	stop
+	start
+	;;
+    *)
+	echo "Usage: $0 start|stop|restart"
+	exit 1
+	;;
+esac
+exit $?
