@@ -41,6 +41,7 @@ genome_analyzer.py instead of "trait-o-matic-server"):
 
  cd ~/get-evidence/server/script
  sudo su
+ /etc/init.d/trait-o-matic stop
  rm /etc/init.d/trait-o-matic
  update-rc.d trait-o-matic remove
  source defaults.sh
