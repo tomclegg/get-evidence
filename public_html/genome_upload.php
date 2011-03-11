@@ -14,7 +14,11 @@ if (isset($_POST['reprocess_genome_id'])) {
     $reprocess_genome_ID = $_POST['reprocess_genome_id'];
     $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype.gff";
     if (! file_exists($permname)) {
-        $permname = $permname . ".gz";
+        if (file_exists ($permname . ".gz")) {
+            $permname = $permname . ".gz";
+        } elseif (file_exists ($permname . ".bz2")) {
+            $permname = $permname . ".bz2";
+        }
     }
     if (file_exists($permname)) {
         $page_content .= "<P>Reprocessing data: " . $reprocess_genome_ID . "</P>\n";
@@ -54,13 +58,15 @@ if (isset($_POST['reprocess_genome_id'])) {
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
     $ext = substr($filename, strrpos($filename, '.') + 1);
-    if (($ext == "txt" || $ext == "gff" || $ext == "gz") && ($_FILES["genotype"]["size"] < 500000000)) {
+    if (($ext == "txt" || $ext == "gff" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 500000000)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
         $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype.gff";
         if ($ext == "gz") {
             $permname = $permname . ".gz";
+        } elseif ($ext == "bz2") {
+            $permname = $permname . ".bz2";
         }
 	$already_have = (file_exists($permname) &&
 			 sha1_file($permname) == $shasum);
@@ -82,7 +88,7 @@ if (isset($_POST['reprocess_genome_id'])) {
             $page_content .= "Error: A problem occurred during file upload!";
         }
     } else {
-        $page_content .= "Error: Only .txt or .gff files under 500MB are accepted for upload";
+        $page_content .= "Error: Only .txt, .gff, .gz or .bz2 files under 500MB are accepted for upload";
     }
 } elseif (isset($_POST['location']) && $user && $user['oid']) {
   $location = preg_replace('{/\.\./}','',$_POST['location']); # No shenanigans
