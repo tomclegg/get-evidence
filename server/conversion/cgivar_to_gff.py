@@ -50,7 +50,7 @@ def process_full_position(data):
     # GFF uses 1-based start & 1-based end, CGI has 0-based start, 1-based end.
     start_onebased = str(int(begin) + 1)
 
-    if type == "ref": 
+    if feat_type == "ref": 
         feat_type, attributes = "REF", "."
     else:
         # Default feature type is INDEL unless lengths are equal.
