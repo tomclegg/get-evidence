@@ -36,10 +36,13 @@ def header_data(gff_in, metadata=dict(), check_ref=0):
     if check_ref > 0:
         metadata['has_ref'] = False
         for i in range(check_ref):
-            if record.feature == "REF":
-                metadata['has_ref'] = True
+            try:
+                if record.feature == "REF":
+                    metadata['has_ref'] = True
+                    break
+                record = gff_data.next()
+            except StopIteration:
                 break
-            record = gff_data.next()
 
     return metadata
 
