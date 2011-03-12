@@ -6,6 +6,10 @@
 
 include "lib/setup.php";
 
+$path_info = "";
+if (isset($_SERVER["PATH_INFO"]))
+    $path_info = $_SERVER["PATH_INFO"];
+
 $snap = false;
 if ($_GET["version"] == "release" ||
     ereg ("/release", $_SERVER["PATH_INFO"]) ||
@@ -16,6 +20,7 @@ else if ($_GET["version"] == "latest" ||
 	 $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "latest")
     $snap = "latest";
 
+$need_max_or_or = 0;
 if (ereg ("/max_or_or", $_SERVER["PATH_INFO"]) ||
     $_SERVER["argc"] > 3 && $_SERVER["argv"][3] == "max_or_or")
     $need_max_or_or = 1;

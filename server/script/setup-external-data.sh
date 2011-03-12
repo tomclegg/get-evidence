@@ -38,10 +38,10 @@ fi
 
 echo Sorting dbSNP
 if [ ! -f dbSNP_sort.stamp ]; then
-  for bcp in b130_SNPChrPosOnRef_36_3.bcp b132_SNPChrPosOnRef_37_1.bcp
+  for bcp in b130_SNPChrPosOnRef_36_3 b132_SNPChrPosOnRef_37_1
   do
-    $GUNZIP < $bcp.gz | sort --buffer-size=20% --key=2,2 --key=3n,3 | perl -nae 'if ($#F == 3) { print; }' > $bcp.tmp
-    mv $bcp.tmp $bcp
+    $GUNZIP < $bcp.bcp.gz | sort --buffer-size=20% --key=2,2 --key=3n,3 | perl -nae 'if ($#F == 3) { print; }' > $bcp.tmp
+    mv $bcp.tmp ${bcp}_sorted.bcp
   done
   touch dbSNP_sort.stamp
 fi
