@@ -33,7 +33,7 @@ import gff_nonsynonymous_filter
 import gff_getevidence_map
 from conversion import cgivar_to_gff
 
-script_dir = os.path.dirname(sys.argv[0])
+SCRIPT_DIR = os.path.dirname(sys.argv[0])
 
 def detect_format(f_in):
     """Take str generator input, determine genome file format (GFF or CGIVAR)"""
@@ -110,7 +110,6 @@ def process_source(genome_in):
         gff_input = cgivar_to_gff.convert(source_input.stdout)
     else:
         print "ERROR: genome file format not recognized"
-        return None
 
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
@@ -119,6 +118,8 @@ def process_source(genome_in):
     sort_out = subprocess.Popen(sort_cmd, stdin=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, bufsize=1)
     genome_build = "b36"
+    b36_list = ["hg18", "36", "b36", "build36", "NCBI36"]
+    b37_list = ["hg19", "37", "b37", "build37", "GRCh37"]
     for line in gff_input:
         if not header_done:
             if re.match('#', line):
@@ -127,9 +128,9 @@ def process_source(genome_in):
                     gbdata = line.split()
                     if len(gbdata) < 2:
                         raise Exception("no genome build specified?")
-                    elif gbdata[1] in ["hg18","36","b36","build36","NCBI36"]:
+                    elif gbdata[1] in b36_list:
                         genome_build = "b36"
-                    elif gbdata[1] in ["hg19","37","b37","build37","GRCh37"]:
+                    elif gbdata[1] in b37_list:
                         genome_build = "b37"
                     else:
                         raise Exception("genome build uninterpretable")
@@ -147,6 +148,7 @@ def process_source(genome_in):
         yield line.rstrip('\n')
 
 def genome_analyzer(genotype_file, server=None):
+    """Perform analyses on genotype_file"""
     if server:
         server.server_close()
     # Set all the variables we'll use.
@@ -161,7 +163,7 @@ def genome_analyzer(genotype_file, server=None):
     log_handle = open(lockfile, "a+", 0)
     try:
         fcntl.flock(log_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except:
+    except IOError:
         print 'Lockfile really is locked.  Quitting.'
         return
     log_handle.seek(0)
@@ -184,9 +186,10 @@ def genome_analyzer(genotype_file, server=None):
              'nonsyn_out': os.path.join(output_dir, 'ns.gff.gz'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
              'metadata_out': os.path.join(output_dir, 'metadata.json'),
-             'genome_stats': os.path.join(script_dir, 'genome_stats.txt'),
+             'genome_stats': os.path.join(SCRIPT_DIR, 'genome_stats.txt'),
              'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA),
-             'getev_flat': os.path.join(os.getenv('CORE'), '../public_html/', GETEV_FLAT) }
+             'getev_flat': os.path.join(os.getenv('CORE'), '../public_html/', 
+                                        GETEV_FLAT) }
 
     # Make output directory if needed
     try:
@@ -196,50 +199,58 @@ def genome_analyzer(genotype_file, server=None):
         print "Unexpected error:", sys.exc_info()[0]
 
     # Process and sort input genome data
-    log.put ('#status 0/100 calling process_source to process and sorting input file')
+    log.put ('#status 0/100 calling process_source to process and sorting'
+             'input file')
     gff_in_gen = process_source(args['genotype_input'])
     genome_data = { 'build': gff_in_gen.next() }
 
     # Set up build-dependent file locations
     if (genome_data['build'] == "b36"):
         args['dbsnp'] = os.path.join(os.getenv('DATA'), DBSNP_B36_SORTED)
-        args['reference'] = os.path.join(os.getenv('DATA'), REFERENCE_GENOME_HG18)
-        args['transcripts'] = os.path.join(os.getenv('DATA'), KNOWNGENE_HG18_SORTED)
+        args['reference'] = os.path.join(os.getenv('DATA'), 
+                                         REFERENCE_GENOME_HG18)
+        args['transcripts'] = os.path.join(os.getenv('DATA'), 
+                                           KNOWNGENE_HG18_SORTED)
     elif (genome_data['build'] == "b37"):
         args['dbsnp'] = os.path.join(os.getenv('DATA'), DBSNP_B37_SORTED)
-        args['reference'] = os.path.join(os.getenv('DATA'), REFERENCE_GENOME_HG19)
-        args['transcripts'] = os.path.join(os.getenv('DATA'), KNOWNGENE_HG19_SORTED)
+        args['reference'] = os.path.join(os.getenv('DATA'), 
+                                         REFERENCE_GENOME_HG19)
+        args['transcripts'] = os.path.join(os.getenv('DATA'), 
+                                           KNOWNGENE_HG19_SORTED)
     else:
         raise Exception("genome build data is invalid")
 
     # It might be more elegant to extract this from metadata.
-    chrlist = map (lambda x: 'chr'+str(x), range(1,22)+['X','Y'])
+    chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
 
     # Process genome through a series of GFF-formatted string generators.
     log.put('#status 4 processing genome data (get reference alleles, '
             + 'dbSNP IDs, nonsynonymous changes, etc.)')
-    pt = ProgressTracker(log_handle, [5,99], expected=chrlist, 
-                         metadata=genome_data)
+    progtrack = ProgressTracker(log_handle, [5, 99], expected=chrlist, 
+                                metadata=genome_data)
     # Record chromosomes seen and genome coverage.
     metadata_gen = get_metadata.genome_metadata(gff_in_gen,
                                                 args['genome_stats'],
-                                                progresstracker=pt
-                                                )
+                                                progresstracker=progtrack)
     # Report coding regions that lack coverage.
     missing_gen = call_missing.report_uncovered(metadata_gen,
                                                 args['transcripts'], 
                                                 args['genetests'], 
                                                 output_file=args['miss_out'],
-                                                progresstracker=pt
-                                                )
+                                                progresstracker=progtrack)
     # Find reference allele.
     twobit_gen = gff_twobit_query.match2ref(missing_gen, args['reference'])
     # Look up dbSNP IDs
     dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
     # Check for nonsynonymous SNP
-    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, args['reference'], args['transcripts'])
+    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, 
+                                                           args['reference'], 
+                                                           args['transcripts'])
     # Pull off GET-Evidence hits
-    nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, args['getev_flat'], output_file=args['getev_out'] + ".tmp", progresstracker=pt)
+    nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, 
+                                       args['getev_flat'], 
+                                       output_file=args['getev_out'] + ".tmp", 
+                                       progresstracker=progtrack)
 
     # Printing to output, pulls data through the generator chain.
     ns_out = gzip.open(args['nonsyn_out'], 'w')
@@ -250,7 +261,7 @@ def genome_analyzer(genotype_file, server=None):
 
     # Print metadata
     metadata_f_out = open(args['metadata_out'], 'w')
-    pt.write_metadata(metadata_f_out)
+    progtrack.write_metadata(metadata_f_out)
     metadata_f_out.close()
 
     log.put ('#status 100 finished')
@@ -290,12 +301,12 @@ def main():
         genome_analyzer(option.genome_data)
     elif option.is_server:
         if option.stderr:
-            errout = open(option.stderr,'a+',0)
+            errout = open(option.stderr, 'a+', 0)
             os.dup2 (errout.fileno(), sys.stdout.fileno())
             os.dup2 (errout.fileno(), sys.stderr.fileno())
 
         if option.pidfile:
-            file(option.pidfile,'w+').write("%d\n" % os.getpid())
+            file(option.pidfile, 'w+').write("%d\n" % os.getpid())
 
         # figure out the host and port
         host = option.host or "localhost"
@@ -306,14 +317,17 @@ def main():
         server.register_introspection_functions()
         
         def submit_local(genotype_file):
-            p = multiprocessing.Process(target=genome_analyzer, args=(genotype_file,server,))
-            p.start()
-            print "Job submitted for genotype_file: \'" + str(genotype_file) + "\', process ID: \'" + str(p.pid) + "\'"
-            return str(p.pid)
+            """Start subprocess to perform genome analysis"""
+            process = multiprocessing.Process(target=genome_analyzer, 
+                                        args=(genotype_file,server,))
+            process.start()
+            print("Job submitted for genotype_file: \'" + 
+                  str(genotype_file) + "\', process ID: \'" + 
+                  str(process.pid) + "\'")
+            return str(process.pid)
 
         server.register_function(submit_local)
 
-        # run the server's main loop
         # run the server's main loop
         try:
             server.serve_forever()
