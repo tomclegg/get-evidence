@@ -14,9 +14,9 @@ usage: %prog [options]
 import multiprocessing
 import re
 import os
+import subprocess
 import sys
 import fcntl
-import bz2
 import gzip
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
@@ -31,20 +31,12 @@ import gff_twobit_query
 import gff_dbsnp_query
 import gff_nonsynonymous_filter
 import gff_getevidence_map
+from conversion import cgivar_to_gff
 
 script_dir = os.path.dirname(sys.argv[0])
 
-def detect_format(genome_in):
-    """Look at genome data and make a best guess for the file format."""
-    if re.search(r'\.bz2$', genome_in):
-        print "BZIP2 detected"
-        f_in = bz2.BZ2File(genome_in, 'r')
-    elif re.search(r'\.gz$', genome_in):
-        print "GZIP detected"
-        f_in = gzip.GzipFile(genome_in, 'r')
-    else:
-        print "No compression suffix, assumed to be flat"
-        f_in = open(genome_in, 'r')
+def detect_format(f_in):
+    """Take str generator input, determine genome file format (GFF or CGIVAR)"""
     try:
         line = f_in.next()
     except StopIteration:
@@ -91,46 +83,68 @@ def detect_format(genome_in):
             line = f_in.next()
         except StopIteration:
             break
-    print "Giving up after 100 lines..."
+    print "Giving up after 100 lines... Can't figure out data format."
     return "UNKNOWN"
 
-
-def process_source(genome_in, sorted_out, log):
+def process_source(genome_in):
     """
-    Sort genome input (flat, gzip, or bzip2), converting first to GFF if needed.
+    Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
-    in_type = detect_format(genome_in)
-    args = { 'genome_in': genome_in,
-          'sorted_out': sorted_out,
-          'cat_command': 'cat'
-          }
+    # Handle genome compression, get input, and make best guess of format type.
+    args = { 'genome_in': genome_in, 'cat_command': 'cat ' + genome_in }
     if re.search(r'\.gz', genome_in):
-        args['cat_command'] = 'zcat'
-    elif re.search(r'\.bz2$', genome_in):
-        args['cat_command'] = 'bzcat'
+        args['cat_command'] = 'zcat ' + genome_in
+    if re.search(r'\.bz2', genome_in):
+        args['cat_command'] = 'bzcat ' + genome_in
+    source_input = subprocess.Popen(args['cat_command'], shell=True, 
+                                    stdout=subprocess.PIPE)
+    in_type = detect_format(source_input.stdout)
 
+    # Reset input and output GFF (convert if necessary).
+    source_input.stdout.close()
+    source_input = subprocess.Popen(args['cat_command'], shell=True,
+                                 stdout=subprocess.PIPE)
     if in_type == "GFF":
-        proc_source_cmd = ("(%(cat_command)s %(genome_in)s | egrep '^#'; "
-                           "%(cat_command)s %(genome_in)s | egrep -v '^#' | "
-                           "sort --buffer-size=20%% --key=1,1 --key=4n,4) | "
-                           "gzip -c > %(sorted_out)s" % args
-                           )
-        log.put(proc_source_cmd)
-        os.system(proc_source_cmd)
+        gff_input = source_input.stdout
     elif in_type == "CGIVAR":
-        args['cgivar_conv'] = "python " + os.path.join(script_dir, "conversion/cgivar_to_gff.py")
-        proc_source_cmd = ("(%(cat_command)s %(genome_in)s | "
-                           "%(cgivar_conv)s | egrep '^#'; "
-                           "%(cat_command)s %(genome_in)s | "
-                           "%(cgivar_conv)s | egrep -v '^#' | "
-                           "sort --buffer-size=20%% --key=1,1 --key=4n,4) | "
-                           "gzip -c > %(sorted_out)s" % args
-                           )
-        os.system(proc_source_cmd)
+        gff_input = cgivar_to_gff.convert(source_input.stdout)
     else:
-        print "Unable to sort - not GFF or CGIVAR?"
+        print "ERROR: genome file format not recognized"
+        return None
 
+    # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
+    header_done = False
+    header = []
+    sort_cmd = ['sort', '--buffer-size=20%', '--key=1,1', '--key=4n,4']
+    sort_out = subprocess.Popen(sort_cmd, stdin=subprocess.PIPE, 
+                                stdout=subprocess.PIPE, bufsize=1)
+    genome_build = "b36"
+    for line in gff_input:
+        if not header_done:
+            if re.match('#', line):
+                header.append(line)
+                if line.startswith("##genome-build"):
+                    gbdata = line.split()
+                    if len(gbdata) < 2:
+                        raise Exception("no genome build specified?")
+                    elif gbdata[1] in ["hg18","36","b36","build36","NCBI36"]:
+                        genome_build = "b36"
+                    elif gbdata[1] in ["hg19","37","b37","build37","GRCh37"]:
+                        genome_build = "b37"
+                    else:
+                        raise Exception("genome build uninterpretable")
+            else:
+                header_done = True
+        else:
+            sort_out.stdin.write(str(line) + '\n')
+    sort_out.stdin.close()
 
+    # Yield the genome build, followed by the GFF data.
+    yield genome_build
+    for line in header:
+        yield line.rstrip('\n')
+    for line in sort_out.stdout:
+        yield line.rstrip('\n')
 
 def genome_analyzer(genotype_file, server=None):
     if server:
@@ -183,10 +197,8 @@ def genome_analyzer(genotype_file, server=None):
 
     # Process and sort input genome data
     log.put ('#status 0/100 calling process_source to process and sorting input file')
-    process_source(args['genotype_input'], args['sorted_out'], log)
-
-    # Get header metadata from whole genome before processing (to get build)
-    genome_data = get_metadata.header_data(args['sorted_out'], check_ref=100)
+    gff_in_gen = process_source(args['genotype_input'])
+    genome_data = { 'build': gff_in_gen.next() }
 
     # Set up build-dependent file locations
     if (genome_data['build'] == "b36"):
@@ -209,7 +221,7 @@ def genome_analyzer(genotype_file, server=None):
     pt = ProgressTracker(log_handle, [5,99], expected=chrlist, 
                          metadata=genome_data)
     # Record chromosomes seen and genome coverage.
-    metadata_gen = get_metadata.genome_metadata(args['sorted_out'],
+    metadata_gen = get_metadata.genome_metadata(gff_in_gen,
                                                 args['genome_stats'],
                                                 progresstracker=pt
                                                 )

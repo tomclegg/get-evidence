@@ -40,8 +40,9 @@ def match2ref(gff_input, twobit_filename):
             yield "# Date: " + datetime.datetime.now().isoformat(' ')
             header_done = True
         
-        # Skip REF lines and do not output
-        if record.feature == "REF":     # Skip REF, no output
+        # Skip REF lines
+        if record.feature == "REF":
+            yield str(record)
             continue
 
         # Add "chr" to chromosome ID if missing
