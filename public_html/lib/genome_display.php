@@ -157,7 +157,7 @@ function genome_display($shasum, $oid) {
             if (array_key_exists("amino_acid_change", $variant_data)) {
                 $variant_data["name"] = $variant_data["gene"] . "-" . $variant_data["amino_acid_change"];
             } else if (array_key_exists("dbSNP", $variant_data)) {
-                $variant_data["name"] = "rs" . $variant_data["dbSNP"];
+                $variant_data["name"] = $variant_data["dbSNP"];
             } else
 		continue;
 

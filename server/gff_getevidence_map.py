@@ -151,11 +151,11 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
     score_comp = 0
     
     # Add scores from variant specific databases.
-    if "in_omim" in data and data["in_omim"] == "Y":
+    if "in_omim" in data and data["in_omim"]:
         score_var_database += 2
-    if "in_gwas" in data and data["in_gwas"] == "Y":
+    if "in_gwas" in data and data["in_gwas"]:
         score_var_database += 1
-    if "in_pharmgkb" in data and data["in_pharmgkb"] == "Y":
+    if "in_pharmgkb" in data and data["in_pharmgkb"]:
         score_var_database += 1
     
     # Add scores from gene specific databases.
@@ -231,7 +231,7 @@ def suff_eval(variant_data):
         return True
 
 
-def match_getev(gff_in, getev_flat, output_file=False, progresstracker=False):
+def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
     """String generator returning JSON-formatted data from GET-Evidence
 
     Required inputs:
@@ -322,7 +322,7 @@ def match_getev(gff_in, getev_flat, output_file=False, progresstracker=False):
             output['genotype'] = '/'.join(sorted(alleles))
         output['ref_allele'] = ref_allele
         if dbsnp_ids:
-            output["dbsnp"] = ",".join(dbsnp_ids)
+            output["dbSNP"] = ",".join(dbsnp_ids)
 
         # If there is an amino acid change reported, look it up based on this.
         if "amino_acid" in record.attributes:
@@ -352,14 +352,20 @@ def match_getev(gff_in, getev_flat, output_file=False, progresstracker=False):
                 output["GET-Evidence"] = True
             else:
                 # If not in GET-Evidence by aa, try dbsnp ID.
-                if "dbsnp" in output:
-                    dbsnp_ids = output["dbsnp"].split(",")
+                if "dbSNP" in output:
+                    dbsnp_ids = output["dbSNP"].split(",")
                     for dbsnp_id in dbsnp_ids:
                         if dbsnp_id in getev_by_dbsnp:
                             getev_data = getev_by_dbsnp[dbsnp_id]
                             output["GET-Evidence"] = True
                             copy_output_data(getev_data, output)
-                            break  # quit after first hit
+                            output["autoscore"] = autoscore(output, 
+                                                            blosum_matrix,
+                                                            aa_from, aa_to)
+                            # Quit after first hit passing threshold
+                            if output["autoscore"] >= 2 or suff_eval(output):
+                                output["dbSNP"] = dbsnp_id
+                                break
             # Calculate autoscore, yield json data if at least 2.
             output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
             if output["autoscore"] >= 2 or suff_eval(output):
@@ -374,13 +380,18 @@ def match_getev(gff_in, getev_flat, output_file=False, progresstracker=False):
                     yield json_output
         else:
             # If no gene data at all, try dbsnp ID.
-            if "dbsnp" in output:
-                dbsnp_ids = output["dbsnp"].split(",")
+            if "dbSNP" in output:
+                dbsnp_ids = output["dbSNP"].split(",")
                 for dbsnp_id in dbsnp_ids:
                     if dbsnp_id in getev_by_dbsnp:
                         output["GET-Evidence"] = True
                         getev_data = getev_by_dbsnp[dbsnp_id]
                         copy_output_data(getev_data, output)
+                        output["autoscore"] = autoscore(output)
+                        # Quit after first hit passing threshold
+                        if output["autoscore"] >= 2 or suff_eval(output):
+                            output["dbSNP"] = dbsnp_id
+                            break
                     break  # quit after first hit
             output["autoscore"] = autoscore(output)
             # Autoscore bar is lower here because you can only get points if 
