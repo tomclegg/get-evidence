@@ -198,10 +198,10 @@ def genome_analyzer(genotype_file, server=None):
              'nonsyn_out': os.path.join(output_dir, 'ns.gff.gz'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
              'metadata_out': os.path.join(output_dir, 'metadata.json'),
-             'genome_stats': os.path.join(SCRIPT_DIR, 'genome_stats.txt'),
+             'genome_stats': os.path.join(os.getenv('DATA'), 'genome_stats.txt'),
              'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA),
-             'getev_flat': os.path.join(os.getenv('CORE'), '../public_html/', 
-                                        GETEV_FLAT) }
+             'getev_flat': os.path.join(os.getenv('DATA'), GETEV_FLAT) 
+             }
 
     # Make output directory if needed
     try:

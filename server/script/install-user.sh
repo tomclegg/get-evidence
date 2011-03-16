@@ -50,3 +50,19 @@ then
   cp $CONFIG/config.default.py $CONFIG/config.py
 fi
 chmod 600 $CONFIG/config.py
+
+if [ ! -e $DATA/genome_stats.txt ]
+then
+    echo Making symlink to genome_stats.txt
+    ln -s $SOURCE/server/genome_stats.txt $DATA/genome_stats.txt
+fi
+
+if [ ! -e $DATA/getev-latest.json.gz ]
+then
+    echo Making symlink to getev-latest.json.gz
+    if [ ! -e $SOURCE/public_html/getev-latest.json.gz ]
+    then
+        touch $SOURCE/public_html/getev-latest.json.gz
+    fi
+    ln -s $SOURCE/public_html/getev-latest.json.gz $DATA/getev-latest.json.gz
+fi
