@@ -149,7 +149,7 @@ def process_source(genome_in):
             else:
                 header_done = True
         else:
-            sort_out.stdin.write(str(line) + '\n')
+            sort_out.stdin.write(str(line.rstrip('\n')) + '\n')
     sort_out.stdin.close()
 
     # Yield the genome build, followed by the GFF data.
