@@ -175,21 +175,22 @@ def convert(cgi_input):
     header_done = False
     for line in cgi_data:
         # Handle the header, get the genome build if you can.
-        if re.match("#", line):
-            if re.match("#GENOME_REFERENCE.*NCBI build 37", line): 
-                build = "b37"
-            elif re.match("#GENOME_REFERENCE.*NCBI build 36", line): 
-                build = "b36"
-            continue
+        if not header_done:
+            if re.match("#", line):
+                if re.match("#GENOME_REFERENCE.*NCBI build 37", line): 
+                    build = "b37"
+                elif re.match("#GENOME_REFERENCE.*NCBI build 36", line): 
+                    build = "b36"
+                continue
+            else:
+                # Output GFF header once we're done reading CGI's.
+                yield "##genome-build " + build
+                header_done = True
         if re.search("^\W*$", line): 
             continue
         # TODO: use table header instead of assuming which column to use
         if re.search("^>", line): 
             continue
-        # Output our header once we're done reading theirs.
-        if not header_done:
-            yield "##genome-build " + build
-            header_done = True
 
         # Handle data
         data = line.rstrip('\n').split("\t")
