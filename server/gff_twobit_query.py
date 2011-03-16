@@ -59,7 +59,13 @@ def match2ref(gff_input, twobit_filename):
             sys.exit() 
 
         if record.attributes:
-            record.attributes["ref_allele"] = ref_seq.upper()
+            # If reference at this pos, note this and remove attributes data.
+            if ("alleles" in record.attributes and 
+                record.attributes["alleles"] == ref_seq.upper()):
+                record.feature = "REF"
+                record.attributes = None
+            else:
+                record.attributes["ref_allele"] = ref_seq.upper()
             yield str(record)
 
 def match2ref_to_file(gff_input, twobit_filename, output_file):
