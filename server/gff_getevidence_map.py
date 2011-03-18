@@ -97,7 +97,8 @@ def copy_output_data(getev_data, output_data):
                     'quality': 'variant_quality',
                     'summary_short': 'summary_short',
                     'variant_quality': 'variant_quality',
-                    'inheritance': 'variant_dominance'
+                    'inheritance': 'variant_dominance',
+                    'n_articles': 'n_articles'
                     }
     for name in name_map:
         if name in getev_data:

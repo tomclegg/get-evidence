@@ -13,7 +13,7 @@ var datatables_options = {
 	'aaSorting': [[2,'desc'], [3,'asc']],
 	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
 	'iDisplayLength': -1,
-	'aoColumnDefs': [{'aTargets': [1,2,3], 'sWidth': '15%'}]
+	'aoColumnDefs': [{'aTargets': [1,2,3], 'sWidth': '10%'}]
     },
     'variant_table_coverage': {
 	'bProcessing': true,

@@ -152,7 +152,7 @@ function genome_display($shasum, $oid) {
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
 	    if (!is_array($variant_data)) continue; // sometimes we can't read python's json??
-
+	    // Set up name, allele frequency, etc. Default to "" if missing.
             $variant_data["name"] = "";
             if (array_key_exists("amino_acid_change", $variant_data)) {
                 $variant_data["name"] = $variant_data["gene"] . "-" . $variant_data["amino_acid_change"];
@@ -160,8 +160,6 @@ function genome_display($shasum, $oid) {
                 $variant_data["name"] = $variant_data["dbSNP"];
             } else
 		continue;
-
-            # Get allele frequency
             if (array_key_exists("num",$variant_data) &&
 		array_key_exists("denom",$variant_data) &&
 		$variant_data["denom"] > 0) {
@@ -170,7 +168,8 @@ function genome_display($shasum, $oid) {
             } else {
                 $variant_data["allele_freq"] = "";
             }
-            # Get zygosity
+	    if (! array_key_exists("n_articles", $variant_data)) $variant_data["n_articles"] = "";
+	    // Get zygosity
             $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
                                             $variant_data["genotype"],
                                             $variant_data["ref_allele"]);
@@ -243,7 +242,8 @@ function genome_display($shasum, $oid) {
 	    . "<TH>Variant</TH>"
 	    . "<TH class='SortNumeric SortDescFirst'>Autoscore</TH>"
 	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
-	    . "<TH class='Unsortable'>Autoscore Reasons</TH>"
+	    . "<TH class='Unsortable'>Num of<BR />articles</TH>"
+	    . "<TH class='Unsortable'>Zygosity and Autoscore Reasons</TH>"
 	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
 	    . "</TR></THEAD><TBODY>\n";
 	$rownumber = 0;
@@ -252,9 +252,11 @@ function genome_display($shasum, $oid) {
 	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
 		. "<TD><A HREF=\""
 		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
-		. $variant["autoscore"]. "</TD><TD>"
+		. $variant["autoscore"] . "</TD><TD>"
 		. $variant["allele_freq"] . "</TD><TD>"
-        . autoscore_evidence($variant) . "</TD><TD class='ui-helper-hidden'>"
+		. $variant["n_articles"] . "</TD><TD>"
+		. $variant["zygosity"] . ". " 
+		. autoscore_evidence($variant) . "</TD><TD class='ui-helper-hidden'>"
 		. $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
