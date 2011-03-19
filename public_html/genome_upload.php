@@ -12,6 +12,11 @@ include('xmlrpc/xmlrpc.inc');
 // check that we have a file
 if (isset($_POST['reprocess_genome_id'])) {
     $reprocess_genome_ID = $_POST['reprocess_genome_id'];
+    $reprocess_type = "full";
+    if (isset($_POST['reproc_type'])) {
+	$reprocess_type = $_POST['reproc_type'];
+	$page_content .= "<P>" . $reprocess_type ."</P>\n";
+    }
     $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype.gff";
     if (! file_exists($permname)) {
         if (file_exists ($permname . ".gz")) {
@@ -23,7 +28,7 @@ if (isset($_POST['reprocess_genome_id'])) {
     if (file_exists($permname)) {
         $page_content .= "<P>Reprocessing data: " . $reprocess_genome_ID . "</P>\n";
         $page_content .= "<P>The <A href=\"genomes?display_genome_id=$reprocess_genome_ID\">existing results</A> will remain available until the new analysis is complete.</P>\n";
-        send_to_server($permname);
+        send_to_server($permname, $reprocess_type);
     } else {
         $page_content .= "<P>Error! Sorry, for some reason we are unable to find the "
             . "original file for " . $reprocess_genome_ID . "</P>";
@@ -127,10 +132,14 @@ if (isset($_POST['reprocess_genome_id'])) {
 }
 
 // Send the filename to the xml-rpc server.
-function send_to_server($permname) {
+function send_to_server($permname, $type = "full") {
     $client = new xmlrpc_client("http://localhost:8080/");
     $client->return_type = 'phpvals';
-    $message = new xmlrpcmsg("submit_local", array(new xmlrpcval($permname, "string")));
+    if ($type == "getev") {
+	$message = new xmlrpcmsg("reprocess_getev", array(new xmlrpcval($permname, "string")));
+    } else {
+	$message = new xmlrpcmsg("submit_local", array(new xmlrpcval($permname, "string")));
+    }
     $resp = $client->send($message);
     if ($resp->faultCode()) { error_log ("xmlrpc send Error: ".$resp->faultString()); }
     error_log ("xmlrpc send success: ".$resp->value());

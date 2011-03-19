@@ -159,8 +159,7 @@ def process_source(genome_in):
     for line in sort_out.stdout:
         yield line.rstrip('\n')
 
-def genome_analyzer(genotype_file, server=None):
-    """Perform analyses on genotype_file"""
+def processing_init(genotype_file, server=None):
     if server:
         server.server_close()
     # Set all the variables we'll use.
@@ -177,21 +176,27 @@ def genome_analyzer(genotype_file, server=None):
         fcntl.flock(log_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except IOError:
         print 'Lockfile really is locked.  Quitting.'
-        return
+        return None
     log_handle.seek(0)
     log_handle.truncate(0)
     log = Logger(log_handle)
-
+    # Redirect current standard error and output
     os.close(sys.stderr.fileno())
     os.close(sys.stdout.fileno())
     os.close(sys.stdin.fileno())
     os.dup2(log_handle.fileno(), sys.stderr.fileno())
     os.dup2(log_handle.fileno(), sys.stdout.fileno())
+    return [output_dir, log, log_handle, lockfile, logfile]
+
+def genome_analyzer(genotype_file, server=None):
+    """Perform analyses on genotype_file"""
+    init_stuff = processing_init(genotype_file, server)
+    if init_stuff:
+        output_dir, log, log_handle, lockfile, logfile = init_stuff
+    else:
+        return None
 
     # Set up arguments used by processing commands and scripts.
-    # TODO: Fix getev_flat so it's stored somewhere more consistent with the
-    # other data files. Probably "make daily" stuff should be going to 'DATA'
-    # instead or in addition to public_html, but www-data would need to own it.
     args = { 'genotype_input': str(genotype_file),
              'miss_out': os.path.join(output_dir, 'missing_coding.json'),
              'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
@@ -283,6 +288,32 @@ def genome_analyzer(genotype_file, server=None):
     print "Finished processing file " + str(genotype_file)
 
 
+def getev_reprocess(genotype_file, server=None):
+    """Redo analysis against GET-Evidence data"""
+    init_stuff = processing_init(genotype_file, server)
+    if init_stuff:
+        output_dir, log, log_handle, lockfile, logfile = init_stuff
+    else:
+        return None
+    log.put('#status 0 Reprocessing data against GET-Evidence')
+    # Set up arguments used by processing commands and scripts. 
+    args = { 'nonsyn_data': os.path.join(output_dir, 'ns.gff.gz'),
+             'getev_out': os.path.join(output_dir, 'get-evidence.json'),
+             'getev_flat': os.path.join(os.getenv('DATA'), GETEV_FLAT)
+             }
+    chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
+    progtrack = ProgressTracker(log_handle, [1, 99], expected=chrlist)
+    # Get GET-Evidence hits
+    gff_getevidence_map.match_getev_to_file(args['nonsyn_data'], 
+                                            args['getev_flat'], 
+                                            args['getev_out'] + ".tmp", 
+                                            progtrack)
+    os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+    os.rename(lockfile, logfile)
+    log_handle.close()
+    print "Finished reprocessing GET-Evidence hits for " + str(genotype_file)
+
+
 def main():
     """Genome analysis XMLRPC server, or submit analysis on command line"""
     # Parse options.
@@ -307,10 +338,15 @@ def main():
     parser.add_option("-g", "--genome", dest="genome_data",
                       help="GENOME_DATA to process",
                       metavar="GENOME_DATA")
+    parser.add_option("--getevonly", action="store_true", dest="getev_only", 
+                      default=False, help="Reprocess against GET-Evidence only")
     option, args = parser.parse_args()
     
     if option.genome_data and not option.is_server:
-        genome_analyzer(option.genome_data)
+        if option.getev_only:
+            getev_reprocess(option.genome_data)
+        else:
+            genome_analyzer(option.genome_data)
     elif option.is_server:
         if option.stderr:
             errout = open(option.stderr, 'a+', 0)
@@ -338,7 +374,18 @@ def main():
                   str(process.pid) + "\'")
             return str(process.pid)
 
+        def reprocess_getev(genotype_file):
+            """Start subprocess to reprocess against GET-Evidence"""
+            process = multiprocessing.Process(target=getev_reprocess, 
+                                              args=(genotype_file, server,))
+            process.start()
+            print("Job submitted for genotype_file: \'" +
+                  str(genotype_file) + "\', process ID: \'" +
+                  str(process.pid) + "\'")
+            return str(process.pid)
+
         server.register_function(submit_local)
+        server.register_function(reprocess_getev)
 
         # run the server's main loop
         try:

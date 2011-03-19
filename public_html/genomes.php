@@ -133,13 +133,26 @@ function uploaded_genome_actions($result) {
     $returned_text .= "<input type=\"submit\" value=\"Get report\" "
                         . "class=\"button\" \/></form>\n";
 
+
+    // Reprocess data button 
+    if ($result['oid'] == $user['oid'] || $user['is_admin']) {
+        $returned_text .=
+            "<form action=\"/genome_upload.php\" method=\"post\">\n" .
+            "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
+            $result['shasum'] . "\">\n" .
+            "<input type=\"hidden\" name=\"reproc_type\" value=\"getev\">\n" .
+            "<input type=\"submit\" value=\"Getev data reprocess\" " .
+            "class=\"button\" \/></form>\n";
+    }
+
     // Reprocess data button
     if ($result['oid'] == $user['oid'] || $user['is_admin']) {
 	$returned_text .=
 	    "<form action=\"/genome_upload.php\" method=\"post\">\n" .
 	    "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
 	    $result['shasum'] . "\">\n" .
-	    "<input type=\"submit\" value=\"Reprocess data\" " .
+	    "<input type=\"hidden\" name=\"reproc_type\" value=\"full\">\n" .
+	    "<input type=\"submit\" value=\"Full data reprocess\" " .
 	    "class=\"button\" \/></form>\n";
     }
 
