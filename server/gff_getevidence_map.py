@@ -37,7 +37,7 @@ def read_getev_flat(getev_flatfile):
     items_wanted = ['gene', 'aa_change_short', 'summary_short', 'impact', \
             'inheritance', 'dbsnp_id', 'in_omim', 'in_gwas', 'in_pharmgkb', \
             'variant_quality', 'overall_frequency_n', 'overall_frequency_d', \
-            'n_articles']
+            'n_articles', 'variant_id']
 
     # Create two dicts to be returned, storing data we want.
     # If possible, getev_by_aa is used with gene and amino acid change as key.
@@ -98,6 +98,7 @@ def copy_output_data(getev_data, output_data):
                     'summary_short': 'summary_short',
                     'variant_quality': 'variant_quality',
                     'inheritance': 'variant_dominance',
+                    'variant_id': 'variant_id',
                     'n_articles': 'n_articles'
                     }
     for name in name_map:

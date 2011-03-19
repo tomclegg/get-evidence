@@ -105,6 +105,7 @@ if ($snap and $want_type_json) {
             if ($row['summary_short']) {
                 $flat_data['summary_short'] = $row['summary_short'];
             }
+            $flat_data['variant_id'] = $row['variant_id'];
             print json_encode($flat_data) . "\n";
         } 
     }
