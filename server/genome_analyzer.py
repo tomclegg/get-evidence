@@ -182,11 +182,12 @@ def genome_analyzer(genotype_file, server=None):
     log_handle.truncate(0)
     log = Logger(log_handle)
 
-    os.close(sys.stderr.fileno())
-    os.close(sys.stdout.fileno())
+    if server:
+        os.close(sys.stderr.fileno())
+        os.close(sys.stdout.fileno())
+        os.dup2(log_handle.fileno(), sys.stderr.fileno())
+        os.dup2(log_handle.fileno(), sys.stdout.fileno())
     os.close(sys.stdin.fileno())
-    os.dup2(log_handle.fileno(), sys.stderr.fileno())
-    os.dup2(log_handle.fileno(), sys.stdout.fileno())
 
     # Set up arguments used by processing commands and scripts.
     # TODO: Fix getev_flat so it's stored somewhere more consistent with the
