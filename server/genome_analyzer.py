@@ -180,7 +180,6 @@ def genome_analyzer(genotype_file, server=None):
         return
     log_handle.seek(0)
     log_handle.truncate(0)
-    log = Logger(log_handle)
 
     if server:
         os.close(sys.stderr.fileno())
@@ -188,6 +187,8 @@ def genome_analyzer(genotype_file, server=None):
         os.dup2(log_handle.fileno(), sys.stderr.fileno())
         os.dup2(log_handle.fileno(), sys.stdout.fileno())
     os.close(sys.stdin.fileno())
+
+    log = Logger(sys.stderr)
 
     # Set up arguments used by processing commands and scripts.
     # TODO: Fix getev_flat so it's stored somewhere more consistent with the
@@ -239,7 +240,7 @@ def genome_analyzer(genotype_file, server=None):
     # Process genome through a series of GFF-formatted string generators.
     log.put('#status 4 processing genome data (get reference alleles, '
             + 'dbSNP IDs, nonsynonymous changes, etc.)')
-    progtrack = ProgressTracker(log_handle, [5, 99], expected=chrlist, 
+    progtrack = ProgressTracker(sys.stderr, [5, 99], expected=chrlist, 
                                 metadata=genome_data)
     # Record chromosomes seen and genome coverage.
     metadata_gen = get_metadata.genome_metadata(gff_in_gen,
