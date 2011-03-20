@@ -213,7 +213,7 @@ def genome_analyzer(genotype_file, server=None):
         print "Unexpected error:", sys.exc_info()[0]
 
     # Process and sort input genome data
-    log.put ('#status 0/100 calling process_source to process and sorting'
+    log.put ('#status 0/100 calling process_source to process and sorting '
              'input file')
     gff_in_gen = process_source(args['genotype_input'])
     genome_data = { 'build': gff_in_gen.next() }
