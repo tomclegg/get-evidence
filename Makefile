@@ -80,3 +80,11 @@ latest_flat.gz: latest_flat
 vis_data:
 	cd get_evidence_vis && ./ProcessTableForVis.pl ../public_html/latest-flat.tsv nsSNP-freq.gff >../public_html/latest_vis_data.tsv.tmp
 	cd public_html && mv latest_vis_data.tsv.tmp latest_vis_data.tsv
+DATADIR:=$(shell . server/script/config-local.sh && echo $$DATA)
+analysis_data_tarball.locator: $(DATADIR)/b130_SNPChrPosOnRef_36_3_sorted.bcp $(DATADIR)/b132_SNPChrPosOnRef_37_1_sorted.bcp \
+ $(DATADIR)/knownGene_hg18_sorted.txt $(DATADIR)/knownGene_hg19_sorted.txt \
+ $(DATADIR)/hg18.2bit $(DATADIR)/hg19.2bit \
+ $(DATADIR)/genetests-data.txt
+	wc -c $^ | tail -n1
+	tar --transform 's/^.*\///' -cf - $^ | gzip -1n | whput --progress --in-manifest --use-filename=analysis_data.tar.gz --name=/get-evidence/analysis_data-$(date +%Y%M%d-%H%m) - | tee $@.tmp
+	mv $@.tmp $@
