@@ -1,6 +1,6 @@
 """Tracking and logging progress and reporting metadata during processing"""
 
-import json
+import simplejson as json
 import time
 
 class Logger:
