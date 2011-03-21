@@ -213,8 +213,7 @@ def genome_analyzer(genotype_file, server=None):
         print "Unexpected error:", sys.exc_info()[0]
 
     # Process and sort input genome data
-    log.put ('#status 0/100 calling process_source to process and sorting '
-             'input file')
+    log.put ('#status 0/100 converting and sorting input file')
     gff_in_gen = process_source(args['genotype_input'])
     genome_data = { 'build': gff_in_gen.next() }
 
@@ -238,8 +237,9 @@ def genome_analyzer(genotype_file, server=None):
     chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
 
     # Process genome through a series of GFF-formatted string generators.
-    log.put('#status 4 processing genome data (get reference alleles, '
-            + 'dbSNP IDs, nonsynonymous changes, etc.)')
+    log.put('#status 4 looking up reference alleles and '
+            'dbSNP IDs, computing nonsynonymous changes, '
+            'cross-referencing GET-Evidence database')
     progtrack = ProgressTracker(sys.stderr, [5, 99], expected=chrlist, 
                                 metadata=genome_data)
     # Record chromosomes seen and genome coverage.
