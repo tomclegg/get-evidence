@@ -18,6 +18,7 @@ import subprocess
 import sys
 import fcntl
 import gzip
+import bz2
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from config import GENETESTS_DATA, GETEV_FLAT
@@ -101,25 +102,24 @@ def process_source(genome_in):
     Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
     # Handle genome compression, get input, and make best guess of format type.
-    args = { 'genome_in': genome_in, 'cat_command': 'cat ' + genome_in }
-    if re.search(r'\.gz', genome_in):
-        args['cat_command'] = 'zcat ' + genome_in
-    if re.search(r'\.bz2', genome_in):
-        args['cat_command'] = 'bzcat ' + genome_in
-    source_input = subprocess.Popen(args['cat_command'], shell=True, 
-                                    stdout=subprocess.PIPE)
-    in_type = detect_format(source_input.stdout)
+    args = { 'genome_in': genome_in }
+    if re.search(r'\.gz$', genome_in):
+        source_input = gzip.GzipFile (genome_in, 'r')
+    elif re.search(r'\.bz2$', genome_in):
+        source_input = bz2.BZ2File (genome_in, 'r')
+    else:
+        source_input = open (genome_in, 'r')
+    in_type = detect_format(source_input)
 
-    # Reset input and output GFF (convert if necessary).
-    source_input.stdout.close()
-    source_input = subprocess.Popen(args['cat_command'], shell=True,
-                                 stdout=subprocess.PIPE)
+    # Reset input and convert to GFF if necessary.
+    source_input.seek(0)
+
     if in_type == "GFF":
-        gff_input = source_input.stdout
+        gff_input = source_input
     elif in_type == "CGIVAR":
-        gff_input = cgivar_to_gff.convert(source_input.stdout)
+        gff_input = cgivar_to_gff.convert(source_input)
     elif in_type == "23ANDME":
-        gff_input = gff_from_23andme.convert(source_input.stdout)
+        gff_input = gff_from_23andme.convert(source_input)
     else:
         print "ERROR: genome file format not recognized"
 
