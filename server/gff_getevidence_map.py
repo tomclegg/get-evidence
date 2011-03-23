@@ -8,7 +8,7 @@ usage: %prog nssnp.gff getev_flatfile.tsv [output_file]
 # Match to GET-Evidence's JSON flatfile dump, 
 # Output data for genome report in JSON format
 
-import json
+import simplejson as json
 import gzip
 import os
 import re

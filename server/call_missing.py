@@ -9,7 +9,7 @@ Genetests genes to produce a report of what regions were not covered by
 sequencing (as opposed to matching the reference genome).
 """
 
-import json
+import simplejson as json
 import gzip
 import os 
 import re

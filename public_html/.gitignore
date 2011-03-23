@@ -5,3 +5,4 @@ evidence_base_vis.jar
 latest_vis_data.tsv*
 latest-flat.tsv*
 getev.json*
+getev-latest.json.gz

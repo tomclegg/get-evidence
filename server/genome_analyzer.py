@@ -18,6 +18,7 @@ import subprocess
 import sys
 import fcntl
 import gzip
+import bz2
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from config import GENETESTS_DATA, GETEV_FLAT
@@ -101,25 +102,24 @@ def process_source(genome_in):
     Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
     # Handle genome compression, get input, and make best guess of format type.
-    args = { 'genome_in': genome_in, 'cat_command': 'cat ' + genome_in }
-    if re.search(r'\.gz', genome_in):
-        args['cat_command'] = 'zcat ' + genome_in
-    if re.search(r'\.bz2', genome_in):
-        args['cat_command'] = 'bzcat ' + genome_in
-    source_input = subprocess.Popen(args['cat_command'], shell=True, 
-                                    stdout=subprocess.PIPE)
-    in_type = detect_format(source_input.stdout)
+    args = { 'genome_in': genome_in }
+    if re.search(r'\.gz$', genome_in):
+        source_input = gzip.GzipFile (genome_in, 'r')
+    elif re.search(r'\.bz2$', genome_in):
+        source_input = bz2.BZ2File (genome_in, 'r')
+    else:
+        source_input = open (genome_in, 'r')
+    in_type = detect_format(source_input)
 
-    # Reset input and output GFF (convert if necessary).
-    source_input.stdout.close()
-    source_input = subprocess.Popen(args['cat_command'], shell=True,
-                                 stdout=subprocess.PIPE)
+    # Reset input and convert to GFF if necessary.
+    source_input.seek(0)
+
     if in_type == "GFF":
-        gff_input = source_input.stdout
+        gff_input = source_input
     elif in_type == "CGIVAR":
-        gff_input = cgivar_to_gff.convert(source_input.stdout)
+        gff_input = cgivar_to_gff.convert(source_input)
     elif in_type == "23ANDME":
-        gff_input = gff_from_23andme.convert(source_input.stdout)
+        gff_input = gff_from_23andme.convert(source_input)
     else:
         print "ERROR: genome file format not recognized"
 
@@ -181,11 +181,12 @@ def processing_init(genotype_file, server=None):
     log_handle.truncate(0)
     log = Logger(log_handle)
     # Redirect current standard error and output
-    os.close(sys.stderr.fileno())
-    os.close(sys.stdout.fileno())
-    os.close(sys.stdin.fileno())
-    os.dup2(log_handle.fileno(), sys.stderr.fileno())
-    os.dup2(log_handle.fileno(), sys.stdout.fileno())
+    if server:
+        os.close(sys.stderr.fileno())
+        os.close(sys.stdout.fileno())
+        os.close(sys.stdin.fileno())
+        os.dup2(log_handle.fileno(), sys.stderr.fileno())
+        os.dup2(log_handle.fileno(), sys.stdout.fileno())
     return [output_dir, log, log_handle, lockfile, logfile]
 
 def genome_analyzer(genotype_file, server=None):
@@ -216,8 +217,7 @@ def genome_analyzer(genotype_file, server=None):
         print "Unexpected error:", sys.exc_info()[0]
 
     # Process and sort input genome data
-    log.put ('#status 0/100 calling process_source to process and sorting'
-             'input file')
+    log.put ('#status 0/100 converting and sorting input file')
     gff_in_gen = process_source(args['genotype_input'])
     genome_data = { 'build': gff_in_gen.next() }
 
@@ -241,9 +241,10 @@ def genome_analyzer(genotype_file, server=None):
     chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
 
     # Process genome through a series of GFF-formatted string generators.
-    log.put('#status 4 processing genome data (get reference alleles, '
-            + 'dbSNP IDs, nonsynonymous changes, etc.)')
-    progtrack = ProgressTracker(log_handle, [5, 99], expected=chrlist, 
+    log.put('#status 4 looking up reference alleles and '
+            'dbSNP IDs, computing nonsynonymous changes, '
+            'cross-referencing GET-Evidence database')
+    progtrack = ProgressTracker(sys.stderr, [5, 99], expected=chrlist, 
                                 metadata=genome_data)
     # Record chromosomes seen and genome coverage.
     metadata_gen = get_metadata.genome_metadata(gff_in_gen,
