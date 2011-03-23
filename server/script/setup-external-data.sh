@@ -88,3 +88,18 @@ if [ ! -f ucsc_sort.stamp ]; then
     # Complete Genomics reports these as chrX and UCSC's transcripts have duplicate annotation)
   touch ucsc_sort.stamp
 fi
+
+echo Getting Polyphen 2 data and processing
+if [ ! -f pph2_data.stamp ]; then
+    if [ ! -e polyphen2_dbsnp131 ]; then
+	mkdir polyphen2_dbsnp131
+    fi
+    (cd polyphen2_dbsnp131;
+     $WGET http://genetics.bwh.harvard.edu/pph2/dokuwiki/_media/polyphen2_dbsnp131_2010-07-05.tar.gz;
+     tar -xf polyphen2_dbsnp131_2010-07-05.tar.gz)
+    touch pph2_data.stamp
+fi
+if [ ! -f pph2_proc.stamp ]; then
+    python $CORE/script/pph2_process.py --pph2 polyphen2_dbsnp131/pph2_snp131_missense_HumVar-short.txt --kgxref kgXref_hg18.txt --kgwithname knownGene_hg18_sorted.txt -o pph2_var_hg18.gz
+    touch pph2_proc.stamp
+fi
