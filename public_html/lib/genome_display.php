@@ -93,6 +93,67 @@ function &genome_coverage_results($shasum, $oid) {
     return $out;
 }
 
+function &genome_variant_results ($shasum, $want_split)
+{
+    if ($want_split)
+        $variants = array(array(), array());
+    else
+        $variants = array();
+
+    $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
+    if (!file_exists($results_file))
+        return null;
+
+    $variants = array(array(),array());
+    $lines = file($results_file);
+    foreach ($lines as $line) {
+        $variant_data = json_decode($line, true);
+        if (!is_array($variant_data))
+            // sometimes we can't read python's json??
+            continue;
+
+        $variant_data["name"] = "";
+        if (array_key_exists("amino_acid_change", $variant_data)) {
+            $variant_data["name"] = $variant_data["gene"] . "-" . $variant_data["amino_acid_change"];
+        } else if (array_key_exists("dbSNP", $variant_data)) {
+            $variant_data["name"] = $variant_data["dbSNP"];
+        } else
+            continue;
+
+        // Get allele frequency
+        if (array_key_exists("num",$variant_data) &&
+            array_key_exists("denom",$variant_data) &&
+            $variant_data["denom"] > 0) {
+            $allele_freq = sprintf("%.3f", $variant_data["num"] / $variant_data["denom"]);
+            $variant_data["allele_freq"] = $allele_freq;
+        } else {
+            $variant_data["allele_freq"] = "";
+        }
+        // Get zygosity
+        $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
+                                       $variant_data["genotype"],
+                                       $variant_data["ref_allele"]);
+        $variant_data["suff_eval"] = quality_eval_suff($variant_data["variant_quality"], $variant_data["variant_impact"]);
+        if ($variant_data["suff_eval"]) {
+            $variant_data["clinical"] = quality_eval_clinical($variant_data["variant_quality"]);
+            $variant_data["evidence"] = quality_eval_evidence($variant_data["variant_quality"]);
+        } else {
+            $variant_data["clinical"] = "";
+            $variant_data["evidence"] = "";
+        }
+        $variant_data["expect_effect"] = $eval_zyg_out[0];
+        $variant_data["zygosity"] = $eval_zyg_out[1];
+        $variant_data["inheritance_desc"] = $eval_zyg_out[2];
+        if (!$want_split)
+            $variants[] = $variant_data;
+        else if ($variant_data["suff_eval"])
+            $variants[0][] = $variant_data;
+        else
+            $variants[1][] = $variant_data;
+    }
+    return $variants;
+}
+
 function genome_display($shasum, $oid) {
     $results = genome_get_results ($shasum, $oid);
     $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=?",
@@ -145,51 +206,9 @@ function genome_display($shasum, $oid) {
     $returned_text .= "</ul>\n";
     $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><BLOCKQUOTE><PRE id='debuginfotext'>Log file: ".$logfile."\n\n".htmlspecialchars($log,ENT_QUOTES,"UTF-8")."\n\n</PRE></BLOCKQUOTE></DIV>\n";
 
-    $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
-    if (file_exists($results_file)) {
-        $variants = array(array(),array());
-        $lines = file($results_file);
-        foreach ($lines as $line) {
-            $variant_data = json_decode($line, true);
-            if (!is_array($variant_data)) continue; // sometimes we can't read python's json??
-
-            $variant_data["name"] = "";
-            if (array_key_exists("amino_acid_change", $variant_data)) {
-                $variant_data["name"] = $variant_data["gene"] . "-" . $variant_data["amino_acid_change"];
-            } else if (array_key_exists("dbSNP", $variant_data)) {
-                $variant_data["name"] = $variant_data["dbSNP"];
-            } else
-                continue;
-
-            # Get allele frequency
-            if (array_key_exists("num",$variant_data) &&
-                array_key_exists("denom",$variant_data) &&
-                $variant_data["denom"] > 0) {
-                $allele_freq = sprintf("%.3f", $variant_data["num"] / $variant_data["denom"]);
-                $variant_data["allele_freq"] = $allele_freq;
-            } else {
-                $variant_data["allele_freq"] = "";
-            }
-            # Get zygosity
-            $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
-                                            $variant_data["genotype"],
-                                            $variant_data["ref_allele"]);
-            $variant_data["suff_eval"] = quality_eval_suff($variant_data["variant_quality"], $variant_data["variant_impact"]);
-            if ($variant_data["suff_eval"]) {
-                $variant_data["clinical"] = quality_eval_clinical($variant_data["variant_quality"]);
-                $variant_data["evidence"] = quality_eval_evidence($variant_data["variant_quality"]);
-            } else {
-                $variant_data["clinical"] = "";
-                $variant_data["evidence"] = "";
-            }
-            $variant_data["expect_effect"] = $eval_zyg_out[0];
-            $variant_data["zygosity"] = $eval_zyg_out[1];
-            $variant_data["inheritance_desc"] = $eval_zyg_out[2];
-            if ($variant_data["suff_eval"])
-                $variants[0][] = $variant_data;
-            else
-                $variants[1][] = $variant_data;
-        }
+    $variant_results = genome_variant_results ($shasum);
+    if (is_array($variant_results)) {
+        $variants =& genome_variant_results ($shasum, true);
         $coverage =& genome_coverage_results ($shasum, $oid);
 
         $returned_text .= "<div id='variant_table_tabs'><ul>\n"
