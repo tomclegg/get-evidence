@@ -1,4 +1,4 @@
-<?php
+<?php ; // -*- mode: java; c-basic-indent: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 
 require_once ("lib/quality_eval.php");
 
@@ -13,31 +13,31 @@ function genome_get_results ($shasum, $oid) {
     $resultfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     $lockfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/lock";
     if (file_exists ($lockfile)) {
-	$logfile = $lockfile;
-	$ret["progress"] = 1;
-	$ret["status"] = "failed";
-	if (!is_writable ($lockfile) || // if !writable, fuser won't work; assume lock is current
-	    "ok" == shell_exec("fuser ''".escapeshellarg($lockfile)." >/dev/null && echo -n ok")) {
-	    $still_processing = true;
-	    $total_steps = 100;
-	    foreach (file($lockfile) as $logline) {
-		if (preg_match ('{^#status (\d*)/?(\d*)( (.+))?}', $logline, $regs)) {
-		    if ($regs[2] > 0) $total_steps = $regs[2];
-		    $ret["progress"] = $regs[1] / $total_steps;
-		    if ($regs[4])
-			$ret["status"] = $regs[4];
-		}
-	    }
-	}
+        $logfile = $lockfile;
+        $ret["progress"] = 1;
+        $ret["status"] = "failed";
+        if (!is_writable ($lockfile) || // if !writable, fuser won't work; assume lock is current
+            "ok" == shell_exec("fuser ''".escapeshellarg($lockfile)." >/dev/null && echo -n ok")) {
+            $still_processing = true;
+            $total_steps = 100;
+            foreach (file($lockfile) as $logline) {
+                if (preg_match ('{^#status (\d*)/?(\d*)( (.+))?}', $logline, $regs)) {
+                    if ($regs[2] > 0) $total_steps = $regs[2];
+                    $ret["progress"] = $regs[1] / $total_steps;
+                    if ($regs[4])
+                        $ret["status"] = $regs[4];
+                }
+            }
+        }
     } else {
-	$logfile = preg_replace ('{lock$}', 'log', $lockfile);
-	if (file_exists ($logfile) && file_exists ($resultfile)) {
-	    $ret["progress"] = 1;
-	    $ret["status"] = "finished";
-	}
+        $logfile = preg_replace ('{lock$}', 'log', $lockfile);
+        if (file_exists ($logfile) && file_exists ($resultfile)) {
+            $ret["progress"] = 1;
+            $ret["status"] = "finished";
+        }
     }
     if (!file_exists ($logfile) || !is_readable ($logfile))
-	$logfile = "/dev/null";
+        $logfile = "/dev/null";
 
     $ret["log"] = preg_replace ('{(\n#status \d+)+(\n#status \d+\n)}', "\n[...]\\2", file_get_contents ($logfile));
     $ret["logmtime"] = filemtime ($logfile);
@@ -57,87 +57,87 @@ function &genome_coverage_results($shasum, $oid) {
     $Ylength = 0;
     $out = array();
     while (($injson = fgets($fh)) !== false) {
-	$gene = json_decode($injson, true);
+        $gene = json_decode($injson, true);
 
-	// In case _random etc. are not already filtered out upstream...
-	if (strpos($gene['chr'], '_') !== false)
-	    continue;
+        // In case _random etc. are not already filtered out upstream...
+        if (strpos($gene['chr'], '_') !== false)
+            continue;
 
-	$length += $gene['length'];
-	if ($gene['chr'] == 'chrY') {
-	    $Ylength += $gene['length'];
-	    $Ymissing += $gene['missing'];
-	}
-	if ($gene['missing'] == 0)
-	    continue;
-	$missing += $gene['missing'];
-	if (!$gene['clin_test'])
-	    continue;
-	$out[] = $gene;
+        $length += $gene['length'];
+        if ($gene['chr'] == 'chrY') {
+            $Ylength += $gene['length'];
+            $Ymissing += $gene['missing'];
+        }
+        if ($gene['missing'] == 0)
+            continue;
+        $missing += $gene['missing'];
+        if (!$gene['clin_test'])
+            continue;
+        $out[] = $gene;
     }
     fclose ($fh);
     // Until we have metadata at hand to tell us whether this person
     // has a chrY, we're assuming that "zero coverage of Y chromosome"
     // means "no Y chromosome".
     if ($Ymissing == $Ylength) {
-	$missing -= $Ymissing;
-	$length -= $Ylength;
-	$i=count($out);
-	while ($i>0)
-	    if ($out[--$i]['chr'] == 'chrY')
-		array_splice ($out, $i, 1);
+        $missing -= $Ymissing;
+        $length -= $Ylength;
+        $i=count($out);
+        while ($i>0)
+            if ($out[--$i]['chr'] == 'chrY')
+                array_splice ($out, $i, 1);
     }
     $out = array ('genes' => $out,
-		  'missing' => $missing,
-		  'length' => $length);
+                  'missing' => $missing,
+                  'length' => $length);
     return $out;
 }
 
 function genome_display($shasum, $oid) {
     $results = genome_get_results ($shasum, $oid);
     $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=?",
-				 array($shasum));
+                                 array($shasum));
     $ds = array ("Name" => false,
-		 "Public profile" => false,
-		 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
+                 "Public profile" => false,
+                 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
     if ($db_query[0]['nickname']) {
-	$realname = $db_query[0]['nickname'];
-	if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
-	    $realname = $regs[1];
-	$ds["Name"] = htmlspecialchars ($realname, ENT_QUOTES, "UTF-8");
+        $realname = $db_query[0]['nickname'];
+        if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
+            $realname = $regs[1];
+        $ds["Name"] = htmlspecialchars ($realname, ENT_QUOTES, "UTF-8");
     }
     $global_human_id = $db_query[0]['global_human_id'];
     if (preg_match ('{^hu[A-F0-9]+$}', $global_human_id)) {
-	$hu = false;
-	// $hu = json_decode(file_get_contents("http://my.personalgenomes.org/api/get/$global_human_id"), true);
-	if ($hu && isset($hu["realname"]))
-	    $ds["Name"] = $hu["realname"];
-	$url = "https://my.personalgenomes.org/profile/$global_human_id";
-	$ds["Public profile"] = "<a href=\"".htmlspecialchars($url)."\">".preg_replace('{^https?://}','',$url)."</a>";
+        $hu = false;
+        // $hu = json_decode(file_get_contents("http://my.personalgenomes.org/api/get/$global_human_id"), true);
+        if ($hu && isset($hu["realname"]))
+            $ds["Name"] = $hu["realname"];
+        $url = "https://my.personalgenomes.org/profile/$global_human_id";
+        $ds["Public profile"] = "<a href=\"".htmlspecialchars($url)."\">".preg_replace('{^https?://}','',$url)."</a>";
     }
     $sourcefile = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff";
     if (! file_exists($sourcefile)) $sourcefile = $sourcefile . ".gz";
     $data_size = filesize ($sourcefile);
     if ($data_size) {
-	$ds["Download"] = "<a href=\"/genome_download.php?download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">source data</a> (".humanreadable_size($data_size).")";
+        $ds["Download"] = "<a href=\"/genome_download.php?download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">source data</a> (".humanreadable_size($data_size).")";
     }
     $outdir = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}-out";
     if (file_exists ($nsfile = $outdir."/ns.gff.gz") ||
-	file_exists ($nsfile = $outdir."/ns.gff")) {
-	if (isset($ds["Download"]))
-	    $ds["Download"] .= ", ";
-	else $ds["Download"] = "";
-	$ds["Download"] .= "<a href=\"/genome_download.php?download_type=ns&amp;download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">dbSNP and nsSNP report</a> (".humanreadable_size(filesize($nsfile)).")";
+        file_exists ($nsfile = $outdir."/ns.gff")) {
+        if (isset($ds["Download"]))
+            $ds["Download"] .= ", ";
+        else $ds["Download"] = "";
+        $ds["Download"] .= "<a href=\"/genome_download.php?download_type=ns&amp;download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">dbSNP and nsSNP report</a> (".humanreadable_size(filesize($nsfile)).")";
     }
     $qrealname = htmlspecialchars($ds["Name"], ENT_QUOTES, "UTF-8");
     $GLOBALS["gOut"]["title"] = $qrealname." - GET-Evidence variant report";
     $returned_text = "<h1>Variant report for ".htmlspecialchars($realname,ENT_QUOTES,"UTF-8")."</h1><ul>";
     foreach ($ds as $k => $v)
-	if ($v)
-	    $returned_text .= "<li>$k: $v</li>\n";
+        if ($v)
+            $returned_text .= "<li>$k: $v</li>\n";
 
     if ($results["progress"] < 1) {
-	$returned_text .= "<li>Processing status: &nbsp; <div style='margin:3px 0 -3px 0;display:inline-block;height:12px;' id='variant_report_progress' value='{$results['progress']}'></div> &nbsp; <div style='display:inline' id='variant_report_status'>{$results['status']}</div><input type='hidden' id='display_genome_id' value='{$shasum}' /></li>\n";
+        $returned_text .= "<li>Processing status: &nbsp; <div style='margin:3px 0 -3px 0;display:inline-block;height:12px;' id='variant_report_progress' value='{$results['progress']}'></div> &nbsp; <div style='display:inline' id='variant_report_status'>{$results['status']}</div><input type='hidden' id='display_genome_id' value='{$shasum}' /></li>\n";
     }
     $logfile = $results["logfilename"];
     $log = $results["log"];
@@ -147,11 +147,11 @@ function genome_display($shasum, $oid) {
 
     $results_file = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
     if (file_exists($results_file)) {
-	$variants = array(array(),array());
+        $variants = array(array(),array());
         $lines = file($results_file);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
-	    if (!is_array($variant_data)) continue; // sometimes we can't read python's json??
+            if (!is_array($variant_data)) continue; // sometimes we can't read python's json??
 
             $variant_data["name"] = "";
             if (array_key_exists("amino_acid_change", $variant_data)) {
@@ -159,13 +159,13 @@ function genome_display($shasum, $oid) {
             } else if (array_key_exists("dbSNP", $variant_data)) {
                 $variant_data["name"] = $variant_data["dbSNP"];
             } else
-		continue;
+                continue;
 
             # Get allele frequency
             if (array_key_exists("num",$variant_data) &&
-		array_key_exists("denom",$variant_data) &&
-		$variant_data["denom"] > 0) {
-		$allele_freq = sprintf("%.3f", $variant_data["num"] / $variant_data["denom"]);
+                array_key_exists("denom",$variant_data) &&
+                $variant_data["denom"] > 0) {
+                $allele_freq = sprintf("%.3f", $variant_data["num"] / $variant_data["denom"]);
                 $variant_data["allele_freq"] = $allele_freq;
             } else {
                 $variant_data["allele_freq"] = "";
@@ -182,119 +182,119 @@ function genome_display($shasum, $oid) {
                 $variant_data["clinical"] = "";
                 $variant_data["evidence"] = "";
             }
-	    $variant_data["expect_effect"] = $eval_zyg_out[0];
-	    $variant_data["zygosity"] = $eval_zyg_out[1];
-	    $variant_data["inheritance_desc"] = $eval_zyg_out[2];
-	    if ($variant_data["suff_eval"])
-		$variants[0][] = $variant_data;
-	    else
-		$variants[1][] = $variant_data;
+            $variant_data["expect_effect"] = $eval_zyg_out[0];
+            $variant_data["zygosity"] = $eval_zyg_out[1];
+            $variant_data["inheritance_desc"] = $eval_zyg_out[2];
+            if ($variant_data["suff_eval"])
+                $variants[0][] = $variant_data;
+            else
+                $variants[1][] = $variant_data;
         }
-	$coverage =& genome_coverage_results ($shasum, $oid);
+        $coverage =& genome_coverage_results ($shasum, $oid);
 
-	$returned_text .= "<div id='variant_table_tabs'><ul>\n"
-	    . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
-	    . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n";
-	if ($coverage)
-	    $returned_text .=
-		"<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
-	$returned_text .=
-	    "</ul>\n"
-	    . "<div id='variant_table_tab_0'>";
+        $returned_text .= "<div id='variant_table_tabs'><ul>\n"
+            . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
+            . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n";
+        if ($coverage)
+            $returned_text .=
+                "<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
+        $returned_text .=
+            "</ul>\n"
+            . "<div id='variant_table_tab_0'>";
 
-	$returned_text .= "<div style='float:right; margin-bottom: 3px' id='variant_filter_radio'>
+        $returned_text .= "<div style='float:right; margin-bottom: 3px' id='variant_filter_radio'>
 <input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show all</label>
 <input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show rare (<i>f</i><10%) pathogenic variants</label>
 </div><br clear=all />";
 
         usort($variants[0], "sort_variants");
         $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table'><THEAD><TR>"
-	    . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
-	    . "<TH>Variant</TH>"
-	    . "<TH class='SortImportance SortDescFirst'>Clinical<BR />Importance</TH>"
-	    . "<TH class='SortEvidence Invisible'>Evidence</TH>"
-	    . "<TH class='SortDescFirst'>Impact</TH>"
-	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
-	    . "<TH class='Unsortable'>Summary</TH>"
-	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
-	    . "</TR></THEAD><TBODY>\n";
-	$rownumber = 0;
+            . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
+            . "<TH>Variant</TH>"
+            . "<TH class='SortImportance SortDescFirst'>Clinical<BR />Importance</TH>"
+            . "<TH class='SortEvidence Invisible'>Evidence</TH>"
+            . "<TH class='SortDescFirst'>Impact</TH>"
+            . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
+            . "<TH class='Unsortable'>Summary</TH>"
+            . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
+            . "</TR></THEAD><TBODY>\n";
+        $rownumber = 0;
         foreach ($variants[0] as $variant) {
-	    ++$rownumber;
-	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
-		. "<TD><A HREF=\""
-		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
-		. $variant["clinical"] . "</TD><TD>"
-		. $variant["evidence"] . "</TD><TD>"
-		. $variant["evidence"]
-		. " " . $variant["variant_impact"] . "<br /><br />"
-		. $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
-		. $variant["allele_freq"] . "</TD><TD>"
-		. $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
-		. $variant["suff_eval"] . "</TD></TR>\n";
+            ++$rownumber;
+            $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
+                . "<TD><A HREF=\""
+                . $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
+                . $variant["clinical"] . "</TD><TD>"
+                . $variant["evidence"] . "</TD><TD>"
+                . $variant["evidence"]
+                . " " . $variant["variant_impact"] . "<br /><br />"
+                . $variant["inheritance_desc"] . ", " . $variant["zygosity"] . "</TD><TD>"
+                . $variant["allele_freq"] . "</TD><TD>"
+                . $variant["summary_short"] . "</TD><TD class='ui-helper-hidden'>"
+                . $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
 
-	$returned_text .= "</div>\n<div id='variant_table_tab_1'>\n";
+        $returned_text .= "</div>\n<div id='variant_table_tab_1'>\n";
 
         usort($variants[1], "sort_variants");
         $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff'><THEAD><TR>"
-	    . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
-	    . "<TH>Variant</TH>"
-	    . "<TH class='SortNumeric SortDescFirst'>Autoscore</TH>"
-	    . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
-	    . "<TH class='Unsortable'>Autoscore Reasons</TH>"
-	    . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
-	    . "</TR></THEAD><TBODY>\n";
-	$rownumber = 0;
+            . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
+            . "<TH>Variant</TH>"
+            . "<TH class='SortNumeric SortDescFirst'>Autoscore</TH>"
+            . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
+            . "<TH class='Unsortable'>Autoscore Reasons</TH>"
+            . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
+            . "</TR></THEAD><TBODY>\n";
+        $rownumber = 0;
         foreach ($variants[1] as $variant) {
-	    ++$rownumber;
-	    $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
-		. "<TD><A HREF=\""
-		. $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
-		. $variant["autoscore"]. "</TD><TD>"
-		. $variant["allele_freq"] . "</TD><TD>"
+            ++$rownumber;
+            $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
+                . "<TD><A HREF=\""
+                . $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
+                . $variant["autoscore"]. "</TD><TD>"
+                . $variant["allele_freq"] . "</TD><TD>"
         . autoscore_evidence($variant) . "</TD><TD class='ui-helper-hidden'>"
-		. $variant["suff_eval"] . "</TD></TR>\n";
+                . $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
 
-	if ($coverage) {
-	    $returned_text .= "</div>\n<div id='variant_table_tab_2'>\n";
+        if ($coverage) {
+            $returned_text .= "</div>\n<div id='variant_table_tab_2'>\n";
 
-	    $returned_text .= '<P>Exome coverage: '
-		. ($coverage['length'] - $coverage['missing'])
-		. ' / '
-		. $coverage['length']
-		. ' = '
-		. sprintf ('%.2f', 100*(1-($coverage['missing'] / $coverage['length'])))
-		. '%</P>';
-	    $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_coverage' style='width: 100%'><THEAD><TR>"
-		. "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
-		. "<TH>Gene</TH>"
-		. "<TH class='SortChromosome'>Chromosome</TH>"
-		. "<TH class='RenderFreq'>Coverage</TH>"
-		. "<TH class='SortNumeric'>Missing</TH>"
-		. "<TH class='SortNumeric'>Length</TH>"
-		. "<TH class='Unsortable'>Missing regions</TH>"
-		. "</TR></THEAD><TBODY>\n";
-	    $rownumber = 0;
-	    foreach ($coverage['genes'] as $gene) {
-		++$rownumber;
-		$returned_text .= '<TR><TD class="ui-helper-hidden">'
-		    . $rownumber . '</TD><TD><A HREF="report?type=search&q='
-		    . $gene['gene'] . '">' . $gene['gene'] . '</A></TD><TD>'
-		    . str_replace('chr','',$gene['chr']) . '</TD><TD>'
-		    . ($gene['length']>0 ? (1-($gene['missing']/$gene['length'])) : '-')
-		    . '</TD><TD>'
-		    . $gene['missing'] . '</TD><TD>'
-		    . $gene['length'] . '</TD><TD>'
-		    . preg_replace('{\b(\d+)-(\1)\b}', '\1', $gene['missing_regions']) . '</TD></TR>' . "\n";
-	    }
-	    $returned_text .= '</TBODY></TABLE>' . "\n";
-	}
+            $returned_text .= '<P>Exome coverage: '
+                . ($coverage['length'] - $coverage['missing'])
+                . ' / '
+                . $coverage['length']
+                . ' = '
+                . sprintf ('%.2f', 100*(1-($coverage['missing'] / $coverage['length'])))
+                . '%</P>';
+            $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_coverage' style='width: 100%'><THEAD><TR>"
+                . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
+                . "<TH>Gene</TH>"
+                . "<TH class='SortChromosome'>Chromosome</TH>"
+                . "<TH class='RenderFreq'>Coverage</TH>"
+                . "<TH class='SortNumeric'>Missing</TH>"
+                . "<TH class='SortNumeric'>Length</TH>"
+                . "<TH class='Unsortable'>Missing regions</TH>"
+                . "</TR></THEAD><TBODY>\n";
+            $rownumber = 0;
+            foreach ($coverage['genes'] as $gene) {
+                ++$rownumber;
+                $returned_text .= '<TR><TD class="ui-helper-hidden">'
+                    . $rownumber . '</TD><TD><A HREF="report?type=search&q='
+                    . $gene['gene'] . '">' . $gene['gene'] . '</A></TD><TD>'
+                    . str_replace('chr','',$gene['chr']) . '</TD><TD>'
+                    . ($gene['length']>0 ? (1-($gene['missing']/$gene['length'])) : '-')
+                    . '</TD><TD>'
+                    . $gene['missing'] . '</TD><TD>'
+                    . $gene['length'] . '</TD><TD>'
+                    . preg_replace('{\b(\d+)-(\1)\b}', '\1', $gene['missing_regions']) . '</TD></TR>' . "\n";
+            }
+            $returned_text .= '</TBODY></TABLE>' . "\n";
+        }
 
-	$returned_text .= "</div></div>\n";
+        $returned_text .= "</div></div>\n";
     }
     return($returned_text);
 }
@@ -371,11 +371,11 @@ function autoscore_evidence($variant) {
 
 function sort_variants($a, $b) {
     if ($a['suff_eval'] && $b['suff_eval'])
-	return sort_reviewed ($a, $b);
+        return sort_reviewed ($a, $b);
     if ($a['suff_eval'])
-	return -1;
+        return -1;
     if ($b['suff_eval'])
-	return 1;
+        return 1;
     return sort_by_autoscore ($a, $b);
 }
 
