@@ -14,7 +14,7 @@ import os
 import re
 import sys
 from utils import doc_optparse, gff
-from config import GENETESTS_DATA
+from config_names import GENETESTS_DATA
 from utils.substitution_matrix import blosum100
 
 def read_getev_flat(getev_flatfile):

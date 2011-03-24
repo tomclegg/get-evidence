@@ -43,14 +43,6 @@ fi
 # Build python exts
 #(cd $CORE ; python setup.py build_ext --inplace)
 
-cp -p $SOURCE/server/config.default.py $CONFIG/config.default.py
-if [ ! -e $CONFIG/config.py -a ! -L $CONFIG/config.py ]
-then
-  echo Copying $CONFIG/config.default.py to $CONFIG/config.py
-  cp $CONFIG/config.default.py $CONFIG/config.py
-fi
-chmod 600 $CONFIG/config.py
-
 if [ ! -e $DATA/genome_stats.txt ]
 then
     echo Making symlink to genome_stats.txt

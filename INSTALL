@@ -145,19 +145,6 @@ Run install-user.sh as www-data (this includes some file downloads):
  source config-local.sh
  sudo -u $USER ./install-user.sh
 
-Use sudo to edit /home/trait/config/config.py file to have the correct
-GET-Evidence password: change "shakespeare" to the password you've
-chosen (also stored in public_html/config.php)
-
- GETEVIDENCE_USER = "evidence"
- GETEVIDENCE_PASSWD = "shakespeare"
- GETEVIDENCE_DATABASE = "evidence"
-
-Create link to config.py in the core directory
- cd ~/get-evidence/server/script/
- source config-local.sh
- sudo ln -sn $CONFIG/config.py $CORE/config.py
-
 Build python extensions:
  cd ~/get-evidence/server
  python setup.py build_ext --inplace

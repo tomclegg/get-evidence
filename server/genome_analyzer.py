@@ -21,10 +21,10 @@ import gzip
 import bz2
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
-from config import GENETESTS_DATA, GETEV_FLAT
-from config import DBSNP_B36_SORTED, DBSNP_B37_SORTED
-from config import KNOWNGENE_HG18_SORTED, KNOWNGENE_HG19_SORTED
-from config import REFERENCE_GENOME_HG18, REFERENCE_GENOME_HG19
+from config_names import GENETESTS_DATA, GETEV_FLAT
+from config_names import DBSNP_B36_SORTED, DBSNP_B37_SORTED
+from config_names import KNOWNGENE_HG18_SORTED, KNOWNGENE_HG19_SORTED
+from config_names import REFERENCE_GENOME_HG18, REFERENCE_GENOME_HG19
 from progresstracker import Logger, ProgressTracker
 import get_metadata 
 import call_missing 
