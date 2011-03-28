@@ -4,6 +4,136 @@
 // within lib directory breaks because the path is wrong. So I've removed
 // those imports because they don't seem to work. -- MPB 2011/3/27
 
+class GenomeVariant {
+    public $data;
+
+    public function __construct($variant_data=array()) {
+        $this->data = array ( 'name' => '',
+                              'suff_eval' => false,
+                              'clinical' => '',
+                              'evidence' => '',
+                              'variant_impact' => '',
+                              'allele_freq' => '',
+                              'expect_effect' => 0,
+                              'zygosity' => '',
+                              'inheritance_desc' => '',
+                              'summary_short' => '',
+                              'autoscore' => '',
+                              'n_articles' => '' );
+        
+        if ($variant_data) {
+            $this->add_new_data($variant_data);
+        }
+    }
+
+    /**
+     * Transfer data to store, process to get some needed items if necessary
+     *
+     * Transfer is conservative -- only occurs if the target array for 
+     * storage has the key and the target value evaluates as false.
+     */
+    public function add_new_data($new_data, &$variant_data=NULL) {
+        if (! $variant_data) {
+            $variant_data =& $this->data;
+        }
+        foreach ($variant_data as $key=>$value) {
+            if (array_key_exists($key, $new_data) && ! $value) {
+                $variant_data[$key] = $new_data[$key];
+            }
+        }
+        // Get name, if needed and possible.
+        if (! $variant_data['name']) {
+            $has_aa_change = (array_key_exists('gene', $new_data) &&
+                              array_key_exists('amino_acid_change', $new_data)
+                              && $new_data['gene'] && 
+                              $new_data['amino_acid_change']);
+            if ($has_aa_change and !$variant_data['name']) {
+                $variant_data['name'] = $new_data['gene'] . '-' . 
+                    $new_data['amino_acid_change'];
+            } else {
+                $has_dbsnp = (array_key_exists('dbSNP', $new_data) && 
+                              $new_data['dbSNP']);
+                if ($has_dbsnp) {
+                    $variant_data['name'] = $new_data['dbSNP'];
+                }
+            }
+        }
+        // Figure out allele frequency.
+        $want_allele_freq = ( (! $variant_data['allele_freq']) && 
+                              array_key_exists('num', $new_data) && 
+                              array_key_exists('denom', $new_data) && 
+                              $new_data['num'] && $new_data['denom']);
+        if ($want_allele_freq) {
+            $allele_freq = $new_data["num"] / $new_data["denom"];
+            $variant_data['allele_freq'] = sprintf("%.3f", $allele_freq);
+        }
+        // Interpret zygosity if needed.
+        $want_eval_zyg = ( (! ($variant_data['expect_effect'] &&
+                               $variant_data['zygosity'] &&
+                               $variant_data['inheritance_desc'] ) ) &&
+                           array_key_exists('variant_dominance', $new_data) &&
+                           array_key_exists('genotype', $new_data) &&
+                           array_key_exists('ref_allele', $new_data));
+        if ($want_eval_zyg) {
+            $eval_zyg_out = $this->eval_zygosity( $new_data["variant_dominance"],
+                                           $new_data["genotype"],
+                                           $new_data["ref_allele"] );
+            $variant_data['expect_effect'] = $eval_zyg_out[0];
+            $variant_data['zygosity'] = $eval_zyg_out[1];
+            $variant_data['inheritance_desc'] = $eval_zyg_out[2];
+        }
+        // Sufficiently evaluated, and clinical & evidence modifiers.
+        $want_suff_eval = ( (! $variant_data['suff_eval']) &&
+                            array_key_exists('variant_quality', $new_data) &&
+                            array_key_exists('variant_impact', $new_data) &&
+                            $new_data['variant_quality'] && 
+                            $new_data['variant_impact']);
+        if ($want_suff_eval) {
+            $variant_data['suff_eval'] = quality_eval_suff($new_data['variant_quality'], $new_data['variant_impact']);
+            if ($variant_data['suff_eval']) {
+                $variant_data['clinical'] = quality_eval_clinical($new_data['variant_quality']);
+                $variant_data['evidence'] = quality_eval_evidence($new_data['variant_quality']);
+            }
+        }
+    }
+    
+    public function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
+        // 1 = expected to have effect (het dominant or hom recessive)
+        // 0 = unclear ("other" inheritance or possible errors)
+        // -1 = no effect expected (recessive carrier) or unknown
+        $alleles = preg_split('/\//', $genotype);
+        $zygosity = "Heterozygous";
+        if (!array_key_exists(1,$alleles) || ($alleles[0] == $alleles[1])) {
+            $zygosity = "Homozygous";
+        }
+        if ($variant_dominance == "dominant") {
+            if ( $ref_allele and 
+                 $ref_allele != $alleles[0] or $ref_allele != $alleles[1]) {
+                return array (1, $zygosity, "Dominant"); // An effect is expected.
+            } else {
+                return array (0, $zygosity . "(matching ref??)", "Dominant"); // Error? maybe pathogenic ref? 
+                // Need to have "pathogenic allele" to know.
+            }
+        } elseif ($variant_dominance == "other") {
+            return array (0, $zygosity, "Complex/Other");
+        } elseif ($variant_dominance == "recessive") {
+            if ($zygosity == "Homozygous") {
+                if ($ref_allele and $ref_allele == $alleles[0]) {
+                    return array (0, $zygosity . "(matching ref??)", "Recessive"); // Error or pathogenic ref? see above.
+                } else {
+                    return array (1, $zygosity, "Recessive"); // Error or pathogenic ref? see above.
+                }
+            } else {
+                return array (-1, "Carrier (" . $zygosity . ")", "Recessive"); // Recessive carrier
+            }
+        } else {
+            return array (-1, $zygosity, "Unknown"); // "unknown" inheritance and other
+        }
+        return 0;
+    }
+
+}
+
 class GenomeReport {
     public $genomeID;
     public $sourcefile;
@@ -98,6 +228,7 @@ class GenomeReport {
      * @return boolean|string false or the string containing openID
      */
     public function permission($user_oid, $is_admin=false) {
+        global $pgp_data_user, $public_data_user;
         // Currently, admins have access to all genome reports.
         if ($is_admin) 
             return true;
@@ -244,42 +375,11 @@ class GenomeReport {
             if (!is_array($variant_data))
                 // sometimes we can't read python's json??
                 continue;
-            // Set up name, allele frequency, etc. Default to "" if missing.
-            $variant_data["name"] = "";
-            if (array_key_exists("amino_acid_change", $variant_data)) {
-                $variant_data["name"] = $variant_data["gene"] . "-" . $variant_data["amino_acid_change"];
-            } else if (array_key_exists("dbSNP", $variant_data)) {
-                $variant_data["name"] = $variant_data["dbSNP"];
-            } else
-                continue;
-            if (array_key_exists("num",$variant_data) &&
-                array_key_exists("denom",$variant_data) &&
-                $variant_data["denom"] > 0) {
-                $allele_freq = sprintf("%.3f", $variant_data["num"] / $variant_data["denom"]);
-                $variant_data["allele_freq"] = $allele_freq;
-        } else {
-                $variant_data["allele_freq"] = "";
-            }
-            if (! array_key_exists("n_articles", $variant_data)) $variant_data["n_articles"] = "";
-            // Get zygosity
-            $eval_zyg_out = eval_zygosity( $variant_data["variant_dominance"],
-                                           $variant_data["genotype"],
-                                           $variant_data["ref_allele"]);
-            $variant_data["suff_eval"] = quality_eval_suff($variant_data["variant_quality"], $variant_data["variant_impact"]);
-            if ($variant_data["suff_eval"]) {
-                $variant_data["clinical"] = quality_eval_clinical($variant_data["variant_quality"]);
-                $variant_data["evidence"] = quality_eval_evidence($variant_data["variant_quality"]);
-            } else {
-                $variant_data["clinical"] = "";
-                $variant_data["evidence"] = "";
-            }
-            $variant_data["expect_effect"] = $eval_zyg_out[0];
-            $variant_data["zygosity"] = $eval_zyg_out[1];
-            $variant_data["inheritance_desc"] = $eval_zyg_out[2];
-            if ($variant_data["suff_eval"])
-                $variants['suff'][] = $variant_data;
+            $variant = new GenomeVariant($variant_data);
+            if ($variant->data['suff_eval'])
+                $variants['suff'][] =& $variant->data;
             else
-                $variants['insuff'][] = $variant_data;
+                $variants['insuff'][] =& $variant->data;
         }
         return $variants;
     }    
@@ -423,42 +523,6 @@ function genome_display($shasum, $oid, $is_admin=false) {
     }
     return($returned_text);
 }
-
-function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
-    // 1 = expected to have effect (het dominant or hom recessive)
-    // 0 = unclear ("other" inheritance or possible errors)
-    // -1 = no effect expected (recessive carrier) or unknown
-    $alleles = preg_split('/\//', $genotype);
-    $zygosity = "Heterozygous";
-    if (!array_key_exists(1,$alleles) || ($alleles[0] == $alleles[1])) {
-        $zygosity = "Homozygous";
-    }
-    if ($variant_dominance == "dominant") {
-        if ( $ref_allele and 
-            $ref_allele != $alleles[0] or $ref_allele != $alleles[1]) {
-            return array (1, $zygosity, "Dominant"); // An effect is expected.
-        } else {
-            return array (0, $zygosity . "(matching ref??)", "Dominant"); // Error? maybe pathogenic ref? 
-                                      // Need to have "pathogenic allele" to know.
-        }
-    } elseif ($variant_dominance == "other") {
-        return array (0, $zygosity, "Complex/Other");
-    } elseif ($variant_dominance == "recessive") {
-        if ($zygosity == "Homozygous") {
-            if ($ref_allele and $ref_allele == $alleles[0]) {
-                return array (0, $zygosity . "(matching ref??)", "Recessive"); // Error or pathogenic ref? see above.
-            } else {
-                return array (1, $zygosity, "Recessive"); // Error or pathogenic ref? see above.
-            }
-        } else {
-            return array (-1, "Carrier (" . $zygosity . ")", "Recessive"); // Recessive carrier
-        }
-    } else {
-        return array (-1, $zygosity, "Unknown"); // "unknown" inheritance and other
-    }
-    return 0;
-}
-    
 
 function autoscore_evidence($variant) {
     $items = array();
