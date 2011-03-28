@@ -394,6 +394,67 @@ class GenomeReport {
     }
 
     /**
+     * Read list of variant_ids, look up in db, return list of data arrays
+     * @param array keys are variant_ids, values an array containing some var data
+     * @return array List of GenomeVariant objects
+     */
+    public function variants_lookup($variants_data) {
+        // Look up data in database
+        $variant_ids = array_keys($variants_data);
+        $add_varidtest = create_function('$str',
+                                'return "snap_latest.variant_id=" . $str;');
+        $with_idtest = array_map($add_varidtest, $variant_ids);
+        $combine_for_db_query = "(" . join(" OR ", $with_idtest) . ")";
+        $db_cmd = "SELECT snap_latest.variant_id as variant_id,
+                       snap_latest.variant_quality as variant_quality,
+                       snap_latest.summary_short as summary_short,
+                       flat_summary.flat_summary as flat_summary
+                   FROM snap_latest
+                   LEFT JOIN flat_summary
+                   ON flat_summary.variant_id=snap_latest.variant_id
+                   WHERE snap_latest.article_pmid=0 AND snap_latest.genome_id=0
+                   AND snap_latest.disease_id=0 AND " . $combine_for_db_query;
+        $db_query = theDb()->getAll($db_cmd);
+        // Store data to return when done.
+        // Each value in variant_data should already contain (if exists): 
+        // 'genotype', 'ref_allele', 'chromosome', and 'coordinates', 
+        // 'autoscore', 'testable', and 'reviewed'
+        $name_map = array ('gene' => 'gene',
+                           'aa_change_short' => 'amino_acid_change',
+                           'impact' => 'variant_impact',
+                           'inheritance' => 'variant_dominance',
+                           'dbsnp_id' => 'dbSNP',
+                           'overall_frequency_n' => 'num',
+                           'overall_frequency_d' => 'denom',
+                           'in_omim' => 'in_omim',
+                           'in_pharmgkb' => 'in_pharmgkb',
+                           'in_gwas' => 'in_gwas',
+                           'n_articles' => 'n_articles',
+                           );
+        $ret = array();
+        foreach ($db_query as $result) {
+            if ($flat_summary = $result['flat_summary']) {
+                $vardata = $variants_data[$result['variant_id']];
+                $vardata['variant_quality'] = $result['variant_quality'];
+                if ($result['summary_short']) {
+                    $vardata['summary_short'] = $result['summary_short'];
+                }
+                // Pull data from flat_summary if not empty
+                $flatdata = json_decode ($flat_summary, true);
+                foreach ($flatdata as $key => $value) {
+                    if (array_key_exists($key, $name_map) && 
+                        $value && ! ($value == "-")) {
+                        $vardata[$name_map[$key]] = $value;
+                    }
+                }
+                $variant = new GenomeVariant($vardata);
+                $ret[] = $variant;
+            }
+        }
+        return $ret;
+    }
+
+    /**
      * Read file containing GET-Evidence hits and other significant variants
      * Return an array containing two keys:
      * 'suff' => list of arrays each w/ sufficiently-evaluated variant data
@@ -404,17 +465,40 @@ class GenomeReport {
         if (!file_exists($this->variantsfile))
             return null;
         $variants = array('suff' => array(), 'insuff' => array());
+        $getev_variants = array();
         $lines = file($this->variantsfile);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
             if (!is_array($variant_data))
                 // sometimes we can't read python's json??
                 continue;
+            // If variant_id exists, variant is in GET-Evidence - 
+            // store necessary data and look up later.
+            if (array_key_exists('variant_id', $variant_data)) {
+                $want = array('genotype', 'ref_allele', 'chromosome',
+                              'coordinates', 'autoscore', 'testable', 
+                              'reviewed');
+                $vardata_to_pass = array();
+                foreach ($want as $key) {
+                    if (array_key_exists($key, $variant_data)) {
+                        $vardata_to_pass[$key] = $variant_data[$key];
+                    }
+                }
+                $getev_variants[$variant_data['variant_id']] = $vardata_to_pass;
+                continue;
+            }
+            // Otherwise process & store. Var is necessarily insuff if not in GET-Ev.
             $variant = new GenomeVariant($variant_data);
-            if ($variant->data['suff_eval'])
+            $variants['insuff'][] =& $variant->data;
+        }
+        // Grab data for GET-Evidence variants from the database.
+        $getev_var_matched = $this->variants_lookup($getev_variants);
+        foreach ($getev_var_matched as $variant) {
+            if ($variant->data['suff_eval']) {
                 $variants['suff'][] =& $variant->data;
-            else
+            } else {
                 $variants['insuff'][] =& $variant->data;
+            }
         }
         return $variants;
     }    
