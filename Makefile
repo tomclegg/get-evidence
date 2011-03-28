@@ -8,6 +8,7 @@ php-openid-2.2.2:
 	cd php-openid && git fetch --tags http://github.com/openid/php-openid.git
 	cd php-openid && git checkout 2.2.2
 	cd php-openid && patch -p1 <../patch-yadis-noprotocol
+	ln -s php-openid php-openid-2.2.2
 
 textile-2.0.0:
 	wget -c http://textile.thresholdstate.com/file_download/2/textile-2.0.0.tar.gz
@@ -20,6 +21,7 @@ DataTables-1.7.4.zip:
 
 public_html/DataTables-1.7.4: DataTables-1.7.4.zip
 	cd public_html && unzip ../DataTables-1.7.4.zip
+	touch $@
 
 public_html/jquery-ui:
 	mkdir -p public_html/jquery-ui && cd public_html/jquery-ui && unzip ../../jquery-ui-1.8.6.custom.zip
