@@ -72,11 +72,14 @@ class GenomeVariant {
         $want_eval_zyg = ( (! ($variant_data['expect_effect'] &&
                                $variant_data['zygosity'] &&
                                $variant_data['inheritance_desc'] ) ) &&
-                           array_key_exists('variant_dominance', $new_data) &&
                            array_key_exists('genotype', $new_data) &&
                            array_key_exists('ref_allele', $new_data));
         if ($want_eval_zyg) {
-            $eval_zyg_out = $this->eval_zygosity( $new_data["variant_dominance"],
+            if (array_key_exists('variant_dominance', $new_data))
+                $dominance = $new_data['variant_dominance'];
+            else
+                $dominance = 'unknown';
+            $eval_zyg_out = $this->eval_zygosity( $dominance,
                                            $new_data["genotype"],
                                            $new_data["ref_allele"] );
             $variant_data['expect_effect'] = $eval_zyg_out[0];
@@ -426,9 +429,10 @@ function genome_display($shasum, $oid, $is_admin=false) {
             "view this genome report. Perhaps you got logged off?</p>";
         return $returned_text;
     } 
-    $qrealname = htmlspecialchars($ds["Name"], ENT_QUOTES, "UTF-8");
+    $header_data = $genome_report->header_data();
+    $qrealname = htmlspecialchars($header_data["Name"], ENT_QUOTES, "UTF-8");
     $GLOBALS["gOut"]["title"] = $qrealname." - GET-Evidence variant report";
-    $returned_text = "<h1>Variant report for ".htmlspecialchars($realname,ENT_QUOTES,"UTF-8")."</h1><ul>";
+    $returned_text = "<h1>Variant report for ".htmlspecialchars($qrealname,ENT_QUOTES,"UTF-8")."</h1><ul>";
     $header_data = $genome_report->header_data();
     foreach ($header_data as $k => $v)
         if ($v)
