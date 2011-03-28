@@ -100,7 +100,7 @@ class GenomeVariant {
             }
         }
         // Summarize autoscore reasons
-        if (!($variant_data['autoscore_why'])) {
+        if (!@$variant_data['autoscore_why']) {
             $variant_data['autoscore_why'] = $this->autoscore_why($new_data);
         }
     }
@@ -371,7 +371,7 @@ class GenomeReport {
             if ($gene['missing'] == 0)
                 continue;
             $missing += $gene['missing'];
-            if (!$gene['clin_test'])
+            if (!@$gene['clin_test'])
                 continue;
             $out[] = $gene;
         }
@@ -401,19 +401,17 @@ class GenomeReport {
     public function variants_lookup($variants_data) {
         // Look up data in database
         $variant_ids = array_keys($variants_data);
-        $add_varidtest = create_function('$str',
-                                'return "snap_latest.variant_id=" . $str;');
-        $with_idtest = array_map($add_varidtest, $variant_ids);
-        $combine_for_db_query = "(" . join(" OR ", $with_idtest) . ")";
-        $db_cmd = "SELECT snap_latest.variant_id as variant_id,
+        $combine_for_db_query = "(" . join(',', $variant_ids) . ")";
+        $db_cmd = "SELECT flat_summary.variant_id as variant_id,
                        snap_latest.variant_quality as variant_quality,
                        snap_latest.summary_short as summary_short,
                        flat_summary.flat_summary as flat_summary
-                   FROM snap_latest
-                   LEFT JOIN flat_summary
+                   FROM flat_summary
+                   LEFT JOIN snap_latest
                    ON flat_summary.variant_id=snap_latest.variant_id
-                   WHERE snap_latest.article_pmid=0 AND snap_latest.genome_id=0
-                   AND snap_latest.disease_id=0 AND " . $combine_for_db_query;
+                   AND snap_latest.article_pmid=0 AND snap_latest.genome_id=0
+                   AND snap_latest.disease_id=0
+                   WHERE flat_summary.variant_id IN $combine_for_db_query";
         $db_query = theDb()->getAll($db_cmd);
         // Store data to return when done.
         // Each value in variant_data should already contain (if exists): 
@@ -507,7 +505,7 @@ class GenomeReport {
 function genome_display($shasum, $oid, $is_admin=false) {
     $genome_report = new GenomeReport($shasum);
     $results = $genome_report->status();
-    $permission = $genome_report->permission($oid, $is_adimn);
+    $permission = $genome_report->permission($oid, $is_admin);
     if (!$permission) {
         $returned_text = "<p>Sorry, you don't seem to have permission to " .
             "view this genome report. Perhaps you got logged off?</p>";
