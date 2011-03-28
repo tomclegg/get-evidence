@@ -10,11 +10,11 @@ if (isset($_SERVER["PATH_INFO"]))
     $path_info = $_SERVER["PATH_INFO"];
 
 $snap = false;
-if ($_GET["version"] == "release" ||
+if (@$_GET["version"] == "release" ||
     preg_match ('{/release}', $path_info) ||
     $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "release")
     $snap = "release";
-else if ($_GET["version"] == "latest" ||
+else if (@$_GET["version"] == "latest" ||
          preg_match ('{/latest}', $path_info) ||
          $_SERVER["argc"] > 1 && $_SERVER["argv"][1] == "latest")
     $snap = "latest";
@@ -69,7 +69,7 @@ if ($snap &&
         }
 
         foreach ($columns as $c)
-            print $flat[$c]."\t";
+            print @$flat[$c]."\t";
         print preg_replace('{[\t\n]}', ' ', $row["summary_short"])."\n";
     }
     exit;
