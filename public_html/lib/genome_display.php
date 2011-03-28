@@ -19,6 +19,7 @@ class GenomeVariant {
                               'inheritance_desc' => '',
                               'summary_short' => '',
                               'autoscore' => '',
+                              'autoscore_reasons' => '',
                               'n_articles' => '' );
         
         if ($variant_data) {
@@ -95,6 +96,10 @@ class GenomeVariant {
                 $variant_data['evidence'] = quality_eval_evidence($new_data['variant_quality']);
             }
         }
+        // Summarize autoscore reasons
+        if (!($variant_data['autoscore_why'])) {
+            $variant_data['autoscore_why'] = $this->autoscore_why($new_data);
+        }
     }
     
     public function eval_zygosity($variant_dominance, $genotype, $ref_allele = null) {
@@ -130,6 +135,33 @@ class GenomeVariant {
             return array (-1, $zygosity, "Unknown"); // "unknown" inheritance and other
         }
         return 0;
+    }
+
+    public function autoscore_why($data) {
+        $items = array();
+        if (array_key_exists("in_omim", $data) && $data["in_omim"])
+            $items[] = "In OMIM";
+        if (array_key_exists("in_gwas", $data) && $data["in_gwas"])
+            $items[] = "In HuGENet GWAS";
+        if (array_key_exists("in_pharmgkb", $data) && $data["in_pharmgkb"])
+            $items[] = "In PharmGKB";
+        if (array_key_exists("disruptive", $data) && $data["disruptive"])
+            $items[] = "Disruptive amino acid change";
+        if (array_key_exists("nonsense", $data) && $data["nonsense"])
+            $items[] = "Nonsense mutation";
+        if (array_key_exists("frameshift", $data) and $data["frameshift"])
+            $items[] = "Frameshift";
+        if (array_key_exists("indel", $data) and $data["indel"]) {
+            $items[] = "Frame-preserving indel";
+        }
+        if (array_key_exists("testable", $data) && $data["testable"] == 1) {
+            if (array_key_exists("reviewed", $data) && $data["reviewed"] == 1)
+                $items[] = "Testable gene in GeneTests with associated GeneReview";
+            else
+                $items[] = "Testable gene in GeneTests";
+        }
+        $returned_text = implode(", ",$items);
+        return $returned_text;
     }
 
 }
@@ -479,7 +511,8 @@ function genome_display($shasum, $oid, $is_admin=false) {
                 . $variant["allele_freq"] . "</TD><TD>"
                 . $variant["n_articles"] . "</TD><TD>"
                 . $variant["zygosity"] . ". "
-        . autoscore_evidence($variant) . "</TD><TD class='ui-helper-hidden'>"
+                . $variant["autoscore_why"] 
+                . "</TD><TD class='ui-helper-hidden'>"
                 . $variant["suff_eval"] . "</TD></TR>\n";
         }
         $returned_text .= "</TBODY></TABLE>\n";
@@ -522,40 +555,6 @@ function genome_display($shasum, $oid, $is_admin=false) {
         $returned_text .= "</div></div>\n";
     }
     return($returned_text);
-}
-
-function autoscore_evidence($variant) {
-    $items = array();
-    if (array_key_exists("in_omim", $variant) and $variant["in_omim"]) {
-        $items[] = "In OMIM";
-    }
-    if (array_key_exists("in_gwas", $variant) and $variant["in_gwas"]) {
-        $items[] = "In HuGENet GWAS";
-    }
-    if (array_key_exists("in_pharmgkb", $variant) and $variant["in_pharmgkb"]) {
-        $items[] = "In PharmGKB";
-    }
-    if (array_key_exists("disruptive", $variant) and $variant["disruptive"]) {
-        $items[] = "Disruptive amino acid change";
-    }
-    if (array_key_exists("nonsense", $variant) and $variant["nonsense"]) {
-        $items[] = "Nonsense mutation";
-    }
-    if (array_key_exists("frameshift", $variant) and $variant["frameshift"]) {
-        $items[] = "Frameshift";
-    }
-    if (array_key_exists("indel", $variant) and $variant["indel"]) {
-        $items[] = "Frame-preserving indel";
-    }
-    if (array_key_exists("testable", $variant) and $variant["testable"] == 1) {
-        if (array_key_exists("reviewed", $variant) and $variant["reviewed"] == 1) {
-            $items[] = "Testable gene in GeneTests with associated GeneReview";
-        } else {
-            $items[] = "Testable gene in GeneTests";
-        }
-    }
-    $returned_text = implode(", ",$items);
-    return $returned_text;
 }
 
 function sort_variants($a, $b) {
