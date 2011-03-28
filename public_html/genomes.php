@@ -22,42 +22,21 @@ if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
 $user = getCurrentUser();
 
 if (strlen($display_genome_ID) > 0) {
-    $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?", 
-				 array($display_genome_ID));
-    // check you should have permission
-    $permission = getCurrentUser('is_admin');
-    $request_ID = "";
-    // First check if logged in use has access
-    if (!$permission) {
-	foreach ($db_query as $result) {
-	    if ($result['oid'] == $user['oid']) {
-		$permission = true;
-		$request_ID = $user['oid'];
-	    }
-	}
-    }
-    # Check if PGP or Public data, display as that if that user
-    if (!$permission) {
-        foreach ($db_query as $result) {
-            if ($result['oid'] == $pgp_data_user) {
-                $permission = true;
-                $request_ID = $pgp_data_user;
-            } elseif ($result['oid'] == $public_data_user) {
-                $permission = true;
-                $request_ID = $public_data_user;
-            }
-        }
-    }
+    $genome_report = new GenomeReport($display_genome_ID);
+    $permission = $genome_report->permission($user['oid'], 
+					      getCurrentUser('is_admin'));
     if ($permission) {
 	if (isset($_REQUEST["json"])) {
 	    header ("Content-type: application/json");
-	    print json_encode (genome_get_results ($display_genome_ID, $request_ID));
+	    print json_encode($genome_report->status());
 	    exit;
 	}
-        $page_content .= genome_display($display_genome_ID, $request_ID);
+        $page_content .= genome_display($display_genome_ID, $permission,
+					getCurrentUser('is_admin'));
     } else {
-        $page_content .= "Sorry, for some reason you've requested a genome you don't have "
-                    . "access to. Perhaps you've been logged off?<br>\n";
+        $page_content .= "Sorry, for some reason you've requested a " .
+	    "genome you don't have access to. " .
+	    "Perhaps you've been logged off?<br>\n";
     }
 } else {
     $page_content .= "<h2>PGP genomes</h2>";
@@ -106,7 +85,8 @@ function list_uploaded_genomes($user_oid) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
 	    $returned_text .= uploaded_genome_actions($result);
 	    if ($result['oid'] == $user['oid'] || $user['is_admin']) {
-		$results = genome_get_results ($result['shasum'], $user['oid']);
+		$genome_report = new GenomeReport($result['shasum']);
+		$results = $genome_report->status();
 		if (isset($results['progress']) &&
 		    $results['progress'] < 1 &&
 		    $results['logmtime'] > time() - 86400)

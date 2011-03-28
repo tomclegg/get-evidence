@@ -1,50 +1,184 @@
 <?php ; // -*- mode: java; c-basic-indent: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 
-require_once ("lib/quality_eval.php");
+// TODO: If I understand the errors correctly, import of packages from 
+// within lib directory breaks because the path is wrong. So I've removed
+// those imports because they don't seem to work. -- MPB 2011/3/27
 
-function genome_get_results ($shasum, $oid) {
-    $ret = array();
+class GenomeReport {
+    public $genomeID;
+    public $sourcefile;
+    public $processedfile;
+    public $variantsfile;
+    public $coveragefile;
+    public $metadatafile;
+    public $lockfile;
+    public $logfile;
 
-    $ret["progress"] = 0;
-    $ret["status"] = "unknown";
+    public function __construct($genomeID) {
+        $this->genomeID = $genomeID;
+        $prefix = $GLOBALS['gBackendBaseDir'] . '/upload/' . $genomeID;
+        $this->sourcefile = $prefix . '/genotype.gff';
+        if (! file_exists($this->sourcefile)) {
+            if (file_exists($this->sourcefile . '.gz')) {
+                $this->sourcefile = $this->sourcefile . '.gz';
+            } else if (file_exists($this->sourcefile . 'bz2')) {
+                $this->sourcefile = $this->sourcefile . 'bz2';
+            }
+         }
+        $this->processedfile = $prefix . '-out/ns.gff.gz';
+        if (! file_exists($this->processedfile)) {
+            $this->processedfile = $prefix . '-out/ns.gff';
+        }
+        $this->variantsfile = $prefix . '-out/get-evidence.json';
+        $this->coveragefile = $prefix . '-out/missing_coding.json';
+        $this->metadatafile = $prefix . '-out/metadata.json';
+        $this->lockfile = $prefix . '-out/lock';
+        $this->logfile = $prefix . '-out/log';
+    }
 
-    $still_processing = false;
+    // Log files can have a long series of status lines with only numbers,
+    // replace all of these but the last with "[...]".
+    private function trim_log(&$log_contents) {
+        $log_contents = preg_replace('{(\n#status \d+)+(\n#status \d+\n)}',
+                                 "\n[...]\\2",
+                                 $log_contents);
+    }
 
-    $resultfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/get-evidence.json";
-    $lockfile = $GLOBALS["gBackendBaseDir"] . "/upload/" . $shasum . "-out/lock";
-    if (file_exists ($lockfile)) {
-        $logfile = $lockfile;
-        $ret["progress"] = 1;
-        $ret["status"] = "failed";
-        if (!is_writable ($lockfile) || // if !writable, fuser won't work; assume lock is current
-            "ok" == shell_exec("fuser ''".escapeshellarg($lockfile)." >/dev/null && echo -n ok")) {
-            $still_processing = true;
-            $total_steps = 100;
-            foreach (file($lockfile) as $logline) {
-                if (preg_match ('{^#status (\d*)/?(\d*)( (.+))?}', $logline, $regs)) {
-                    if ($regs[2] > 0) $total_steps = $regs[2];
-                    $ret["progress"] = $regs[1] / $total_steps;
-                    if ($regs[4])
-                        $ret["status"] = $regs[4];
+    // Check log and lock files, return information on processing status.
+    public function status() {
+        $ret = array('progress' => 0, 'status' => 'unknown');
+        $still_processing = false;
+        if (file_exists($this->lockfile)) {
+            $ret['logfilename'] = $this->lockfile;
+            // If not writable, fuser won't work: assume lock is current.
+            $fuser_test = shell_exec("fuser ''" . 
+                                     escapeshellarg($this->lockfile) . 
+                                     ' >/dev/null && echo -n ok');
+            if (!is_writable ($this->lockfile) || "ok" == $fuser_test) {
+                $still_processing = true;
+                $total_steps = 100;
+                foreach (file($this->lockfile) as $logline) {
+                    if (preg_match ('{^#status (\d*)/?(\d*)( (.+))?}', 
+                                    $logline, 
+                                    $regs)) {
+                        if ($regs[2] > 0) 
+                            $total_steps = $regs[2];
+                        $ret['progress'] = $regs[1] / $total_steps;
+                        if ($regs[4])
+                            $ret['status'] = $regs[4];
+                    }
+                }
+            }
+        } else {
+            $ret['logfilename'] = $this->logfile;
+            if (file_exists($this->logfile) && 
+                file_exists($this->variantsfile)) {
+                $ret['progress'] = 1;
+                $ret['status'] = 'finished';
+            }
+        }
+        if (!file_exists($ret['logfilename']) || 
+            !is_readable($ret['logfilename']))
+            $ret['logfilename'] = "/dev/null";
+        $ret['logmtime'] = filemtime ($ret['logfilename']);
+        $ret['log'] = file_get_contents($ret['logfilename']);
+        $this->trim_log($ret['log']);
+        $ret['log'] .= "\n\nLog file ends: ".date('r',$ret['logmtime']);
+        return $ret;
+    }
+
+    /**
+     * Check if user should have permission to access this genome report
+     *
+     * Return false if no permission, an openID string if permission.
+     * If the user has access to the report because it is a PGP or Public 
+     * genome, return the PGP or Public genome openID.
+     * @param string $user_oid
+     * @param boolean $is_admin (optional, defaults to false)
+     * @return boolean|string false or the string containing openID
+     */
+    public function permission($user_oid, $is_admin=false) {
+        // Currently, admins have access to all genome reports.
+        if ($is_admin) 
+            return true;
+        $db_cmd = "SELECT oid FROM private_genomes 
+                   WHERE shasum=?";
+        $db_query = theDb()->getAll($db_cmd, array($this->genomeID));
+        // Permission is false unless found by one of these checks.
+        $permission = false;
+        // First check if logged in user has access.
+        foreach ($db_query as $result) {
+            if ($result['oid'] == $user_oid) {
+                $permission = $user_oid;
+            }
+        }
+        // If no user-specific permission, check if PGP or Public data.
+        if (!$permission) {
+            foreach ($db_query as $result) {
+                if ($result['oid'] == $pgp_data_user) {
+                    $permission = $pgp_data_user;
+                } elseif ($result['oid'] == $public_data_user) {
+                    $permission = $public_data_user;
                 }
             }
         }
-    } else {
-        $logfile = preg_replace ('{lock$}', 'log', $lockfile);
-        if (file_exists ($logfile) && file_exists ($resultfile)) {
-            $ret["progress"] = 1;
-            $ret["status"] = "finished";
-        }
+        return $permission;
     }
-    if (!file_exists ($logfile) || !is_readable ($logfile))
-        $logfile = "/dev/null";
 
-    $ret["log"] = preg_replace ('{(\n#status \d+)+(\n#status \d+\n)}', "\n[...]\\2", file_get_contents ($logfile));
-    $ret["logmtime"] = filemtime ($logfile);
-    $ret["logfilename"] = $logfile;
-    $ret["log"] .= "\n\nLog file ends: ".date("r",$ret["logmtime"]);
-
-    return $ret;
+    /**
+     * Return info and links to put at top of genome report
+     * @return array
+     */
+    public function header_data() {
+        $db_cmd = "SELECT nickname, global_human_id FROM private_genomes 
+                   WHERE shasum=?";
+        $db_query = theDb()->getAll ($db_cmd, array($this->genomeID));
+        $head_data = array("Name" => false,
+                           "Public profile" => false,
+                           "This report" => "<a href=\"/genomes?" . 
+                           $this->genomeID . "\">" . 
+                           "{$_SERVER['HTTP_HOST']}/genomes?" .
+                           $this->genomeID . "</a>");
+        if ($db_query[0]["nickname"]) {
+            $realname = $db_query[0]["nickname"];
+            if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
+                $realname = $regs[1];
+            $head_data["Name"] = htmlspecialchars($realname, ENT_QUOTES, 
+                                                  "UTF-8");
+        }
+        $global_human_id = $db_query[0]['global_human_id'];
+        if (preg_match ('{^hu[A-F0-9]+$}', $global_human_id)) {
+            $hu = false;
+            // $hu = json_decode(file_get_contents("http://my.personalgenomes.org/api/get/$global_human_id"), true);
+            if ($hu && isset($hu["realname"]))
+                $head_data["Name"] = $hu["realname"];
+            $url = "https://my.personalgenomes.org/profile/$global_human_id";
+            $head_data['public profile'] = "<a href=\"" . 
+                htmlspecialchars($url) . "\">" . 
+                preg_replace('{^https?://}', '', $url) . "</a>";
+        }
+        $data_size = filesize ($this->sourcefile);
+        if ($data_size) {
+            $head_data["Download"] = "<a href=\"/genome_download.php?" . 
+                "download_genome_id=" . $this->genomeID . 
+                "&amp;download_nickname=" . urlencode($realname) . 
+                "\">source data</a> (" . humanreadable_size($data_size) . ")";
+        }
+        $outdir = $GLOBALS["gBackendBaseDir"]."/upload/" . $this->genomeID . 
+            "-out";
+        if (file_exists ($this->processedfile)) {
+            if (isset($head_data["Download"]))
+                $head_data["Download"] .= ", ";
+            else $head_data["Download"] = "";
+            $head_data["Download"] .= "<a href=\"/genome_download.php?" .
+                "download_type=ns&amp;download_genome_id=" . $this->genomeID . 
+                "&amp;download_nickname=" . urlencode($realname) . 
+                "\">dbSNP and nsSNP report</a> (" . 
+                humanreadable_size(filesize($this->processedfile)) . ")";
+        }
+        return $head_data;
+    }
+    
 }
 
 function &genome_coverage_results($shasum, $oid) {
@@ -154,49 +288,22 @@ function &genome_variant_results ($shasum, $want_split)
     return $variants;
 }
 
-function genome_display($shasum, $oid) {
-    $results = genome_get_results ($shasum, $oid);
-    $db_query = theDb()->getAll ("SELECT nickname, global_human_id FROM private_genomes WHERE shasum=?",
-                                 array($shasum));
-    $ds = array ("Name" => false,
-                 "Public profile" => false,
-                 "This report" => "<a href=\"/genomes?$shasum\">{$_SERVER['HTTP_HOST']}/genomes?$shasum</a>");
-    if ($db_query[0]['nickname']) {
-        $realname = $db_query[0]['nickname'];
-        if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
-            $realname = $regs[1];
-        $ds["Name"] = htmlspecialchars ($realname, ENT_QUOTES, "UTF-8");
-    }
-    $global_human_id = $db_query[0]['global_human_id'];
-    if (preg_match ('{^hu[A-F0-9]+$}', $global_human_id)) {
-        $hu = false;
-        // $hu = json_decode(file_get_contents("http://my.personalgenomes.org/api/get/$global_human_id"), true);
-        if ($hu && isset($hu["realname"]))
-            $ds["Name"] = $hu["realname"];
-        $url = "https://my.personalgenomes.org/profile/$global_human_id";
-        $ds["Public profile"] = "<a href=\"".htmlspecialchars($url)."\">".preg_replace('{^https?://}','',$url)."</a>";
-    }
-    $sourcefile = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}/genotype.gff";
-    if (! file_exists($sourcefile)) $sourcefile = $sourcefile . ".gz";
-    $data_size = filesize ($sourcefile);
-    if ($data_size) {
-        $ds["Download"] = "<a href=\"/genome_download.php?download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">source data</a> (".humanreadable_size($data_size).")";
-    }
-    $outdir = $GLOBALS["gBackendBaseDir"]."/upload/{$shasum}-out";
-    if (file_exists ($nsfile = $outdir."/ns.gff.gz") ||
-        file_exists ($nsfile = $outdir."/ns.gff")) {
-        if (isset($ds["Download"]))
-            $ds["Download"] .= ", ";
-        else $ds["Download"] = "";
-        $ds["Download"] .= "<a href=\"/genome_download.php?download_type=ns&amp;download_genome_id=$shasum&amp;download_nickname=".urlencode($realname)."\">dbSNP and nsSNP report</a> (".humanreadable_size(filesize($nsfile)).")";
-    }
+function genome_display($shasum, $oid, $is_admin=false) {
+    $genome_report = new GenomeReport($shasum);
+    $results = $genome_report->status();
+    $permission = $genome_report->permission($oid, $is_adimn);
+    if (!$permission) {
+        $returned_text = "<p>Sorry, you don't seem to have permission to " .
+            "view this genome report. Perhaps you got logged off?</p>";
+        return $returned_text;
+    } 
     $qrealname = htmlspecialchars($ds["Name"], ENT_QUOTES, "UTF-8");
     $GLOBALS["gOut"]["title"] = $qrealname." - GET-Evidence variant report";
     $returned_text = "<h1>Variant report for ".htmlspecialchars($realname,ENT_QUOTES,"UTF-8")."</h1><ul>";
-    foreach ($ds as $k => $v)
+    $header_data = $genome_report->header_data();
+    foreach ($header_data as $k => $v)
         if ($v)
             $returned_text .= "<li>$k: $v</li>\n";
-
     if ($results["progress"] < 1) {
         $returned_text .= "<li>Processing status: &nbsp; <div style='margin:3px 0 -3px 0;display:inline-block;height:12px;' id='variant_report_progress' value='{$results['progress']}'></div> &nbsp; <div style='display:inline' id='variant_report_status'>{$results['status']}</div><input type='hidden' id='display_genome_id' value='{$shasum}' /></li>\n";
     }
