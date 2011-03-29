@@ -43,10 +43,18 @@ fi
 # Build python exts
 #(cd $CORE ; python setup.py build_ext --inplace)
 
-cp -p $SOURCE/server/config.default.py $CONFIG/config.default.py
-if [ ! -e $CONFIG/config.py -a ! -L $CONFIG/config.py ]
+if [ ! -e $DATA/genome_stats.txt ]
 then
-  echo Copying $CONFIG/config.default.py to $CONFIG/config.py
-  cp $CONFIG/config.default.py $CONFIG/config.py
+    echo Making symlink to genome_stats.txt
+    ln -s $SOURCE/server/genome_stats.txt $DATA/genome_stats.txt
 fi
-chmod 600 $CONFIG/config.py
+
+if [ ! -e $DATA/getev-latest.json.gz ]
+then
+    echo Making symlink to getev-latest.json.gz
+    if [ ! -e $SOURCE/public_html/getev-latest.json.gz ]
+    then
+        touch $SOURCE/public_html/getev-latest.json.gz
+    fi
+    ln -s $SOURCE/public_html/getev-latest.json.gz $DATA/getev-latest.json.gz
+fi

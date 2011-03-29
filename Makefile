@@ -1,13 +1,14 @@
 CACHEDIR=$(shell pwd)/tmp
 
-daily: update_editors_summary dump_database vis_data_local
-install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js public_html/DataTables-1.7.4 public_html/jquery-ui update_editors_summary
+daily: update_editors_summary dump_database data_local
+install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js DataTables-1.7.4.zip public_html/DataTables-1.7.4 public_html/jquery-ui update_editors_summary
 
 php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
 	cd php-openid && git fetch --tags http://github.com/openid/php-openid.git
 	cd php-openid && git checkout 2.2.2
 	cd php-openid && patch -p1 <../patch-yadis-noprotocol
+	ln -s php-openid php-openid-2.2.2
 
 textile-2.0.0:
 	wget -c http://textile.thresholdstate.com/file_download/2/textile-2.0.0.tar.gz
@@ -20,6 +21,7 @@ DataTables-1.7.4.zip:
 
 public_html/DataTables-1.7.4: DataTables-1.7.4.zip
 	cd public_html && unzip ../DataTables-1.7.4.zip
+	touch $@
 
 public_html/jquery-ui:
 	mkdir -p public_html/jquery-ui && cd public_html/jquery-ui && unzip ../../jquery-ui-1.8.6.custom.zip
@@ -62,18 +64,30 @@ PID:=$(shell echo $$PPID)
 dump_database:
 	./dump_database.php public_html/get-evidence.sql.gz
 
-vis_data_local: latest_flat_tmp_local latest_flat latest_flat.gz vis_data
-vis_data_http: latest_flat_tmp_http latest_flat latest_flat.gz vis_data
+data_local: latest_flat_tmp_local latest_flat latest_flat.gz vis_data
+data_http: latest_flat_tmp_http latest_flat latest_flat.gz vis_data
 latest_flat_tmp_local:
 	mkdir -p $(CACHEDIR)
 	(cd public_html && php ./download.php latest flat) > $(CACHEDIR)/latest-flat.tsv.tmp
+	(cd public_html && php ./download.php latest json) | gzip -c > $(CACHEDIR)/getev-latest.json.gz.tmp
 latest_flat_tmp_http:
 	mkdir -p $(CACHEDIR)
 	wget -O$(CACHEDIR)/latest-flat.tsv.tmp http://$(GETEVIDENCEHOST)/latest-flat.tsv
+	wget -O$(CACHEDIR)/getev-latest.json.gz.tmp http://$(GETEVIDENCEHOST)/getev-latest.json.gz
 latest_flat:
 	mv $(CACHEDIR)/latest-flat.tsv.tmp public_html/latest-flat.tsv
+	mv $(CACHEDIR)/getev-latest.json.gz.tmp public_html/getev-latest.json.gz
 latest_flat.gz: latest_flat
 	gzip -9n <public_html/latest-flat.tsv >public_html/latest-flat.tsv.gz
 vis_data:
 	cd get_evidence_vis && ./ProcessTableForVis.pl ../public_html/latest-flat.tsv nsSNP-freq.gff >../public_html/latest_vis_data.tsv.tmp
 	cd public_html && mv latest_vis_data.tsv.tmp latest_vis_data.tsv
+DATADIR:=$(shell . server/script/config-local.sh && echo $$DATA)
+analysis_data_tarball.locator: $(DATADIR)/b130_SNPChrPosOnRef_36_3_sorted.bcp $(DATADIR)/b132_SNPChrPosOnRef_37_1_sorted.bcp \
+ $(DATADIR)/knownGene_hg18_sorted.txt $(DATADIR)/knownGene_hg19_sorted.txt \
+ $(DATADIR)/hg18.2bit $(DATADIR)/hg19.2bit \
+ $(DATADIR)/genetests-data.txt \
+ server/genome_stats.txt
+	wc -c $^ | tail -n1
+	tar --transform 's/^.*\///' -cf - $^ | gzip -1n | whput --progress --in-manifest --use-filename=analysis_data.tar.gz --name=/get-evidence/analysis_data-$(date +%Y%M%d-%H%m) - | tee $@.tmp
+	mv $@.tmp $@

@@ -10,17 +10,6 @@ Fetch and install webgui dependencies:
  cd ~/get-evidence
  make install
 
-Compare /home/trait/config/config.py and
-/home/trait/config/config.default.py -- if any configuration settings
-have been added, make the same additions (and alter to suit) in your
-config file.
-
- (
-  source ~/get-evidence/server/script/config-local.sh
-  sudo -u $USER diff -u /home/trait/config/config{.default,}.py
-  sudo -u $USER emacs /home/trait/config/config*.py
- )
-
 Run install-user.sh -- it might need to download new data files.
 
  (
@@ -29,8 +18,33 @@ Run install-user.sh -- it might need to download new data files.
   sudo -u $USER ./install-user.sh
  )
 
+Run make daily -- there may be new regularly updated files the server expects.
+
+ (
+  cd ~/get-evidence/
+  make daily
+ )
+
+Replace back-end server if necessary (renamed to be "genome-analyzer" using 
+genome_analyzer.py instead of "trait-o-matic-server"):
+
+ cd ~/get-evidence/server/script
+ sudo su
+ /etc/init.d/trait-o-matic stop
+ rm /etc/init.d/trait-o-matic
+ update-rc.d trait-o-matic remove
+ source defaults.sh
+ perl -p -e 's/%([A-Z]+)%/$ENV{$1}/g' \
+   < $SOURCE/server/script/genome-analyzer.in \
+   > /etc/init.d/genome-analyzer.tmp
+ chmod 755 /etc/init.d/genome-analyzer.tmp
+ chown 0:0 /etc/init.d/genome-analyzer.tmp
+ mv /etc/init.d/genome-analyzer.tmp /etc/init.d/genome-analyzer
+ update-rc.d genome-analyzer start 20 2 3 4 5 . stop 80 0 1 6 .
+ exit
+
 Restart the back-end server.
 
- sudo /etc/init.d/trait-o-matic restart
+ sudo /etc/init.d/genome-analyzer restart
 
 Try processing some data.

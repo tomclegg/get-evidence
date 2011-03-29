@@ -22,40 +22,21 @@ if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
 $user = getCurrentUser();
 
 if (strlen($display_genome_ID) > 0) {
-    $db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?", 
-                                            array($display_genome_ID));
-    # check you should have permission
-    $permission = false;
-    $request_ID = "";
-    # First check if logged in use has access
-    foreach ($db_query as $result) {
-        if ($result['oid'] == $user['oid']) {
-            $permission = true;
-            $request_ID = $user['oid'];
-        }
-    }
-    # Check if PGP or Public data, display as that if that user
-    if (!$permission) {
-        foreach ($db_query as $result) {
-            if ($result['oid'] == $pgp_data_user) {
-                $permission = true;
-                $request_ID = $pgp_data_user;
-            } elseif ($result['oid'] == $public_data_user) {
-                $permission = true;
-                $request_ID = $public_data_user;
-            }
-        }
-    }
+    $genome_report = new GenomeReport($display_genome_ID);
+    $permission = $genome_report->permission($user['oid'], 
+					      getCurrentUser('is_admin'));
     if ($permission) {
 	if (isset($_REQUEST["json"])) {
 	    header ("Content-type: application/json");
-	    print json_encode (genome_get_results ($display_genome_ID, $request_ID));
+	    print json_encode($genome_report->status());
 	    exit;
 	}
-        $page_content .= genome_display($display_genome_ID, $request_ID);
+        $page_content .= genome_display($display_genome_ID, $permission,
+					getCurrentUser('is_admin'));
     } else {
-        $page_content .= "Sorry, for some reason you've requested a genome you don't have "
-                    . "access to. Perhaps you've been logged off?<br>\n";
+        $page_content .= "Sorry, for some reason you've requested a " .
+	    "genome you don't have access to. " .
+	    "Perhaps you've been logged off?<br>\n";
     }
 } else {
     $page_content .= "<h2>PGP genomes</h2>";
@@ -87,19 +68,31 @@ go();
 
 function list_uploaded_genomes($user_oid) {
     global $pgp_data_user, $public_data_user, $user;
-    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid=? ORDER BY private_genome_id", array("$user_oid"));
+    if ($user_oid != $pgp_data_user &&
+	$user_oid != $public_data_user &&
+	getCurrentUser('is_admin')) {
+	$condition = 'oid NOT IN (?,?)';
+	$param = array ($pgp_data_user, $public_data_user);
+    } else {
+	$condition = 'oid=?';
+	$param = array ($user_oid);
+    }
+    $db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE $condition ORDER BY private_genome_id", $param);
     if ($db_query) {
-        $returned_text = "<TABLE class=\"report_table\">\n";
+        $returned_text = "<TABLE class=\"report_table genome_list_table\">\n";
         $returned_text .= "<TR><TH>Nickname</TH><TH>Action</TH></TR>\n";
         foreach ($db_query as $result) {
             $returned_text .= "<TR><TD>" . $result['nickname'] . "</TD><TD>";
-            if ($user_oid == $public_data_user and $user['oid'] != $public_data_user) {
-                $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
-            } elseif ($user_oid == $pgp_data_user and $user['oid'] != $pgp_data_user) {
-                $returned_text .= public_genome_actions($result) . "</TD></TR>\n";
-            } else {
-                $returned_text .= uploaded_genome_actions($result) . "</TD></TR>\n";
-            }
+	    $returned_text .= uploaded_genome_actions($result);
+	    if ($result['oid'] == $user['oid'] || $user['is_admin']) {
+		$genome_report = new GenomeReport($result['shasum']);
+		$results = $genome_report->status();
+		if (isset($results['progress']) &&
+		    $results['progress'] < 1 &&
+		    $results['logmtime'] > time() - 86400)
+		    $returned_text .= "processing, ".floor($results['progress']*100)."% complete";
+		$returned_text .=  "</TD></TR>\n";
+	    }
         }
         $returned_text .= "</TABLE>\n";
         return $returned_text;
@@ -111,39 +104,49 @@ function list_uploaded_genomes($user_oid) {
     return "<P>You have not uploaded any genomes.</P>\n";
 }
 
-function public_genome_actions($result) {
-    $returned_text = "<form action=\"/genomes.php\" method=\"get\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
-                    . $result['shasum'] . "\">\n";
-    $returned_text .= "<input type=\"submit\" value=\"Get report\" "
-                        . "class=\"button\" \/></form>\n";
-    return($returned_text);
-}
-
 function uploaded_genome_actions($result) {
     global $user;
-    # Get report button
+    // Get report button
     $returned_text = "<form action=\"/genomes\" method=\"get\">\n";
     $returned_text .= "<input type=\"hidden\" name=\"display_genome_id\" value=\"" 
                     . $result['shasum'] . "\">\n";
     $returned_text .= "<input type=\"submit\" value=\"Get report\" "
-                        . "class=\"button\" \/></form><br>\n";
-    # Reprocess data button
-    $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\""
-                    . $result['shasum'] . "\">\n";
-    $returned_text .= "<input type=\"submit\" value=\"Reprocess data\" "
-                        . "class=\"button\" \/></form><br>\n";
-    # Delete file button
-    $returned_text .= "<form action=\"/genome_upload.php\" method=\"post\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"delete_genome_id\" value=\""
-                    . $result['shasum'] . "\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"delete_genome_nickname\" value=\""
-                    . $result['nickname'] . "\">\n";
-    $returned_text .= "<input type=\"hidden\" name=\"user_oid\" value=\"" 
-                    . $user['oid'] . "\">\n";
-    $returned_text .= "<input type=\"submit\" value=\"Delete data\" "
-                        . "class=\"button\" \/></form><br>\n";
+                        . "class=\"button\" \/></form>\n";
+
+
+    // Reprocess data button 
+    if ($result['oid'] == $user['oid'] || $user['is_admin']) {
+        $returned_text .=
+            "<form action=\"/genome_upload.php\" method=\"post\">\n" .
+            "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
+            $result['shasum'] . "\">\n" .
+            "<input type=\"hidden\" name=\"reproc_type\" value=\"getev\">\n" .
+            "<input type=\"submit\" value=\"Getev data reprocess\" " .
+            "class=\"button\" \/></form>\n";
+    }
+
+    // Reprocess data button
+    if ($result['oid'] == $user['oid'] || $user['is_admin']) {
+	$returned_text .=
+	    "<form action=\"/genome_upload.php\" method=\"post\">\n" .
+	    "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
+	    $result['shasum'] . "\">\n" .
+	    "<input type=\"hidden\" name=\"reproc_type\" value=\"full\">\n" .
+	    "<input type=\"submit\" value=\"Full data reprocess\" " .
+	    "class=\"button\" \/></form>\n";
+    }
+
+    // Delete file button
+    if ($result['oid'] == $user['oid']) {
+	$returned_text .=
+	    "<form action=\"/genome_upload.php\" method=\"post\">\n" .
+	    "<input type=\"hidden\" name=\"delete_genome_id\" value=\"" .
+	    $result['private_genome_id'] . "\">\n" .
+	    "<input type=\"hidden\" name=\"user_oid\" value=\"" .
+	    $user['oid'] . "\">\n" .
+	    "<input type=\"submit\" value=\"Delete\" " .
+	    "class=\"button\" \/></form>\n";
+    }
     return($returned_text);
 }
 

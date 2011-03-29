@@ -29,7 +29,7 @@ theDb()->query ("CREATE TEMPORARY TABLE import_genomes_tmp (
  rsid BIGINT UNSIGNED,
  dataset_id VARCHAR(16) NOT NULL,
  zygosity ENUM('heterozygous','homozygous') NOT NULL DEFAULT 'heterozygous',
- INDEX(variant_id,dataset_id),
+ UNIQUE(variant_id,dataset_id),
  INDEX(dataset_id),
  INDEX(chr,chr_pos))");
 theDb()->query ("CREATE TEMPORARY TABLE imported_datasets (
@@ -47,8 +47,8 @@ if (isset ($want_genome)) {
 	$and = "AND private_genome_id=?";
     $params[] = $want_genome;
 }
-$public_genomes = theDb()->getAll ("SELECT * FROM private_genomes WHERE oid IN (?,?) $and",
-				   $params);
+$sql = "SELECT * FROM private_genomes WHERE oid IN (?,?) $and";
+$public_genomes = theDb()->getAll ($sql, $params);
 
 foreach ($public_genomes as $g) {
     $datadir = "$gBackendBaseDir/upload/{$g['shasum']}-out";
@@ -92,64 +92,79 @@ foreach ($public_genomes as $g) {
 	    continue;
 	}
 	if (isset($jvariant["gene"]) && isset($jvariant["amino_acid_change"]))
-	  $variant_name = $jvariant["gene"] . " " . $jvariant["amino_acid_change"];
-	else if (isset($jvariant["dbSNP"]))
-	  $variant_name = "rs" . $jvariant["dbSNP"];
+	    $variant_names = array($jvariant["gene"] . " " . $jvariant["amino_acid_change"]);
+	else if (isset($jvariant["dbsnp"]))
+	    $variant_names = explode(',', $jvariant["dbsnp"]);
 	else {
 	    if ($jvariant["GET-Evidence"])
 		print "(Why is this here?) $line";
 	    continue;
 	}
-	$variant_id = evidence_get_variant_id ($variant_name);
-	if ($variant_id)
-	    ++$count_existing_variants;
-	else {
-	    ++$count_new_variants;
+	foreach ($variant_names as $variant_name) {
+	    $rsid = null;
+	    if (preg_match ('/^rs(\d+)$/', $variant_name, $regs) ||
+		(isset ($jvariant["dbsnp"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbsnp"], $regs)))
+		$rsid = $regs[1];
+	    $variant_id = evidence_get_variant_id ($variant_name);
+	    if ($variant_id)
+		++$count_existing_variants;
+	    else {
+		// Create the variant, and an "initial edit/add" row in edits table
+		$variant_id = evidence_get_variant_id ($variant_name,
+						       false, false, false,
+						       true);
+		if (!$variant_id) {
+		    error_log ("failed to add variant: $variant_name");
+		    continue;
+		}
+		++$count_new_variants;
+		$edit_id = evidence_get_latest_edit ($variant_id,
+						     0, 0, 0,
+						     true);
+	    }
 
-	    // Create the variant, and an "initial edit/add" row in edits table
-	    $variant_id = evidence_get_variant_id ($variant_name,
-						   false, false, false,
-						   true);
-	    $edit_id = evidence_get_latest_edit ($variant_id,
-						 0, 0, 0,
-						 true);
-	}
-
-	$taf = null;
-	if (isset($jvariant["num"]) && $jvariant["denom"]>0)
-	    // FIXME: taf is no longer in JSON so downstream needs to be updated before it can be used
-	    $taf = $jvariant["num"] / $jvariant["denom"];
-
-	$allele = $jvariant["genotype"];
-	$zygosity = preg_match ('{^[ACGT]$}', $allele) ? "homozygous" : "heterozygous";
-	$trait_allele = preg_replace ('{[^ACGT]|'.$jvariant["ref_allele"].'}', '', $jvariant["genotype"]);
-	if (strlen($trait_allele) > 1) {
-	    $trait_allele = bp_flatten ($trait_allele); // compound het
 	    $taf = null;
-	}
+	    if (isset($jvariant["num"]) && $jvariant["denom"]>0)
+		// FIXME: taf is no longer in JSON so downstream needs to be updated before it can be used
+		$taf = $jvariant["num"] / $jvariant["denom"];
 
-	$ok = theDb()->query ("INSERT INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
-			      array ($variant_id,
-				     $genome_id,
-				     $jvariant["chromosome"],
-				     $jvariant["coordinates"],
-				     $trait_allele,
-				     $taf,
-				     isset($jvariant["dbsnp"]) ? $jvariant["dbsnp"] : null,
-				     $dataset_id,
-				     $zygosity));
-	if (theDb()->isError($ok)) die ($ok->getMessage());
+	    $allele = $jvariant["genotype"];
+	    $zygosity = preg_match ('{^[ACGT]$}', $allele) ? "homozygous" : "heterozygous";
+	    $trait_allele = preg_replace ('{[^ACGT]|'.$jvariant["ref_allele"].'}', '', $jvariant["genotype"]);
+	    if (strlen($trait_allele) > 1) {
+		$trait_allele = bp_flatten ($trait_allele); // compound het
+		$taf = null;
+	    }
+
+	    $ok = theDb()->query ("INSERT IGNORE INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
+				  array ($variant_id,
+					 $genome_id,
+					 $jvariant["chromosome"],
+					 $jvariant["coordinates"],
+					 $trait_allele,
+					 $taf,
+					 $rsid,
+					 $dataset_id,
+					 $zygosity));
+	    if (theDb()->isError($ok)) die ($line."\n".$ok->getMessage()."\n");
+	}
     }
     print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
     fclose ($fh);
 
-    $fh = fopen ("$datadir/ns.gff", "r");
-    if (!$fh) { print "open($datadir/ns.gff) failed.\n"; continue; }
+    print "\nReading ns.gff[.gz].\n";
+    if (file_exists ("$datadir/ns.gff.gz"))
+	$fh = gzopen ($nsfile = "$datadir/ns.gff.gz", "r");
+    else
+	$fh = fopen ($nsfile = "$datadir/ns.gff", "r");
+    if (!$fh) { print "open($nsfile) failed.\n"; continue; }
     if (file_exists ("$datadir/lock")) { print "Skipping because backend is still processing.\n"; continue; }
     $ops = 0;
     $count_existing_variants = 0;
     $count_new_variants = 0;
     while (($line = fgets ($fh)) !== false) {
+	if ($line[0] == "#")
+	    continue;
 	++$ops;
 	if ($ops % 100000 == 0)
 	    print $ops;
@@ -157,15 +172,15 @@ foreach ($public_genomes as $g) {
 	    print ".";
 	$gff = explode ("\t", $line);
 
-	$dbSNP = null;
-	if (preg_match ('{db_xref dbsnp:rs(\d+)}', $gff[8], $regs))
-	    $dbSNP = $regs[1];
+	$rsid = null;
+	if (preg_match ('{db_xref dbsnp(?:\.\d+)?:rs(\d+)}', $gff[8], $regs))
+	    $rsid = $regs[1];
 
 	if (preg_match ('{amino_acid ([^;\n]+)}', $gff[8], $regs))
 	    $variant_names = explode ("/", $regs[1]);
-	else if ($dbSNP)
+	else if ($rsid)
 	    // If we wanted to add all dbsnp variants, we would do...
-	    // $variant_names = array ("rs$dbSNP");
+	    // $variant_names = array ("rs$rsid");
 	    // ...but we don't.
 	    continue;
 	else
@@ -199,22 +214,26 @@ foreach ($public_genomes as $g) {
 		$variant_id = evidence_get_variant_id ($variant_name,
 						       false, false, false,
 						       true);
+		if (!$variant_id) {
+		    error_log ("failed to add variant: $variant_name");
+		    continue;
+		}
 		$edit_id = evidence_get_latest_edit ($variant_id,
 						     0, 0, 0,
 						     true);
 	    }
+	    $ok = theDb()->query ("INSERT IGNORE INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
+				  array ($variant_id,
+					 $genome_id,
+					 $chromosome,
+					 $position,
+					 $trait_allele,
+					 $taf,
+					 $rsid,
+					 $dataset_id,
+					 $zygosity));
+	    if (theDb()->isError($ok)) die ($line."\n".$ok->getMessage());
 	}
-	$ok = theDb()->query ("INSERT IGNORE INTO import_genomes_tmp SET variant_id=?, genome_id=?, chr=?, chr_pos=?, trait_allele=?, taf=?, rsid=?, dataset_id=?, zygosity=?",
-			      array ($variant_id,
-				     $genome_id,
-				     $chromosome,
-				     $position,
-				     $trait_allele,
-				     $taf,
-				     $dbSNP,
-				     $dataset_id,
-				     $zygosity));
-	if (theDb()->isError($ok)) die ($ok->getMessage());
     }
     print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
     fclose ($fh);

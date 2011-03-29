@@ -18,17 +18,31 @@ then
   $WGET ftp://hgdownload.cse.ucsc.edu/goldenPath/hg18/bigZips/hg18.2bit
   touch hg18.2bit.stamp
 fi
+
+# hg19.2bit genome
+echo Getting hg19.2bit genome from UCSC
+if [ ! -f hg19.2bit.stamp ]
+then
+  $WGET ftp://hgdownload.cse.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit
+  touch hg19.2bit.stamp
+fi
  
 # dbSNP (only two tables)
 echo Getting dbSNP from NIH
 if [ ! -f dbSNP.stamp ]; then
-  $WGET ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/b130_archive/OmimVarLocusIdSNP.bcp.gz
+  $WGET ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/organism_data/OmimVarLocusIdSNP.bcp.gz
   $WGET ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/b130_archive/b130_SNPChrPosOnRef_36_3.bcp.gz
+  $WGET ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/database/organism_data/b132_SNPChrPosOnRef_37_1.bcp.gz
   touch dbSNP.stamp
 fi
+
 echo Sorting dbSNP
 if [ ! -f dbSNP_sort.stamp ]; then
-  $GUNZIP < b130_SNPChrPosOnRef_36_3.bcp.gz | sort --key=2,2 --key=3n,3 | perl -nae 'if ($#F == 3) { print; }' > b130_SNPChrPosOnRef_36_3_sorted.bcp
+  for bcp in b130_SNPChrPosOnRef_36_3 b132_SNPChrPosOnRef_37_1
+  do
+    $GUNZIP < $bcp.bcp.gz | sort --buffer-size=20% --key=2,2 --key=3n,3 | perl -nae 'if ($#F == 3) { print; }' > $bcp.tmp
+    mv $bcp.tmp ${bcp}_sorted.bcp
+  done
   touch dbSNP_sort.stamp
 fi
 
@@ -41,19 +55,51 @@ fi
 # knownGene/UCSC
 echo Getting knownGene, knownCanonical, kgXref, and refFlat from UCSC
 if [ ! -f ucsc.stamp ]; then
-  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/knownGene.txt.gz
-  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/knownCanonical.txt.gz
-  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/kgXref.txt.gz
-  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/refFlat.txt.gz 
-  $GUNZIP -c knownGene.txt.gz > knownGene.txt
-  $GUNZIP -c knownCanonical.txt.gz > knownCanonical.txt
-  $GUNZIP -c kgXref.txt.gz > kgXref.txt
-  $GUNZIP -c refFlat.txt.gz > refFlat.txt
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/knownGene.txt.gz -OknownGene_hg18.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/knownCanonical.txt.gz -OknownCanonical_hg18.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/kgXref.txt.gz -OkgXref_hg18.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/refFlat.txt.gz -OrefFlat_hg18.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/knownGene.txt.gz -OknownGene_hg19.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/knownCanonical.txt.gz -OknownCanonical_hg19.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/kgXref.txt.gz -OkgXref_hg19.txt.gz
+  $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/refFlat.txt.gz -OrefFlat_hg19.txt.gz
+  $GUNZIP -c knownGene_hg18.txt.gz > knownGene_hg18.txt
+  $GUNZIP -c knownCanonical_hg18.txt.gz > knownCanonical_hg18.txt
+  $GUNZIP -c kgXref_hg18.txt.gz > kgXref_hg18.txt
+  $GUNZIP -c refFlat_hg18.txt.gz > refFlat_hg18.txt
+  $GUNZIP -c knownGene_hg19.txt.gz > knownGene_hg19.txt
+  $GUNZIP -c knownCanonical_hg19.txt.gz > knownCanonical_hg19.txt
+  $GUNZIP -c kgXref_hg19.txt.gz > kgXref_hg19.txt
+  $GUNZIP -c refFlat_hg19.txt.gz > refFlat_hg19.txt
   touch ucsc.stamp
 fi
 
 echo Attaching gene names to knownGene and sorting
 if [ ! -f ucsc_sort.stamp ]; then
-  perl $CORE/script/getCanonicalWithName.pl knownGene.txt knownCanonical.txt kgXref.txt refFlat.txt hgnc_genenames.txt | sort --key=3,3 --key=5n,5 > knownGene_sorted.txt
+  perl $CORE/script/getCanonicalWithName.pl knownGene_hg18.txt knownCanonical_hg18.txt kgXref_hg18.txt refFlat_hg18.txt hgnc_genenames.txt | \
+    grep -v "chr[0-9MXY]*_.*" | awk '{ if ( !( ($3 == "chrY") && (($7 >= 0 && $8 <= 2709520) || ($7 >= 57443437 && $8 <= 57772954 )) )) print }' | \
+    sort --key=3,3 --key=5n,5 > knownGene_hg18_sorted.txt
+  perl $CORE/script/getCanonicalWithName.pl knownGene_hg19.txt knownCanonical_hg19.txt kgXref_hg19.txt refFlat_hg19.txt hgnc_genenames.txt | \
+    grep -v "chr[0-9MXY]*_.*" | awk '{ if ( !( ($3 == "chrY") && (($7 >= 10000 && $8 <= 2649520) || ($7 >= 59034049 && $8 <= 59363566 )) )) print }' | \
+    sort --key=3,3 --key=5n,5 > knownGene_hg19_sorted.txt
+    # Some command line stuff is added afterwards:
+    # grep removes alternate assemblies and unplaced scaffolds
+    # awk removes the chrY pseudoautosomal region (coordinates based on Complete Genomics data, 
+    # Complete Genomics reports these as chrX and UCSC's transcripts have duplicate annotation)
   touch ucsc_sort.stamp
+fi
+
+echo Getting Polyphen 2 data and processing
+if [ ! -f pph2_data.stamp ]; then
+    if [ ! -e polyphen2_dbsnp131 ]; then
+	mkdir polyphen2_dbsnp131
+    fi
+    (cd polyphen2_dbsnp131;
+     $WGET http://genetics.bwh.harvard.edu/pph2/dokuwiki/_media/polyphen2_dbsnp131_2010-07-05.tar.gz;
+     tar -xf polyphen2_dbsnp131_2010-07-05.tar.gz)
+    touch pph2_data.stamp
+fi
+if [ ! -f pph2_proc.stamp ]; then
+    python $CORE/script/pph2_process.py --pph2 polyphen2_dbsnp131/pph2_snp131_missense_HumVar-short.txt --kgxref kgXref_hg18.txt --kgwithname knownGene_hg18_sorted.txt -o pph2_var_hg18.gz
+    touch pph2_proc.stamp
 fi

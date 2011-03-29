@@ -1,22 +1,22 @@
 #!/bin/bash
 # 
 # chkconfig: 2345 20 80 
-# description: Trait-o-matic service
+# description: Genome analysis server
 
 export USER="%USER%"
 export LOG="%LOG%"
 export CORE="%CORE%"
 export DATA="%DATA%"
-SERVER="$CORE/trait-o-matic-server.py"
+SERVER="$CORE/genome_analyzer.py"
 SERVER_PID="%TMP%/server.pid"
 
 start() {
-    echo Starting Trait-o-matic server.
-    start-stop-daemon --pidfile $SERVER_PID --user $USER --exec `which python` --background --chuid $USER --startas $SERVER --start -- --pidfile=$SERVER_PID --stderr=$LOG/server.log
+    echo Starting genome analysis server.
+    start-stop-daemon --pidfile $SERVER_PID --user $USER --exec `which python` --background --chuid $USER --startas $SERVER --start -- -s --pidfile=$SERVER_PID --stderr=$LOG/server.log
 }
 
 stop() {
-    echo Stopping Trait-o-matic server.
+    echo Stopping genome analysis server.
     start-stop-daemon --pidfile $SERVER_PID --user $USER --exec `which python` --stop --retry 2
 }
 
