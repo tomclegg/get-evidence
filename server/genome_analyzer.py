@@ -297,11 +297,14 @@ def getev_reprocess(genotype_file, server=None):
     else:
         return None
     log.put('#status 0 Reprocessing data against GET-Evidence')
-    # Set up arguments used by processing commands and scripts. 
-    args = { 'nonsyn_data': os.path.join(output_dir, 'ns.gff.gz'),
+    # Set up arguments used by processing commands and scripts.
+    args = { 'nonsyn_data': os.path.join(output_dir, 'ns.gff'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
              'getev_flat': os.path.join(os.getenv('DATA'), GETEV_FLAT)
              }
+    if (os.path.exists (args['nonsyn_data'] + '.gz')):
+        args['nonsyn_data'] = args['nonsyn_data'] + '.gz'
+
     chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
     progtrack = ProgressTracker(log_handle, [1, 99], expected=chrlist)
     # Get GET-Evidence hits
