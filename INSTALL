@@ -16,6 +16,14 @@ Install prerequisites:
 If apt-get python-biopython fails, ensure that you have universe in
 your apt source list.
 
+If your python is older than 2.6, install "multiprocessing" from
+http://pypi.python.org/pypi/multiprocessing/#downloads
+
+ wget http://pypi.python.org/packages/source/m/multiprocessing/multiprocessing-2.6.2.1.tar.gz
+ tar xzf multiprocessing-2.6.2.1.tar.gz
+ cd multiprocessing-2.6.2.1
+ sudo python setup.py install
+
 Clone get-evidence from github:
 
  git clone git://git.clinicalfuture.com/get-evidence.git
