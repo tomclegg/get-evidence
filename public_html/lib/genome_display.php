@@ -350,7 +350,7 @@ class GenomeReport {
      * @result array
      */
     public function &coverage_data() {
-        $fh = fopen($this->coveragefile, 'r');
+        $fh = @fopen($this->coveragefile, 'r');
         if (!$fh) { $out = false; return $out; }
         $missing = 0;
         $length = 0;
