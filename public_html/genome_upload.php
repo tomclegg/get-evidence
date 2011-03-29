@@ -12,10 +12,9 @@ include('xmlrpc/xmlrpc.inc');
 // check that we have a file
 if (isset($_POST['reprocess_genome_id'])) {
     $reprocess_genome_ID = $_POST['reprocess_genome_id'];
-    $reprocess_type = "full";
-    if (isset($_POST['reproc_type'])) {
-	$reprocess_type = $_POST['reproc_type'];
-	$page_content .= "<P>" . $reprocess_type ."</P>\n";
+    $reprocess_type = 'full';
+    if (@$_POST['reproc_type'] == 'getev') {
+	$reprocess_type = 'getev';
     }
     $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype.gff";
     if (! file_exists($permname)) {

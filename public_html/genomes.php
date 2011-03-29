@@ -121,7 +121,7 @@ function uploaded_genome_actions($result) {
             "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
             $result['shasum'] . "\">\n" .
             "<input type=\"hidden\" name=\"reproc_type\" value=\"getev\">\n" .
-            "<input type=\"submit\" value=\"Getev data reprocess\" " .
+            "<input type=\"submit\" value=\"Quick reprocess\" " .
             "class=\"button\" \/></form>\n";
     }
 
@@ -132,7 +132,7 @@ function uploaded_genome_actions($result) {
 	    "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
 	    $result['shasum'] . "\">\n" .
 	    "<input type=\"hidden\" name=\"reproc_type\" value=\"full\">\n" .
-	    "<input type=\"submit\" value=\"Full data reprocess\" " .
+	    "<input type=\"submit\" value=\"Full reprocess\" " .
 	    "class=\"button\" \/></form>\n";
     }
 
