@@ -49,12 +49,8 @@ then
     ln -s $SOURCE/server/genome_stats.txt $DATA/genome_stats.txt
 fi
 
-if [ ! -e $DATA/getev-latest.json.gz ]
+if [ ! -e $DATA/getev-latest.json.gz -a ! -h $DATA/getev-latest.json.gz ]
 then
     echo Making symlink to getev-latest.json.gz
-    if [ ! -e $SOURCE/public_html/getev-latest.json.gz ]
-    then
-        touch $SOURCE/public_html/getev-latest.json.gz
-    fi
     ln -s $SOURCE/public_html/getev-latest.json.gz $DATA/getev-latest.json.gz
 fi

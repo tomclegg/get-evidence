@@ -10,6 +10,9 @@ Fetch and install webgui dependencies:
  cd ~/get-evidence
  make install
 
+Check other runtime dependencies (see INSTALL; especially the note re.
+multiprocessing for python < 2.6)
+
 Run install-user.sh -- it might need to download new data files.
 
  (
