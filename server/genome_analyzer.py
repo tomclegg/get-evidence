@@ -17,8 +17,6 @@ import os
 import subprocess
 import sys
 import fcntl
-import gzip
-import bz2
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from config_names import GENETESTS_DATA, GETEV_FLAT
@@ -33,6 +31,7 @@ import gff_dbsnp_query
 import gff_nonsynonymous_filter
 import gff_getevidence_map
 from conversion import cgivar_to_gff, gff_from_23andme
+from utils import autozip
 
 SCRIPT_DIR = os.path.dirname(sys.argv[0])
 
@@ -102,17 +101,12 @@ def process_source(genome_in):
     Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
     # Handle genome compression, get input, and make best guess of format type.
-    args = { 'genome_in': genome_in }
-    if re.search(r'\.gz$', genome_in):
-        source_input = gzip.GzipFile (genome_in, 'r')
-    elif re.search(r'\.bz2$', genome_in):
-        source_input = bz2.BZ2File (genome_in, 'r')
-    else:
-        source_input = open (genome_in, 'r')
+    source_input = autozip.file_open(genome_in, 'r')
     in_type = detect_format(source_input)
 
     # Reset input and convert to GFF if necessary.
-    source_input.seek(0)
+    source_input.close()
+    source_input = autozip.file_open(genome_in, 'r')
 
     if in_type == "GFF":
         gff_input = source_input
@@ -271,7 +265,7 @@ def genome_analyzer(genotype_file, server=None):
                                        progresstracker=progtrack)
 
     # Printing to output, pulls data through the generator chain.
-    ns_out = gzip.open(args['nonsyn_out'], 'w')
+    ns_out = autozip.file_open(args['nonsyn_out'], 'w')
     for line in nonsyn_gen2:
         ns_out.write(line + "\n")
     ns_out.close()
