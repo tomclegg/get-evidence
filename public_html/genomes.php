@@ -181,7 +181,7 @@ function genome_entry_form() {
  onsubmit="closeKeepAlive();">
 <table><tr> 
 <td><label class="label">Filename<br> 
-<input type="hidden" name="MAX_FILE_SIZE" value="500000000"> 
+<input type="hidden" name="MAX_FILE_SIZE" value="524288000"> 
 <input type="file" class="file" name="genotype" id="genotype" /></label></td> 
 <td>OR</td>
 	<td><label class="label">File location on server (use file:/// syntax)<br> 

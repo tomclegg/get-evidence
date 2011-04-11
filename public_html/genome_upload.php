@@ -59,10 +59,12 @@ if (isset($_POST['reprocess_genome_id'])) {
 	    }
 	}
     }
+} elseif((!empty($_FILES["genotype"])) && (($_FILES['genotype']['error'] == 2) || $_FILES['genotype']['error'] == 3)) {
+    $page_content .= "Error: file too large! Size limit is 500MB.";
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
     $ext = substr($filename, strrpos($filename, '.') + 1);
-    if (($ext == "txt" || $ext == "gff" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 500000000)) {
+    if (($ext == "txt" || $ext == "gff" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 524288000)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
