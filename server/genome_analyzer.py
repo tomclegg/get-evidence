@@ -121,7 +121,7 @@ def process_source(genome_in, metadata=dict()):
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
     header = []
-    sort_cmd = ['sort', '--buffer-size=20%', '--key=1,1', '--key=4n,4']
+    sort_cmd = ['sort', '--buffer-size=20%', '--key=1,1', '--key=5n,5', '--key=4n,4']
     sort_out = subprocess.Popen(sort_cmd, stdin=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, bufsize=1)
     genome_build = DEFAULT_BUILD
