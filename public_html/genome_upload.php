@@ -16,13 +16,19 @@ if (isset($_POST['reprocess_genome_id'])) {
     if (@$_POST['reproc_type'] == 'getev') {
 	$reprocess_type = 'getev';
     }
-    $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype.gff";
+    $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype";
     if (! file_exists($permname)) {
         if (file_exists ($permname . ".gz")) {
             $permname = $permname . ".gz";
         } elseif (file_exists ($permname . ".bz2")) {
             $permname = $permname . ".bz2";
-        }
+        } elseif (file_exists ($permname . ".gff")) {
+	    $permname = $permname . ".gff";
+	} elseif (file_exists ($permname . ".gff.gz")) {
+	    $permname = $permname . ".gff.gz";
+	} elseif (file_exists ($permname . ".gff.bz2")) {
+	    $permname = $permname . ".gff.bz2";
+	}
     }
     if (file_exists($permname)) {
         $page_content .= "<P>Reprocessing data: " . $reprocess_genome_ID . "</P>\n";
@@ -68,7 +74,7 @@ if (isset($_POST['reprocess_genome_id'])) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
-        $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype.gff";
+        $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype";
         if ($ext == "gz") {
             $permname = $permname . ".gz";
         } elseif ($ext == "bz2") {
@@ -102,9 +108,11 @@ if (isset($_POST['reprocess_genome_id'])) {
     $location = preg_replace('{^file://}','',$location);
     if (file_exists($location) && strpos ($location, $GLOBALS["gBackendBaseDir"] . "/upload/") === 0) {
       $shasum = sha1_file($location);
-      $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype.gff";
+      $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype";
       if (preg_match ('{\.gz$}', $location))
-	  $permname = $permname . ".gz";
+          $permname = $permname . ".gz";
+      elseif (preg_match ('{\.bz2$}', $location))
+	  $permname = $permname . ".bz2";
       // Attempt to move the uploaded file to its new place
       @mkdir ($GLOBALS["gBackendBaseDir"] . "/upload/$shasum");
       $already_have = (file_exists($permname) &&

@@ -2,13 +2,34 @@
 
 include "lib/setup.php";
 
-$ext = '.gff';
+$ext = '';
 $genome_id = $_REQUEST['download_genome_id'];
 if (@$_REQUEST['download_type'] == 'ns') {
-    $ext = '.ns.gff';
-    $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "-out/ns.gff";
-} else
-    $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/genotype.gff";
+    $ext = $ext . '.ns';
+    $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "-out/ns";
+} else {
+    $fullPath = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/genotype";
+}
+
+if (! file_exists($fullPath)) {
+    if (file_exists($fullPath . '.gff')) {
+	$ext = $ext . '.gff';
+	$fullPath = $fullPath . '.gff';
+    } elseif (file_exists($fullPath . '.gz')) {
+	$ext = $ext . '.gz';
+	$fullPath = $fullPath . '.gz';
+    } elseif (file_exists($fullPath . '.gff.gz')) {
+	$ext = $ext . '.gff.gz';
+	$fullPath = $fullPath . '.gff.gz';
+    } elseif (file_exists($fullPath . '.bz2')) {
+	$ext = $ext . '.bz2';
+	$fullPath = $fullPath . '.bz2';
+    } elseif (file_exists($fullPath . '.gff.bz2')) {
+	$ext = $ext . '.gff.bz2';
+	$fullPath = $fullPath . '.gff.bz2';
+    }
+}
+
 $nickname = $_REQUEST['download_nickname'];
 $nickname = preg_replace('/ +/', '_', $nickname) . $ext;
 
@@ -24,12 +45,6 @@ foreach ($db_query as $result) {
 }
 
 if ($permission) {
-    if (! file_exists($fullPath)) {
-        if (file_exists ($fullPath . ".gz")) {
-            $fullPath = $fullPath . ".gz";
-            $nickname = $nickname . ".gz";
-        }
-    }
     if ($fd = fopen ($fullPath, "r")) {
         $fsize = filesize($fullPath);
         header("Content-type: text/plain");
