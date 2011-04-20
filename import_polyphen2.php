@@ -38,12 +38,21 @@ if (theDb()->isError($q)) print $q->getMessage();
 print theDb()->affectedRows();
 print "\n";
 
+print "Attaching annotations for score ranges ... ";
+theDb()->query ("ALTER TABLE import_pph2 ADD annotation VARCHAR(64)");
+theDb()->query ("UPDATE import_pph2 SET annotation=' (benign)'");
+print theDb()->affectedRows() . " total, ";
+theDb()->query ("UPDATE import_pph2 SET annotation=' (possibly damaging)' where polyphen2_score >= 0.2");
+print theDb()->affectedRows() . " >= 0.2, ";
+theDb()->query ("UPDATE import_pph2 SET annotation=' (probably damaging)' where polyphen2_score >= 0.85");
+print theDb()->affectedRows() . " >= 0.85\n";
+
 print "Copying data into variant_external ...";
 theDb()->query ("LOCK TABLES variant_external WRITE");
 theDb()->query ("DELETE FROM variant_external WHERE tag='PolyPhen-2'");
 $q = theDb()->query ("REPLACE INTO variant_external
  (variant_id, tag, content, updated)
- SELECT variant_id, ?, concat('Score: ',if(polyphen2_score=1,'1.0',polyphen2_score)), now()
+ SELECT variant_id, ?, concat('Score: ',if(polyphen2_score=1,'1.0',polyphen2_score),annotation), now()
  FROM import_pph2",
 		array ('PolyPhen-2'));
 if (theDb()->isError($q)) print $q->getMessage();
