@@ -4,7 +4,7 @@
 
 from optparse import OptionParser
 
-def parse_allele_counts(countsfile, outputfile=None):
+def parse_allele_counts(countsfile):
     f_in = open(countsfile, 'r')
 
     seen_before = dict()   
@@ -54,7 +54,7 @@ def parse_allele_counts(countsfile, outputfile=None):
 
 
 def main():
-    usage = "%prog -c allele_counts_file [-o outputfile]"
+    usage = "%prog -c allele_counts_file"
     parser = OptionParser(usage=usage)
     parser.add_option("-c", "--counts", dest="countsfile",
                       help="Allele counts as produced by count_allele_freq.py",
@@ -62,7 +62,7 @@ def main():
     options, args = parser.parse_args()
 
     if options.countsfile:
-        parse_allele_counts(options.countsfile, options.outputfile)
+        parse_allele_counts(options.countsfile)
     else:
         parser.print_help()
 
