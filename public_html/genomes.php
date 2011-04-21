@@ -50,9 +50,16 @@ if (strlen($display_genome_ID) > 0) {
         $page_content .= "<hr>";
         $page_content .= "<h2>Upload a genome for analysis</h2>\n";
 	$page_content .= upload_warning();
-        $page_content .= "<p><A HREF=\"guide_upload_and_source_file_formats\">"
-                . "Upload file form guide</A></p>";
-        $page_content .= genome_entry_form();
+	if (getCurrentUser('tos_date_signed')) {
+	    $page_content .= "<p><A HREF=" . 
+		"\"guide_upload_and_source_file_formats\">" .
+		"Upload file form guide</A></p>";
+	    $page_content .= genome_entry_form();
+	} else {
+	    $page_content .= "<p>You have not signed the terms of service! " .
+		"Please click the link above and confirm that you have read " .
+		"and agree with these.";
+	}
     } else {
         $page_content .= "<P>If you log in with your OpenID, you can process "
 		    . "your own data by uploading it here.</P>";

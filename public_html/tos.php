@@ -1,8 +1,29 @@
 <?php
 
 include "lib/setup.php";
+
+$user = getCurrentUser();
+
+if ($user) {
+    if (isset ($_REQUEST['tos_signed']) and $_REQUEST['tos_signed'] == "True") {
+	$unix_date = time();
+	theDb()->query ("UPDATE eb_users SET tos_date_signed=? WHERE "
+			. "oid=?", array ($unix_date, getCurrentUser('oid')) );
+	// Set this so the user doesn't need to log out and back in.
+	$_SESSION["user"]["tos_date_signed"] = $unix_date;
+	$user = getCurrentUser();    // Refresh
+	$gOut["content"] = "<p>Thank you for agreeing to our terms of service!";
+    } elseif ($user['tos_date_signed']) {
+	$gOut["content"] = "<p>You have confirmed for us that you have read "
+	    . "and agree to these terms of service.</p>";
+    } else {
+	$gOut["content"] = "<p>You have not yet notified us that you have " .
+	    "read and agree to these terms of service.</p>";
+    }
+}
+
 $gOut["title"] = "GET-Evidence: Terms of Service";
-$gOut["content"] = $gTheTextile->textileThis (<<<EOF
+$gOut["content"] .= $gTheTextile->textileThis (<<<EOF
 h2. Terms of Service
 
 GET-Evidence is meant for research purposes only. It is available free of charge. In doing so we make no claims or guarantees about ANYTHING, including but not limited to: (1) Privacy, (2) Effectiveness, (3) Reliability.
@@ -30,6 +51,16 @@ h3. Reliability
 _By using GET-Evidence you agree that any data you have given us may be erased at any time._ 
 EOF
 );
+
+if ($user && ! $user['tos_date_signed'])
+    $gOut["content"] .= '
+            <form enctype="multipart/form-data" 
+                action="/tos.php" method="post"><p>
+            <input type="hidden" name="tos_signed" value="True" />
+            <input type="submit" 
+		value="I have read and agree to these terms of service" 
+                class="button" />
+            </p></form>';
 
 go();
 
