@@ -781,13 +781,25 @@ function evidence_get_report ($snap, $variant_id)
 	  break;
     }
 
-    $tags = array();
-    foreach (theDb()->getAll ("SELECT distinct tag FROM variant_external WHERE variant_id=?", array ($variant_id)) as $tagrow) {
-      $tags[] = $tagrow["tag"];
+    // Note: if multiple matches w/the same tag only one is saved in ext_data
+    $ext_data = array();
+    foreach (theDb()->getAll ("SELECT tag, content FROM variant_external WHERE variant_id=?", array ($variant_id)) as $tagrow) {
+      $ext_data[$tagrow["tag"]] = $tagrow["content"];
     }
-    $row["in_omim"] = in_array ("OMIM", $tags) ? 'Y' : '-';
-    $row["in_gwas"] = in_array ("GWAS", $tags) ? 'Y' : '-';
-    $row["in_pharmgkb"] = in_array ("PharmGKB", $tags) ? 'Y' : '-';
+    $row["in_omim"] = in_array ("OMIM", array_keys($ext_data)) ? 'Y' : '-';
+    $row["in_gwas"] = in_array ("GWAS", array_keys($ext_data)) ? 'Y' : '-';
+    $row["in_pharmgkb"] = in_array ("PharmGKB", array_keys($ext_data)) ? 'Y' : '-';
+    if (in_array("PolyPhen-2", array_keys($ext_data))) {
+	if (preg_match('/Score: ([01]\.[0-9]+) /', 
+		       $ext_data["PolyPhen-2"],
+		       $pph2_match)) {
+	    $row["pph2_score"] = $pph2_match[1];
+	} else {
+	    $row["pph2_score"] = "-";
+	}
+    } else {
+	$row["pph2_score"] = "-";
+    }
 
     $autoscore = 0;
     $why = array();
@@ -840,7 +852,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb autoscore webscore");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb pph2_score autoscore webscore");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -877,11 +889,20 @@ function evidence_get_assoc ($snap, $variant_id)
     else {
       $section =& $variant;
       $want_keys =& $gWantKeysForAssoc["variant"];
-      $row["aa_change"]
-	  = $row["variant_aa_from"]
-	  . $row["variant_aa_pos"]
-	  . $row["variant_aa_to"];
-      $row["aa_change_short"] = aa_short_form ($row["aa_change"]);
+      if ($row["variant_aa_del"] and $row["variant_aa_ins"]) {
+	  $row["aa_change_short"]
+	      = $row["variant_aa_del"]
+	      . $row["variant_aa_pos"]
+	      . $row["variant_aa_ins"];
+	  $row["aa_change"] = aa_long_form ($row["aa_change_short"]);
+      } else {
+	  $row["aa_change"]
+	      = $row["variant_aa_from"]
+	      . $row["variant_aa_pos"]
+	      . $row["variant_aa_to"];
+	  $row["aa_change_short"] = aa_short_form ($row["aa_change"]);
+      }
+
 
       // TODO: combine these into one array and add labels
       $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 7, "-"));
@@ -995,6 +1016,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
   $flat["in_omim"] = $nonflat["in_omim"];
   $flat["in_gwas"] = $nonflat["in_gwas"];
   $flat["in_pharmgkb"] = $nonflat["in_pharmgkb"];
+  $flat["pph2_score"] = $nonflat["pph2_score"];
   $flat["genetests_testable"] = (isset($nonflat["genetests_testable"]) && $nonflat["genetests_testable"]) ? 'Y' : '-';
   $flat["genetests_reviewed"] = (isset($nonflat["genetests_reviewed"]) && $nonflat["genetests_reviewed"]) ? 'Y' : '-';
   if (isset($nonflat["nblosum100"])) {
