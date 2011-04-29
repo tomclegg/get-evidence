@@ -8,13 +8,9 @@ usage: %prog child_gff_file parentA_gff_file [parentB_gff_file] [-o output file]
 """
 ################################################################################
 
-import sys
-import gzip
-import bz2
-import zipfile
 import re
 import optparse
-from utils import gff
+from utils import gff, autozip
 
 DEFAULT_BUILD = "b36"
 
@@ -26,7 +22,7 @@ class PhaseTrio:
     header_done = False
     NO_CALL, REF, MATCH, MISMATCH = range(4)
 
-    def __init__(self, f_child, f_parA, f_parB, f_out, mend_errs):
+    def __init__(self, f_child, f_parA, f_parB, mend_errs):
         """Initializes class variables, opens input files."""
         self.filenames = {0 : f_child, 1 : f_parA}
         self.mend_errs = mend_errs
@@ -39,40 +35,10 @@ class PhaseTrio:
             self.gffs[2] = None
             self.positions[2] = ('chr1', -1, -1, None)
     
-        # Set up output file
-        self.output_file = None
-        if isinstance(f_out, str):
-            # Treat as path
-            if (re.match(".*\.gz", f_out)):
-                #why was this "f_out" in quotes?
-                self.output_file = gzip.open(f_out, 'w')
-            else:
-                self.output_file = open(f_out, 'w')
-        else:
-            # Treat as writeable file object
-            self.output_file = f_out
-
+        # Set up input/output files
         for idx, filename in self.filenames.iteritems():
-            if re.search("\.zip", filename):
-                archive = zipfile.ZipFile(filename, 'r')
-                files = archive.infolist()
-                if len(files) == 1:
-                    if hasattr(archive, "open"):
-                        self.gffs[idx] = gff.input(archive.open(files[0]))
-                    else:
-                        sys.exit("zipfile.ZipFile.open not available. Upgrade" \
-                            + " python to 2.6 to work with zip-compressed " \
-                            + "files!")
-                else:
-                    sys.exit("Zip archive " + filename \
-                                + " has more than one file!")
-            elif re.search("\.gz", filename):
-                self.gffs[idx] = gff.input(gzip.GzipFile(filename, 'r'))
-            elif re.search("\.bz2", filename):
-                self.gffs[idx] = gff.input(bz2.BZ2File(filename, 'r'))
-            else:
-                self.gffs[idx] = gff.input(open(filename, 'r'))
-
+            self.gffs[idx] = gff.input(autozip.file_open(filename, 'r'))
+            
     def advance_child(self, patient):
         """Advance file to next heterozygous variation."""
         patient_idx = self.str2idx[patient] if isinstance(patient, str) \
@@ -80,17 +46,17 @@ class PhaseTrio:
 
         # Print header data
         if not self.header_done:
-            self.output_file.write("##genome-build " + DEFAULT_BUILD + "\n")
             self.header_done = True
+            return ("##genome-build %s" % DEFAULT_BUILD), False
 
         for record in self.gffs[patient_idx]:
             if (not record.feature == "REF" and is_heterozygous(record)):
                 self.positions[patient_idx] = (record.seqname, record.start,
                                                 record.end, record)
-                return record
+                return record, True
             else:
-                self.output_file.write(str(record)+"\n")
-        return False
+                return str(record), False
+        return False, False
 
     def advance_parent_to(self, patient, position):
         """Advance file for given parent to (or immediately past) a given
@@ -132,11 +98,17 @@ class PhaseTrio:
             return self.NO_CALL
 
     def call_phase(self):
-        """Try to call phasing for SNPs in child, given one or two parents."""
+        """Try to call phasing for SNPs in child, given one or two parents.
+        Returns a generator printing GFF-style lines."""
         using_parB = self.str2idx['parB'] in self.gffs
         NO, MAYBE, YES = range(-1, 2) #to match return values for var_match()
-        child_record = self.advance_child('child')
+        child_record, should_process = self.advance_child('child')
         while (child_record):
+            if (not should_process):
+                yield child_record
+                child_record, should_process = self.advance_child('child')
+                continue
+
             ref = None
             if ('ref_allele' in child_record.attributes):
                 ref = child_record.attributes['ref_allele']
@@ -210,8 +182,8 @@ class PhaseTrio:
                             
             # make final phase call and continue
             self.interpret_phase(phase, child_record, par_alleles)
-            self.output_file.write(str(child_record)+"\n")
-            child_record = self.advance_child('child')
+            yield (str(child_record))
+            child_record, should_process = self.advance_child('child')
 
     def interpret_phase(self, data, child_record, par_alleles, phase_block=1):
         """Takes the output data from call_phase and interprets it to make
@@ -340,19 +312,23 @@ def main():
         dest='mend_errs', action='store_true', default=False)
     (opts, args) = parser.parse_args()
 
-    if opts.f_out:
-        f_out = opts.f_out
-    else:
-        f_out = sys.stdout
-
     if (len(args) < 2):
         parser.error("Need atleast 2 input file arguments.")
-    elif (len(args) == 2):
-        trioizer = PhaseTrio(args[0], args[1], None, f_out, opts.mend_errs)
-        trioizer.call_phase()
-    elif (len(args) == 3):
-        trioizer = PhaseTrio(args[0], args[1], args[2], f_out, opts.mend_errs)
-        trioizer.call_phase()
+
+    child = args[0]
+    parent_a = args[1]
+    parent_b = None
+    if (len(args) > 2):
+        parent_b = args[2]
+
+    trioizer = PhaseTrio(child, parent_a, parent_b, opts.mend_errs)
+    if opts.f_out:
+        out = autozip.file_open(opts.f_out, 'w')
+        for line in trioizer.call_phase():
+            out.write(line)
+    else:
+        for line in trioizer.call_phase():
+            print line
     
 if __name__ == "__main__":
     main()
