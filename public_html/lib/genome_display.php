@@ -182,12 +182,18 @@ class GenomeReport {
     public function __construct($genomeID) {
         $this->genomeID = $genomeID;
         $prefix = $GLOBALS['gBackendBaseDir'] . '/upload/' . $genomeID;
-        $this->sourcefile = $prefix . '/genotype.gff';
+        $this->sourcefile = $prefix . '/genotype';
         if (! file_exists($this->sourcefile)) {
             if (file_exists($this->sourcefile . '.gz')) {
                 $this->sourcefile = $this->sourcefile . '.gz';
-            } else if (file_exists($this->sourcefile . 'bz2')) {
-                $this->sourcefile = $this->sourcefile . 'bz2';
+            } else if (file_exists($this->sourcefile . '.bz2')) {
+                $this->sourcefile = $this->sourcefile . '.bz2';
+            } else if (file_exists($this->sourcefile . '.gff')) {
+                $this->sourcefile = $this->sourcefile . '.gff';
+            } else if (file_exists($this->sourcefile . '.gff.gz')) {
+                $this->sourcefile = $this->sourcefile . '.gff.gz';
+            } else if (file_exists($this->sourcefile . '.gff.bz2')) {
+                $this->sourcefile = $this->sourcefile . '.gff.bz2';
             }
          }
         $this->processedfile = $prefix . '-out/ns.gff.gz';

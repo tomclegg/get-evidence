@@ -117,6 +117,6 @@ print theDb()->affectedRows();
 print "\n";
 
 
-theDb()->query ("DROP TEMPORARY TABLE variant_frequency_tmp");
+theDb()->query ("DROP TEMPORARY TABLE import_1000genomes");
 
 ?>
