@@ -1,7 +1,7 @@
 <?php
   ;
 
-// Copyright 2009, 2010 Clinical Future, Inc.
+// Copyright 2009-2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
 
 include "lib/setup.php";
@@ -279,6 +279,19 @@ foreach ($allele_frequency as $chr_pos_allele => $f) {
       $html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom) in $tag</LI>\n";
       $gotsome = 1;
   }
+}
+foreach (theDb()->getAll ("SELECT * FROM variant_population_frequency WHERE variant_id=?",
+			  array($variant_id)) as $frow) {
+    if (!$frow['denom'])
+	continue;
+    $allele = $frow['genotype'];
+    $chr = $frow["chr"];
+    $num = $frow["num"];
+    $denom = $frow["denom"];
+    $f = sprintf ("%.1f%%", 100 * $num / $denom);
+    $tag = $frow["dbtag"];
+    $html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom) in $tag</LI>\n";
+    $gotsome = 1;
 }
 if (isset ($row0["variant_f"])) {
     $html .= "<LI>Overall frequency computed as "
