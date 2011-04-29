@@ -24,5 +24,5 @@ $user = escapeshellarg($regs[1]);
 $pass = escapeshellarg($regs[2]);
 $host = escapeshellarg($regs[3]);
 $db = escapeshellarg($regs[4]);
-passthru ("mysqldump -e -u $user -p$pass -h $host $db allele_frequency articles datasets diseases editor_summary edits flat_summary gene_canonical_name gene_disease genetests_genes genomes snap_latest snap_release variant_disease variant_external variant_frequency variant_locations variant_occurs variants web_vote web_vote_history web_vote_latest | gzip -9v > $dumpfile.tmp && mv $dumpfile.tmp $dumpfile && ls -l $dumpfile");
+passthru ("mysqldump -e -u $user -p$pass -h $host $db allele_frequency articles datasets diseases editor_summary edits flat_summary gene_canonical_name gene_disease genetests_genes genomes snap_latest snap_release variant_disease variant_external variant_frequency variant_population_frequency variant_locations variant_occurs variants web_vote web_vote_history web_vote_latest | gzip -9v > $dumpfile.tmp && mv $dumpfile.tmp $dumpfile && ls -l $dumpfile");
 
