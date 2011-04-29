@@ -1,7 +1,7 @@
 <?php
     ;
 
-// Copyright 2009, 2010 Clinical Future, Inc.
+// Copyright 2009-2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
 
 require_once ("lib/article.php");
@@ -161,6 +161,20 @@ function evidence_create_tables ()
   denom INT UNSIGNED,
   f FLOAT,
   INDEX(f))");
+  theDb()->query ("ALTER TABLE variant_frequency CHANGE num num BIGINT UNSIGNED");
+  theDb()->query ("ALTER TABLE variant_frequency CHANGE denom denom BIGINT UNSIGNED");
+ 
+  theDb()->query ("CREATE TABLE IF NOT EXISTS variant_population_frequency (
+  variant_id BIGINT UNSIGNED NOT NULL,
+  dbtag VARCHAR(16),
+  UNIQUE variant_dbtag_index (variant_id,dbtag),
+  chr VARCHAR(12),
+  start BIGINT UNSIGNED,
+  end BIGINT UNSIGNED,
+  genotype VARCHAR(64),
+  num BIGINT UNSIGNED,
+  denom BIGINT UNSIGNED,
+  f FLOAT)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS dbsnp (
   id INT UNSIGNED NOT NULL PRIMARY KEY,

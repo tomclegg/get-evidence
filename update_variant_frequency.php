@@ -2,7 +2,7 @@
 <?php
     ;
 
-// Copyright 2010 Clinical Future, Inc.
+// Copyright 2010, 2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
 
 chdir ('public_html');
@@ -73,9 +73,10 @@ print theDb()->affectedRows();
 print "\n";
 
 
-print "Updating variant_frequency...";
-theDb()->query ("LOCK TABLES variant_frequency WRITE");
-theDb()->query ("DELETE FROM variant_frequency WHERE 1=1");
+theDb()->query ("LOCK TABLES variant_frequency WRITE, variant_population_frequency");
+theDb()->query ("DELETE FROM variant_frequency");
+
+print "Updating variant_frequency from allele_frequency_merge...";
 $q=theDb()->query ("INSERT INTO variant_frequency
  (variant_id, num, denom, f)
  SELECT vcp.variant_id, num, denom, num/denom
@@ -87,6 +88,17 @@ $q=theDb()->query ("INSERT INTO variant_frequency
 if (theDb()->isError($q)) die ($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
+
+print "Updating variant_frequency from variant_population_frequency...";
+$q=theDb()->query ("INSERT INTO variant_frequency
+ (variant_id, num, denom, f)
+ SELECT variant_id, num, denom, num/denom
+ FROM variant_population_frequency vpf
+ ON DUPLICATE KEY UPDATE variant_frequency.num=variant_frequency.num+vpf.num, variant_frequency.denom=variant_frequency.denom+vpf.denom, f=variant_frequency.num/variant_frequency.denom");
+if (theDb()->isError($q)) die ($q->getMessage());
+print theDb()->affectedRows();
+print "\n";
+
 theDb()->query ("UNLOCK TABLES");
 
 ?>
