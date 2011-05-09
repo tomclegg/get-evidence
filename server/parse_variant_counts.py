@@ -30,9 +30,7 @@ def parse_allele_counts(countsfile):
             total += var_count
             key = parsed['reasons'][i]
             # Ignore synonymous variants.
-            if key == 'none':
-                continue
-            if key in seen_before:
+            if not key == 'none' and key in seen_before:
                 skip_site = True
                 break
             elif key in seen_here:
