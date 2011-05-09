@@ -352,6 +352,19 @@ class GenomeReport {
     }
 
     /**
+     * Read file and return metadata for genome
+     * @result array
+     */
+    public function &metadata() {
+        $fh = @fopen($this->metadatafile, 'r');
+        if (!$fh) { $out = false; return $out; }
+        $line = fgets($fh);
+        $metadata = json_decode($line, true);
+        fclose ($fh);
+        return $metadata;
+    }
+
+    /**
      * Read file and return data for missing coding regions
      * @result array
      */
@@ -537,6 +550,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
     $variants =& $genome_report->variants();
     if (is_array($variants)) {
         $coverage =& $genome_report->coverage_data();
+        $metadata =& $genome_report->metadata();
 
         $returned_text .= "<div id='variant_table_tabs'><ul>\n"
             . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
@@ -544,6 +558,9 @@ function genome_display($shasum, $oid, $is_admin=false) {
         if ($coverage)
             $returned_text .=
                 "<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
+        if ($metadata)
+            $returned_text .=
+                "<li><A href='#variant_table_tab_3'>Metadata</A></li>\n";
         $returned_text .=
             "</ul>\n"
             . "<div id='variant_table_tab_0'>";
@@ -644,6 +661,57 @@ function genome_display($shasum, $oid, $is_admin=false) {
             $returned_text .= '</TBODY></TABLE>' . "\n";
         }
 
+        if ($metadata) {
+            $returned_text .= "</div>\n<div id='variant_table_tab_3'>\n";
+            if (array_key_exists('input_type', $metadata)) {
+                $returned_text .= '<p>Input file format: ' .
+                    $metadata['input_type'] . '</p>' . "\n";
+            }
+            if (array_key_exists('genome_build', $metadata)) {
+                $returned_text .= '<p>Genome build: ' .
+                    $metadata['genome_build'] . '</p>' . "\n";
+            }
+            if (array_key_exists('called_num', $metadata) &&
+                array_key_exists('ref_nogap_num', $metadata) &&
+                array_key_exists('ref_all_num', $metadata)) {
+                $perc_callable = $metadata['called_num'] * 100.0 / 
+                    $metadata['ref_nogap_num'];
+                $perc_total = $metadata['called_num'] * 100.0 / 
+                    $metadata['ref_all_num'];
+                $returned_text .= '<p>Genome coverage: ' .
+                    number_format($metadata['called_num']) .
+                    ' bases (' . number_format($perc_callable, 1) .
+                    '% of callable positions, ' . 
+                    number_format($perc_total, 1) .
+                    '% of total positions)</p>' . "\n";
+            }
+            if (array_key_exists('called_coding_n', $metadata) &&
+                array_key_exists('ref_coding_n', $metadata)) {
+                $perc_coding = $metadata['called_coding_n'] * 100.0 /
+                    $metadata['ref_coding_n'];
+                if (array_key_exists('called_coding_clintest_n', $metadata) &&
+                    array_key_exists('ref_coding_clintest_n', $metadata)) {
+                    $perc_clintest = $metadata['called_coding_clintest_n'] * 
+                        100.0 / $metadata['ref_coding_clintest_n'];
+                    $returned_text .= '<p>Coding region coverage: ' .
+                        number_format($metadata['called_coding_n']) .
+                        ' bases (' . number_format($perc_coding, 1) .
+                        '% of all genes, ' . number_format($perc_clintest, 1) .
+                        '% of genes with clinical testing available)</p>' . 
+                        "\n";
+                } else {
+                    $returned_text .= '<p>Coding region coverage: ' .
+                        number_format($metadata['called_coding_n']) .
+                        ' bases (' . number_format($perc_coding, 1) .
+                        '% of all genes)</p>' . "\n";
+                }
+            }
+            if (array_key_exists('chromosomes', $metadata)) {
+                $returned_text .= '<p>Chromosomes: ' . 
+                    join(', ', $metadata['chromosomes']) . '</p>' . "\n";
+            }
+            $returned_text .= "\n";
+        }
         $returned_text .= "</div></div>\n";
     }
     return($returned_text);
