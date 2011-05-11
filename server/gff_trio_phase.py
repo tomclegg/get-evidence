@@ -3,11 +3,6 @@
 # Author: Evan Maxwell (evanmaxwell@gmail.com)
 # Date: April 2011
 
-"""
-usage: %prog child_gff_file parentA_gff_file [parentB_gff_file] [-o output file]
-"""
-################################################################################
-
 import re
 import optparse
 from utils import gff, autozip
@@ -70,7 +65,11 @@ class PhaseTrio:
         if (comp == 0):
             if (position[1] == prev_pos[1] and position[2] == prev_pos[2]):
                 # Variant at the searched position
-                return prev_pos[3]
+                rec = prev_pos[3]
+                if (rec.feature == "REF"):
+                    return self.REF
+                else:
+                    return rec
 
             # Reference at the searched position
             return self.REF
@@ -95,7 +94,8 @@ class PhaseTrio:
                     return record
 
             # Searched position never found or var that didn't match exactly
-            return self.NO_CALL
+            break
+        return self.NO_CALL
 
     def call_phase(self):
         """Try to call phasing for SNPs in child, given one or two parents.
@@ -134,7 +134,8 @@ class PhaseTrio:
                     break
 
                 # Check if parent record is REF or NO_CALL, else it's a variant
-                if (isinstance(parent_record, int)):
+                if (isinstance(parent_record, int)):# \
+                        #or (not 'alleles' in parent_record.attributes)):
                     if (parent_record == self.REF):
                         par_alleles[par_idx] = "REF"
                         if (child_alleles[0] == ref):
@@ -147,7 +148,7 @@ class PhaseTrio:
                             # Parent is ref and child has no ref, mismatch
                             phase[par_idx][0] = NO
                             phase[par_idx][1] = NO
-                    elif (parent_record == self.NO_CALL):
+                    else:
                         # no call is default
                         par_alleles[par_idx] = "NO_CALL"
                 else:
@@ -325,10 +326,10 @@ def main():
     if opts.f_out:
         out = autozip.file_open(opts.f_out, 'w')
         for line in trioizer.call_phase():
-            out.write(line)
+            out.write('%s\n' % line)
     else:
         for line in trioizer.call_phase():
-            print line
+            print '%s\n' % line
     
 if __name__ == "__main__":
     main()
