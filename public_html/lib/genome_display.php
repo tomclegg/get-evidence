@@ -566,8 +566,8 @@ function genome_display($shasum, $oid, $is_admin=false) {
             . "<div id='variant_table_tab_0'>";
 
         $returned_text .= "<div style='float:right; margin-bottom: 3px' id='variant_filter_radio'>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show all</label>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show rare (<i>f</i><10%) pathogenic variants</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show rare (<i>f</i><10%) pathogenic variants</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show all</label>
 </div><br clear=all />";
 
         usort($variants['suff'], "sort_variants");

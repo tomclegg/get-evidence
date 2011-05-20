@@ -27,8 +27,8 @@ var datatables_objects = {};
 var variant_table_showall = false;
 var variant_table = false;
 var variant_table_filter = function(){return true;};
-var variant_table_filters = [function(oSettings, aData, iDataIndex) { return true; },
-			     function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); }];
+var variant_table_filters = [function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); },
+			     function(oSettings, aData, iDataIndex) { return true; }];
 
 jQuery(document).ready(function($){
 	$.fn.dataTableExt.afnFiltering.push(function(oSettings, aData, iDataIndex) {
