@@ -201,6 +201,7 @@ def genome_analyzer(genotype_file, server=None):
              'nonsyn_out_tmp': os.path.join(output_dir, 'ns_tmp.gff.gz'),
              'nonsyn_out': os.path.join(output_dir, 'ns.gff.gz'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
+             'getev_genes_out': os.path.join(output_dir, 'get-ev_genes.json'),
              'metadata_out': os.path.join(output_dir, 'metadata.json'),
              'genome_stats': os.path.join(os.getenv('DATA'), 'genome_stats.txt'),
              'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA),
@@ -307,9 +308,11 @@ def genome_analyzer(genotype_file, server=None):
                                                            args['transcripts'])
     # Pull off GET-Evidence hits
     nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, 
-                                       args['getev_flat'], 
-                                       output_file=args['getev_out'] + ".tmp", 
-                                       progresstracker=progtrack)
+                                 args['getev_flat'], 
+                                 transcripts_file=args['transcripts'],
+                                 gene_out_file=args['getev_genes_out'] + ".tmp",
+                                 output_file=args['getev_out'] + ".tmp", 
+                                 progresstracker=progtrack)
 
     # Printing to output, pulls data through the generator chain.
     ns_out = autozip.file_open(args['nonsyn_out_tmp'], 'w')
@@ -318,6 +321,7 @@ def genome_analyzer(genotype_file, server=None):
     ns_out.close()
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
     os.system("mv " + args['nonsyn_out_tmp'] + " " + args['nonsyn_out'])
+    os.system("mv " + args['getev_genes_out'] + ".tmp " + args['getev_genes_out'])
 
     # Print metadata
     metadata_f_out = open(args['metadata_out'], 'w')
@@ -339,22 +343,44 @@ def getev_reprocess(genotype_file, server=None):
     else:
         return None
     log.put('#status 0 Reprocessing data against GET-Evidence')
-    # Set up arguments used by processing commands and scripts.
-    args = { 'nonsyn_data': os.path.join(output_dir, 'ns.gff'),
+    args = { 'metadata': os.path.join(output_dir, 'metadata.json'), 
+             'nonsyn_data': os.path.join(output_dir, 'ns.gff'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
+             'getev_genes_out': os.path.join(output_dir, 'get-ev_genes.json'),
              'getev_flat': os.path.join(os.getenv('DATA'), GETEV_FLAT)
              }
+    # Read metadata file (need this to get build info for transcripts file)
+    try:
+        f_metadata = autozip.file_open(args['metadata'])
+        metadata = json.loads(f_metadata.next())
+        f_metadata.close()
+        if metadata['genome_build'] == 'b36':
+            args['transcripts'] = os.path.join(os.getenv('DATA'),
+                                               KNOWNGENE_HG18_SORTED)
+        elif metadata['genome_build'] == 'b37':
+            args['transcripts'] = os.path.join(os.getenv('DATA'),
+                                               KNOWNGENE_HG19_SORTED)
+        else:
+            raise KeyError
+    except (IOError, KeyError):
+        genome_analyzer(genotype_file)
+        return
+    
     if (os.path.exists (args['nonsyn_data'] + '.gz')):
         args['nonsyn_data'] = args['nonsyn_data'] + '.gz'
 
     chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
     progtrack = ProgressTracker(log_handle, [1, 99], expected=chrlist)
+
     # Get GET-Evidence hits
-    gff_getevidence_map.match_getev_to_file(args['nonsyn_data'], 
-                                            args['getev_flat'], 
-                                            args['getev_out'] + ".tmp", 
-                                            progtrack)
+    gff_getevidence_map.match_getev_to_file(args['nonsyn_data'],
+                                            args['getev_flat'],
+                                            transcripts_file=args['transcripts'],
+                                            output_file=args['getev_out'] + ".tmp",
+                                            gene_out_file=args['getev_genes_out'] + ".tmp",
+                                            progresstracker=progtrack)
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+    os.system("mv " + args['getev_genes_out'] + ".tmp " + args['getev_genes_out'])
     os.rename(lockfile, logfile)
     log_handle.close()
     print "Finished reprocessing GET-Evidence hits for " + str(genotype_file)
