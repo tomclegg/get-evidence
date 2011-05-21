@@ -21,6 +21,16 @@ var datatables_options = {
 	'aaSorting': [[3,'asc']],
 	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
 	'iDisplayLength': -1
+    },
+    'variant_table_genereport': {
+	'bProcessing': true,
+        'bAutoWidth': false,
+	'aaSorting': [[0, 'desc']],
+        'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
+        'iDisplayLength': -1,
+	'aoColumnDefs': [{'aTargets': [1,5], 'sWidth': '15%'},
+                         {'aTargets': [2,4], 'sWidth': '10%'},
+                         {'aTargets': [3], 'sWidth': '5%'}]
     }
 };
 var datatables_objects = {};

@@ -291,6 +291,9 @@ def impact_rank(variant):
             elif (variant['variant_impact'] == 'protective' or
                   variant['variant_impact'] == 'pharmacogenetic'):
                 impact_rank += 1
+            elif (variant['variant_impact'] == 'benign'):
+                impact_rank = 0
+                return impact_rank
         if variant['autoscore'] >= 4:
             impact_rank += 2
         elif variant['autoscore'] >= 2:

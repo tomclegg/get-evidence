@@ -16,6 +16,8 @@ class GenomeVariant {
                               'allele_freq' => '',
                               'expect_effect' => 0,
                               'zygosity' => '',
+                              'phase' => '',
+                              'variant_quality' => '',
                               'inheritance_desc' => '',
                               'summary_short' => '',
                               'autoscore' => '',
@@ -203,6 +205,7 @@ class GenomeReport {
         $this->variantsfile = $prefix . '-out/get-evidence.json';
         $this->coveragefile = $prefix . '-out/missing_coding.json';
         $this->metadatafile = $prefix . '-out/metadata.json';
+        $this->genereportfile = $prefix . '-out/get-ev_genes.json';
         $this->lockfile = $prefix . '-out/lock';
         $this->logfile = $prefix . '-out/log';
     }
@@ -362,6 +365,44 @@ class GenomeReport {
         $metadata = json_decode($line, true);
         fclose ($fh);
         return $metadata;
+    }
+
+    /**
+     * Read gene report file for genome and return data
+     * @result array
+     */
+    public function &gene_report() {
+        $fh = @fopen($this->genereportfile, 'r');
+        if (!$fh) { $out = false; return $out; }
+        $gene_data = array();
+        while (($genedataline = fgets($fh)) !== false) {
+            $gene = json_decode($genedataline, true);
+            $variants = $gene['data'];
+            $gene['data'] = array();
+            foreach ($variants as $vardata) {
+                $vardata = new GenomeVariant($vardata);
+                $gene['data'][] = $vardata->data;
+            }
+            $gene_data[] = $gene;
+        }
+        fclose ($fh);
+        usort($gene_data, array($this, "cmp_gene_data"));
+        $gene_data = array_reverse($gene_data);
+        return $gene_data;
+    }
+
+    /**
+     * Sort function for gene report data
+     * @result int
+     */
+    private function cmp_gene_data($genedataA, $genedataB) {
+        if ($genedataA['effect_rank'] < $genedataB['effect_rank']) {
+            return -1;
+        } elseif ($genedataA['effect_rank'] > $genedataB['effect_rank']) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -551,6 +592,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
     if (is_array($variants)) {
         $coverage =& $genome_report->coverage_data();
         $metadata =& $genome_report->metadata();
+        $gene_report =& $genome_report->gene_report();
 
         $returned_text .= "<div id='variant_table_tabs'><ul>\n"
             . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
@@ -558,9 +600,12 @@ function genome_display($shasum, $oid, $is_admin=false) {
         if ($coverage)
             $returned_text .=
                 "<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
+        if ($gene_report)
+            $returned_text .=
+                "<li><A href='#variant_table_tab_3'>Gene Report</A></li>\n";
         if ($metadata)
             $returned_text .=
-                "<li><A href='#variant_table_tab_3'>Metadata</A></li>\n";
+                "<li><A href='#variant_table_tab_4'>Metadata</A></li>\n";
         $returned_text .=
             "</ul>\n"
             . "<div id='variant_table_tab_0'>";
@@ -660,9 +705,47 @@ function genome_display($shasum, $oid, $is_admin=false) {
             }
             $returned_text .= '</TBODY></TABLE>' . "\n";
         }
-
-        if ($metadata) {
+        if ($gene_report) {
             $returned_text .= "</div>\n<div id='variant_table_tab_3'>\n";
+            $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_genereport' style='width: 100%'><THEAD><TR>" .
+                "<TH class='Invisible ui-helper-hidden'>Effect rank</TH>" .
+                "<TH class='Unsortable'>Variant</TH>" .
+                "<TH class='Unsortable'>Phase/<BR />Zygosity</TH>" .
+                "<TH class='Unsortable'>Allele freq</TH>" .
+                "<TH class='Unsortable'>Impact</TH>" .
+                "<TH class='Unsortable'>Evaluation</TH>" .
+                "<TH class='Unsortable'>Summary / Info</TH>" .
+                "</TR></THEAD><TBODY>\n";
+            foreach ($gene_report as $gene_data) {
+                foreach ($gene_data['data'] as $variant) {
+                    if ($variant['phase'] != 'homozygous' && 
+                        $variant['phase'] != 'het unknown')
+                        $variant['phase'] = 'het ' . $variant['phase'];
+                    $returned_text .= "<TR>" . 
+                        '<TD class="ui-helper-hidden">' . 
+                            $gene_data['effect_rank'] . '</TD>' .
+                        '<TD><A HREF="' . $variant['name'] . '">' . 
+                            $variant['name'] . '</A></TD>' .
+                        '<TD>' . $variant['phase'] . '</TD>' .
+                        '<TD>' . $variant['allele_freq'] . '</TD>' .
+                        '<TD>' . $variant['inheritance_desc'] . '<BR />' .
+                            $variant["variant_impact"] . '</TD>';
+                    if ($variant['clinical'] and $variant['evidence']) {
+                        $returned_text .= "<TD>" . $variant["clinical"] . 
+                               " clinical importance, <BR />" . 
+                               strtolower($variant["evidence"]) . '</TD>' .
+                            '<TD>' . $variant['summary_short'] . '</TD>';
+                    } else {
+                        $returned_text .= '<TD>Insufficiently evaluated</TD>' .
+                            '<TD>Autoscore: ' . $variant['autoscore'] . 
+                            '<BR />' . $variant['autoscore_why'] . '</TD>';
+                    }
+                }
+            }
+            $returned_text .= "</TBODY></TABLE>\n";
+        }
+        if ($metadata) {
+            $returned_text .= "</div>\n<div id='variant_table_tab_4'>\n";
             if (array_key_exists('input_type', $metadata)) {
                 $returned_text .= '<p>Input file format: ' .
                     $metadata['input_type'] . '</p>' . "\n";
