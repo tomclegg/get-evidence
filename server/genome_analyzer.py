@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 import fcntl
+import simplejson as json
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from config_names import GENETESTS_DATA, GETEV_FLAT
@@ -24,6 +25,7 @@ from config_names import DBSNP_B36_SORTED, DBSNP_B37_SORTED
 from config_names import KNOWNGENE_HG18_SORTED, KNOWNGENE_HG19_SORTED
 from config_names import REFERENCE_GENOME_HG18, REFERENCE_GENOME_HG19
 from progresstracker import Logger, ProgressTracker
+import gff_trio_phase
 import get_metadata 
 import call_missing 
 import gff_twobit_query
@@ -212,14 +214,53 @@ def genome_analyzer(genotype_file, server=None):
     except:
         print "Unexpected error:", sys.exc_info()[0]
 
+    # Read metadata with uploaded file, if available.
+    try:
+        f_metadata = autozip.file_open(os.path.dirname(genotype_file) + 
+                                       '/metadata.json')
+        metadata_line = f_metadata.next()
+        genome_data = json.loads(metadata_line)
+    except IOError:
+        genome_data = dict()
+
     # Process and sort input genome data
     log.put ('#status 0/100 converting and sorting input file')
-    genome_data = dict()
-    gff_in_gen = process_source(args['genotype_input'], genome_data)
-
-    # We pass it as a yield (instead of in metadata) to force the generator to 
-    # read the header portion of the input data (which checks for build info).
-    genome_data['genome_build'] = gff_in_gen.next()
+    gff_in_gen = None
+    # Look for parents and, if possible, use these to phase genome.
+    if ('parent A' in genome_data and 'parent B' in genome_data):
+        parA_in_dir = os.path.join(
+            os.path.dirname(os.path.dirname(args['genotype_input'])),
+            genome_data['parent A'])
+        parB_in_dir = os.path.join(
+            os.path.dirname(os.path.dirname(args['genotype_input'])),
+            genome_data['parent B'])
+        if os.path.exists(parA_in_dir) and os.path.exists(parB_in_dir):
+            parA_files = os.listdir(parA_in_dir)
+            parA_file_match = [x for x in parA_files if re.match('genotype', x)]
+            parB_files = os.listdir(parB_in_dir)
+            parB_file_match = [x for x in parB_files if re.match('genotype', x)]
+            if parA_file_match and parB_file_match:
+                parA_input = os.path.join(parA_in_dir, parA_file_match[0])
+                parB_input = os.path.join(parB_in_dir, parB_file_match[0])
+                gff_parA_gen = process_source(parA_input)
+                gff_parB_gen = process_source(parB_input)
+                gff_child_gen = process_source(args['genotype_input'], 
+                                               genome_data)
+                parA_build = gff_parA_gen.next()
+                parB_build = gff_parB_gen.next()
+                genome_data['genome_build'] = gff_child_gen.next()
+                if (parA_build == genome_data['genome_build'] and 
+                    parB_build == genome_data['genome_build']):
+                    trio_phase = gff_trio_phase.PhaseTrio(gff_child_gen, 
+                                                          gff_parA_gen, 
+                                                          gff_parB_gen, False)
+                    gff_in_gen = trio_phase.call_phase()
+    # Set up if trio phasing couldn't be done.
+    if not gff_in_gen:
+        # We pass build as a yield (instead of in metadata) to force the 
+        # generator to read through the header portion of the input data.
+        gff_in_gen = process_source(args['genotype_input'], genome_data)
+        genome_data['genome_build'] = gff_in_gen.next()
 
     # Set up build-dependent file locations
     if (genome_data['genome_build'] == "b36"):
