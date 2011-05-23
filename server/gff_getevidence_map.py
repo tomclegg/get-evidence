@@ -287,7 +287,7 @@ def impact_rank(variant):
     else:
         if 'variant_impact' in variant:
             if variant['variant_impact'] == 'pathogenic':
-                impact_rank += 2
+                impact_rank += 3
             elif (variant['variant_impact'] == 'protective' or
                   variant['variant_impact'] == 'pharmacogenetic'):
                 impact_rank += 1
@@ -298,6 +298,10 @@ def impact_rank(variant):
             impact_rank += 2
         elif variant['autoscore'] >= 2:
             impact_rank += 1
+        if ('num' in variant and 'denom' in variant and variant['denom'] > 0):
+            freq = int(variant['num']) * 1.0 / int(variant['denom'])
+            if freq > 0.1:
+                impact_rank = impact_rank * 0.5
     return impact_rank
 
 def gene_report(f_out, gene, gene_data):
@@ -316,8 +320,10 @@ def gene_report(f_out, gene, gene_data):
     # compound hets. It's gene level, the max of the combined set of: 
     # (1) all homozygous impact_ranks
     # (2) all dominant het impact_ranks
+    # (3) 50% of non-recessive, non-dominant impact_ranks
     # (3) average of compound het 'impact_rank'
     # (4) 50% of average of potentially compound (unphased) 'impact_rank'
+    # Note that 50% is used as a compromise for unknown variants.
     #    -- MPB 5/11
     effect_ranks = [ 0 ]
     for variant in gene_data:
@@ -328,6 +334,9 @@ def gene_report(f_out, gene, gene_data):
                 variant['variant_dominance'] == 'dominant'):
                 effect_ranks.append(impact_rank(variant))                 # (2)
             else:
+                if ('variant_dominance' in variant and
+                    variant['variant_dominance'] != 'recessive'):
+                    effect_ranks.append(impact_rank(variant) * 0.5)
                 if variant['phase'] == 'het unknown':
                     for variant2 in gene_data:
                         if variant == variant2:
