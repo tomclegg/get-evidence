@@ -48,9 +48,9 @@ theDb()->query ("ALTER TABLE allele_frequency_merge ADD UNIQUE(chr,chr_pos,allel
 theDb()->query ("INSERT IGNORE INTO allele_frequency_merge
  (chr,chr_pos,allele,num,denom)
  SELECT
- chr,chr_pos,allele,SUM(num),SUM(denom)
+ chr,chr_pos,allele,num,denom
  FROM allele_frequency
- GROUP BY chr,chr_pos,allele");
+ ORDER BY chr,chr_pos,allele,denom desc");
 print theDb()->affectedRows();
 print "\n";
 
