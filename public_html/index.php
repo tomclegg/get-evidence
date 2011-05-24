@@ -294,8 +294,8 @@ foreach (theDb()->getAll ("SELECT * FROM variant_population_frequency WHERE vari
     $gotsome = 1;
 }
 if (isset ($row0["variant_f"])) {
-    $html .= "<LI>Overall frequency computed as "
-	. sprintf ("%.1f%% (%d/%d)",
+    $html .= "<LI>Frequency shown in summary reports: "
+	. sprintf ("<B>%.1f%%</B> (%d/%d)",
 		   100 * $row0["variant_f"],
 		   $row0["variant_f_num"],
 		   $row0["variant_f_denom"])
