@@ -784,15 +784,17 @@ function evidence_get_report ($snap, $variant_id)
       $row["nblosum100"] = 0-blosum100($row["variant_aa_del"], $row["variant_aa_ins"]);
 
     $webhits_relevant = 0;
+    $webhits_irrelevant = 0;
     $webhits_unscored = 0;
     $urlscores =& evidence_get_web_votes ($variant_id);
     foreach (evidence_extract_urls (theDb()->getOne ("SELECT content FROM variant_external WHERE variant_id=? AND tag=?",
 						     array ($variant_id, "Yahoo!"))) as $url) {
-      if (!isset($urlscores[$url]) || !strlen($urlscores[$url]))
-	++$webhits_unscored;
-      else if ($urlscores[$url] > 0)
-	if (++$webhits_relevant >= 2)
-	  break;
+	if (!isset($urlscores[$url]) || !strlen($urlscores[$url])) 
+	    ++$webhits_unscored;
+	else if ($urlscores[$url] > 0) {
+	    $webhits_relevant++;
+	} else if ($urlscores[$url] == 0)
+	    $webhits_irrelevant++;
     }
 
     // Note: if multiple matches w/the same tag only one is saved in ext_data
@@ -819,12 +821,38 @@ function evidence_get_report ($snap, $variant_id)
     $why = array();
 
     // Computational (max of 2 points):
-    if (!isset ($row["nblosum100"])) { } // e.g., rsID but no nsSNP
-    else if ($row["nblosum100"] > 9) { $autoscore+=2; $why[] = "nblosum100>9"; }
-    else if ($row["nblosum100"] > 3) { $autoscore++; $why[] = "nblosum100>3"; }
+    if ($row["variant_aa_from"] &&  $row["variant_aa_to"]) {
+	if ($row["pph2_score"] != "-") {
+	    if ($row["pph2_score"] >= 0.85) { 
+		$autoscore+=2; 
+		$why[] = "pph2: prob damaging"; 
+	    } else if ($row["pph2_score"] >= 0.2) { 
+		$autoscore++; 
+		$why[] = "pph2: poss damaging"; 
+	    } else {
+		$why[] = "pph2: benign";
+	    }
+        } else {
+	    if ($row["variant_aa_to"] == "*" || $row["variant_aa_to"] == "X") {
+		$autoscore+=2;
+		$why[] = "nonsense mutation";
+	    } else {
+		$autoscore++;
+		$why[] = "pph2: unknown";
+	    }
+	}
+    } else if ($row["variant_aa_del"] && $row["variant_aa_ins"]) {
+	if ($row["variant_aa_ins"] == "Shift" || 
+	    $row["variant_aa_ins"] == "Frameshift") {
+	    $autoscore+=2;
+	    $why[] = "frameshift";
+	} else {
+	    $autoscore++;
+	    $why[] = "pph2: unknown";
+	}
+    }
+    if ($row["variant_f"] > 0.05 && $autoscore > 0) $autoscore--;
     // TODO: ++$autoscore if within 1 base of a splice site
-    // TODO: ++$autoscore if indel in coding region
-    // TODO: ++$autoscore if indel in coding region and causes frameshift
     if ($autoscore > 2) $autoscore = 2;
 
     // Variant-specific lists (max of 2 points):
@@ -837,7 +865,11 @@ function evidence_get_report ($snap, $variant_id)
       }
     }
     if ($row["in_pharmgkb"] == 'Y') { ++$autoscore_db; $why[] = "PharmGKB"; }
-    if ($webhits_relevant > 0) { $autoscore_db += $webhits_relevant; $why[] = "relevant web hits"; }
+    if ($webhits_relevant > 0) { 
+	$autoscore_db += 2; $why[] = "relevant web hits"; 
+    } elseif ($webhits_unscored > 0) {
+	$autoscore_db += 1; $why[] = "potential web hits";
+    }
     if ($autoscore_db > 2) $autoscore_db = 2;
     $autoscore += $autoscore_db;
 
@@ -851,7 +883,12 @@ function evidence_get_report ($snap, $variant_id)
       $row["webscore"] = "Y";	// already getting web scores
     else
       $row["webscore"] = "N";	// no hits, or all hits are voted irrelevant
-
+    if ($webhits_unscored > 0)
+	$row["n_web_uneval"] = $webhits_unscored;
+    if ($webhits_relevant > 0)
+	$row["n_web_pos"] = $webhits_relevant;
+    if ($webhits_irrelevant > 0)
+	$row["n_web_neg"] = $webhits_irrelevant;
     $row["autoscore"] = $autoscore;
     $row["autoscore_flags"] = implode(", ",$why);
 
@@ -866,7 +903,7 @@ $gWantKeysForAssoc = array
      "disease" => "disease_id disease_name case_pos case_neg control_pos control_neg",
      "article" => "article_pmid summary_long",
      "genome" => "genome_id global_human_id name sex zygosity dataset_id rsid chr chr_pos allele summary_long",
-     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb pph2_score autoscore webscore");
+     "variant" => "variant_id:id variant_gene:gene aa_change aa_change_short variant_rsid:rsid variant_impact:impact qualified_impact variant_dominance:inheritance quality_scores quality_comments variant_f_num variant_f_denom variant_f gwas_max_or nblosum100 disease_max_or variant_evidence clinical_importance genetests_testable genetests_reviewed in_omim in_gwas in_pharmgkb pph2_score autoscore webscore n_web_uneval n_web_pos n_web_neg");
 
 function evidence_get_assoc ($snap, $variant_id)
 {
@@ -1055,6 +1092,12 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 
   $flat["autoscore"] = $nonflat["autoscore"];
   $flat["webscore"] = $nonflat["webscore"];
+  if (array_key_exists("n_web_uneval", $nonflat))
+      $flat["n_web_uneval"] = $nonflat["n_web_uneval"];
+  if (array_key_exists("n_web_pos", $nonflat)) 
+      $flat["n_web_pos"] = $nonflat["n_web_pos"];
+  if (array_key_exists("n_web_neg", $nonflat)) 
+      $flat["n_web_neg"] = $nonflat["n_web_neg"];
   $flat["variant_evidence"] = $nonflat["variant_evidence"];
   $flat["clinical_importance"] = $nonflat["clinical_importance"];
   return $flat;

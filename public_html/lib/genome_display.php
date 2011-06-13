@@ -12,6 +12,7 @@ class GenomeVariant {
                               'suff_eval' => false,
                               'clinical' => '',
                               'evidence' => '',
+                              'pph2_score' => '',
                               'variant_impact' => '',
                               'allele_freq' => '',
                               'expect_effect' => 0,
@@ -150,17 +151,54 @@ class GenomeVariant {
             $items[] = "In HuGENet GWAS";
         if (array_key_exists("in_pharmgkb", $data) && $data["in_pharmgkb"])
             $items[] = "In PharmGKB";
-        if (array_key_exists("disruptive", $data) && $data["disruptive"])
-            $items[] = "Disruptive amino acid change";
-        if (array_key_exists("nonsense", $data) && $data["nonsense"])
-            $items[] = "Nonsense mutation";
-        if (array_key_exists("frameshift", $data) and $data["frameshift"])
-            $items[] = "Frameshift";
-        if (array_key_exists("indel", $data) and $data["indel"]) {
-            $items[] = "Frame-preserving indel";
+        if (array_key_exists("webscore", $data) && $data["webscore"] != "N") {
+            if ($data["webscore"] == "-") {
+                $items[] = "Has unevaluated web hits";
+            } elseif ($data["webscore"] == "Y") {
+                $items[] = "Has confirmed web hits";
+            }
         }
-        if (array_key_exists("testable", $data) && $data["testable"] == 1) {
-            if (array_key_exists("reviewed", $data) && $data["reviewed"] == 1)
+        if (array_key_exists("pph2_score", $data) && $data["pph2_score"]) {
+            $pph2_string = "Polyphen 2: " . $data["pph2_score"];
+            if ($data["pph2_score"] >= 0.85)
+                $pph2_string = $pph2_string . " (probably damaging)";
+            elseif ($data["pph2_score"] >= 0.2)
+                $pph2_string = $pph2_string . " (possibly damaging)";
+            else
+                $pph2_string = $pph2_string . " (benign)";
+            $items[] = $pph2_string;
+        }
+        if ($data["aa_to"] || $data["aa_ins"]) {
+            // Live data from database
+            if ($data["aa_to"] && ($data["aa_to"] == "X" ||
+                                   $data["aa_to"] == "*"))
+                $items[] = "Nonsense mutation";
+            else if ($data["aa_ins"]) {
+                if ($data["aa_ins"] == "Shift" || 
+                    $data["aa_ins"] == "Frameshift")
+                    $items[] = "Frameshift";
+                else if (strlen($data["aa_del"] != strlen($data["aa_ins"])))
+                    $items[] = "Frame-preserving indel";
+            }
+        } else {
+            // Stored data from JSON report
+            if ( (array_key_exists("nonsense", $data) && $data["nonsense"]) ||
+                 (preg_match('/X$/', $data['amino_acid_change']) || 
+                  preg_match('/\*$/', $data['amino_acid_change'])) )
+                $items[] = "Nonsense mutation";
+            else if ( (array_key_exists("frameshift", $data) && 
+                       $data["frameshift"]) ||
+                      (preg_match('/Shift$/', $data['amino_acid_change']) || 
+                       preg_match('/Framshift$/', $data['amino_acid_change'])) )
+                $items[] = "Frameshift";
+            else if (! (array_key_exists("pph2_score", $data) && 
+                        $data["pph2_score"])) 
+                // Remainder: frame-preserving indels, large substitutions, 
+                // or otherwise unknown to Polyphen 2.
+                $items[] = "Polyphen 2: Unknown";
+        }
+        if (array_key_exists("testable", $data) && $data["testable"]) {
+            if (array_key_exists("reviewed", $data) && $data["reviewed"])
                 $items[] = "Testable gene in GeneTests with associated GeneReview";
             else
                 $items[] = "Testable gene in GeneTests";
@@ -475,13 +513,20 @@ class GenomeReport {
         $db_query = theDb()->getAll($db_cmd);
         // Store data to return when done.
         // Each value in variant_data should already contain (if exists): 
-        // 'genotype', 'ref_allele', 'chromosome', and 'coordinates', 
-        // 'autoscore', 'testable', and 'reviewed'
+        // 'genotype', 'ref_allele', 'chromosome', and 'coordinates'
         $name_map = array ('gene' => 'gene',
                            'aa_change_short' => 'amino_acid_change',
                            'impact' => 'variant_impact',
                            'inheritance' => 'variant_dominance',
+                           'pph2_score' => 'pph2_score',
+                           'genetests_testable' => 'testable',
+                           'genetests_reviewed' => 'reviewed',
+                           'autoscore' => 'autoscore',
+                           'aa_to' => 'aa_to',
+                           'aa_ins' => 'aa_ins',
                            'dbsnp_id' => 'dbSNP',
+                           'webscore' => 'webscore',
+                           'overall_frequency' => 'allele_freq',
                            'overall_frequency_n' => 'num',
                            'overall_frequency_d' => 'denom',
                            'in_omim' => 'in_omim',
@@ -501,8 +546,15 @@ class GenomeReport {
                 $flatdata = json_decode ($flat_summary, true);
                 foreach ($flatdata as $key => $value) {
                     if (array_key_exists($key, $name_map) && 
-                        $value && ! ($value == "-")) {
-                        $vardata[$name_map[$key]] = $value;
+                        $value && ! ($value == "-" && $key != 'webscore')) {
+                        // note -- "-" is meaningful for webscore, empty elsewhere
+                        if ($value == "Y" && 
+                            ($key == 'genetests_testable' || 
+                             $key == 'genetests_reviewed')) {
+                            $vardata[$name_map[$key]] = true;
+                        } else {
+                            $vardata[$name_map[$key]] = $value;
+                        }
                     }
                 }
                 $variant = new GenomeVariant($vardata);
@@ -534,8 +586,7 @@ class GenomeReport {
             // store necessary data and look up later.
             if (array_key_exists('variant_id', $variant_data)) {
                 $want = array('genotype', 'ref_allele', 'chromosome',
-                              'coordinates', 'autoscore', 'testable', 
-                              'reviewed');
+                              'coordinates');
                 $vardata_to_pass = array();
                 foreach ($want as $key) {
                     if (array_key_exists($key, $variant_data)) {

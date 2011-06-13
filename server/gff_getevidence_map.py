@@ -37,7 +37,7 @@ def read_getev_flat(getev_flatfile):
     items_wanted = ['gene', 'aa_change_short', 'summary_short', 'impact', \
             'inheritance', 'dbsnp_id', 'in_omim', 'in_gwas', 'in_pharmgkb', \
             'variant_quality', 'overall_frequency_n', 'overall_frequency_d', \
-            'n_articles', 'variant_id']
+            'pph2_score', 'n_articles', 'variant_id']
 
     # Create two dicts to be returned, storing data we want.
     # If possible, getev_by_aa is used with gene and amino acid change as key.
@@ -99,6 +99,7 @@ def copy_output_data(getev_data, output_data):
     """Copy data to output using names recognized by genome_display.php"""
     name_map = {    'overall_frequency_n': 'num',
                     'overall_frequency_d': 'denom',
+                    'pph2_score': 'pph2_score',
                     'impact': 'variant_impact',
                     'quality': 'variant_quality',
                     'summary_short': 'summary_short',
@@ -187,10 +188,19 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
         score_comp = 1
         data["indel"] = True
     elif aa_from and aa_to:
-        for i in range(len(aa_from)):
-            if blosum.value(aa_from[i], aa_to[i]) <= -4:
+        if ('pph2_score' in data and data['pph2_score'] and 
+            data['pph2_score'] != '-'):
+            if float(data['pph2_score']) >= 0.85:
+                score_comp = 2
+            elif float(data['pph2_score']) >= 0.2:
                 score_comp = 1
-                data["disruptive"] = True
+        else:
+            score_comp = 1
+    # Less one point if allele frequency is greater than 5%
+    if ('num' in data and 'denom' in data and 
+        ((int(data['num']) * 1.0) / int(data['denom']) > 0.05) and
+        score_comp > 0):
+        score_comp = score_comp - 1
 
     # Make sure none exceed 2, then return the sum (which is the autoscore).
     score_var_database = min(2, score_var_database)
@@ -578,7 +588,8 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
     if f_gene_out:
         f_gene_out.close()
 
-def match_getev_to_file(gff_in, getev_flat, output_file, transcripts_file=None, gene_out_file=None, progresstracker=False):
+def match_getev_to_file(gff_in, getev_flat, output_file, transcripts_file=None, 
+                        gene_out_file=None, progresstracker=False):
     """Outputs JSON-formatted data from GET-Evidence to output_file
 
     This calls match_getev (a string generator) and writes results to file.
