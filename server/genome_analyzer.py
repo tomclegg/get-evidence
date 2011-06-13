@@ -363,6 +363,8 @@ def getev_reprocess(genotype_file, server=None):
         else:
             raise KeyError
     except (IOError, KeyError):
+        fcntl.flock(log_handle, fcntl.LOCK_UN)
+        log_handle.close()
         genome_analyzer(genotype_file)
         return
     
