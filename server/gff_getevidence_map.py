@@ -257,10 +257,10 @@ def eval_scores(variant_quality):
             scores[i] = -1
         else:
             scores[i] = int(scores[i])
-    if (scores[6] >= 3 and (scores[4] >= 4 or
+    if (scores[6] >= 4 and (scores[4] >= 4 or
                             (scores[4] >= 3 and scores[5] >= 4))):
         clin_importance = "High"
-    elif (scores[6] >= 2 and (scores[4] >= 3 or
+    elif (scores[6] >= 3 and (scores[4] >= 3 or
                               (scores[4] >= 2 and scores[5] >= 3))):
         clin_importance = "Moderate"
     else:

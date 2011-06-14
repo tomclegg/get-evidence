@@ -44,13 +44,13 @@ h2. Clinical importance qualifier
 Clinical importance is determined according to the following rules:
 
 * "high clinical importance": 
-## At least 3 points in penetrance (>= 5% attributable risk)
+## At least 4 points in penetrance (high-moderate penetrance / >= 20% attributable risk)
 ## and either:
 ### At least 3 stars in severity and at least 4 stars in treatability
 ### *or* at least 4 stars in severity
 
 * moderate clinical importance": 
-## At least 2 points in penetrance (>= 1% attributable risk)
+## At least 3 points in penetrance (moderate penetrance / >= 5% attributable risk)
 ## and either:
 ### At least 2 stars in severity and at least 3 stars in treatability
 ### *or* at least 3 stars in severity
