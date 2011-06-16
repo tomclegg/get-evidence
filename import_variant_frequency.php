@@ -22,17 +22,18 @@ print "\n";
 
 
 theDb()->query ("CREATE TEMPORARY TABLE import_variant_f (
+ variant_id VARCHAR(32),
+ variant_name VARCHAR(64) NOT NULL,
  chr VARCHAR(12),
  start BIGINT UNSIGNED,
  end BIGINT UNSIGNED,
- ref_allele VARCHAR(12),
- ref_count BIGINT UNSIGNED NOT NULL,
  variant_alleles VARCHAR(32),
- variant_counts VARCHAR(32),
- variant_id BIGINT UNSIGNED NOT NULL PRIMARY KEY
+ variant_count VARCHAR(32),
+ covered_count BIGINT UNSIGNED NOT NULL
  )");
 
 
+print "Loading ".$_SERVER["argv"][1]."...";
 $q = theDb()->query ("LOAD DATA LOCAL INFILE ?
 	 INTO TABLE import_variant_f
 	 FIELDS TERMINATED BY '\t'
@@ -42,35 +43,42 @@ if (theDb()->isError($q)) print $q->getMessage();
 print theDb()->affectedRows();
 print "\n";
 
-print "merging (adding) variant allele/sequence counts (e.g., '1,1,2' -> '4') ... ";
-$all = theDb()->getAll("SELECT variant_id, variant_counts FROM import_variant_f WHERE variant_counts LIKE '%,%'");
-$did = 0;
-foreach ($all as $row) {
-    $tot = 0;
-    foreach (explode(',', $row['variant_counts']) as $c) {
-	$tot += $c;
-    }
-    theDb()->query ("UPDATE import_variant_f SET variant_counts=? WHERE variant_id=?",
-		    array ($tot, $row['variant_id']));
-    ++$did;
-}
-print "$did\n";
 
-$tag = $_SERVER["argc"] == 3 ? $_SERVER["argv"][2] : "GET-Evidence";
-print "Copying data into real variant_population_frequency table...";
-theDb()->query ("LOCK TABLES variant_population_frequency WRITE");
-theDb()->query ("DELETE FROM variant_population_frequency WHERE dbtag=?", array($tag));
-theDb()->query ("REPLACE INTO variant_population_frequency
- (variant_id, dbtag, chr, start, end, genotype, num, denom)
- SELECT variant_id, ?, chr, start, end, variant_alleles, variant_counts, variant_counts+ref_count
- FROM import_variant_f
- WHERE variant_id>0",
-		array ($tag));
+print "Looking up missing variant ids...";
+$q = theDb()->query ("UPDATE import_variant_f SET variant_id=NULL where variant_id='unknown'");
+$q = theDb()->query ("ALTER TABLE import_variant_f CHANGE variant_id variant_id BIGINT UNSIGNED");
+$q = theDb()->query ("ALTER TABLE import_variant_f ADD INDEX(variant_id)");
+$q = theDb()->query ("ALTER TABLE import_variant_f ADD INDEX(variant_name)");
+$q = theDb()->query ("UPDATE import_variant_f SET variant_name = UPPER(replace(variant_name,'*','X'))");
+$q = theDb()->query ("CREATE TEMPORARY TABLE v_id_name AS SELECT variant_id, upper(concat(variant_gene,'-',variant_aa_del,variant_aa_pos,variant_aa_ins)) variant_name FROM variants");
+$q = theDb()->query ("ALTER TABLE v_id_name ADD INDEX(variant_name)");
+$q = theDb()->query ("UPDATE import_variant_f i
+ LEFT JOIN v_id_name v ON v.variant_name = i.variant_name
+ SET i.variant_id = v.variant_id
+ WHERE i.variant_id IS NULL");
+if (theDb()->isError($q)) die ($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
 
-theDb()->query ("UNLOCK TABLES");
+
+$tag = $_SERVER["argc"] == 3 ? $_SERVER["argv"][2] : "GET-Evidence";
+print "Copying data into real variant_population_frequency table...";
+theDb()->query ("START TRANSACTION");
+theDb()->query ("DELETE FROM variant_population_frequency WHERE dbtag=?", array($tag));
+theDb()->query ("REPLACE INTO variant_population_frequency
+ (variant_id, dbtag, chr, start, end, genotype, num, denom)
+ SELECT variant_id, ?, chr, start, end, variant_alleles, variant_count, covered_count
+ FROM import_variant_f
+ WHERE variant_id>0",
+		array ($tag));
+if (theDb()->isError($q)) die ($q->getMessage());
+print theDb()->affectedRows();
+print "\n";
+
+theDb()->query ("COMMIT");
+if (theDb()->isError($q)) die ($q->getMessage());
 
 theDb()->query ("DROP TEMPORARY TABLE import_variant_f");
+if (theDb()->isError($q)) die ($q->getMessage());
 
 ?>

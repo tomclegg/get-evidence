@@ -1,14 +1,15 @@
 Perform the following steps after updating your installation (using
 git-pull or whatever).
 
-Upgrade database tables by visiting:
-
- http://your.site.example.com/install
-
 Fetch and install webgui dependencies:
 
  cd ~/get-evidence
  make install
+
+Upgrade database tables by running:
+
+ cd ~/get-evidence
+ ./upgrade.php
 
 Check other runtime dependencies (see INSTALL; especially the note re.
 multiprocessing for python < 2.6)

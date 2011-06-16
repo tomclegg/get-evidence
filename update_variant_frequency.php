@@ -48,9 +48,9 @@ theDb()->query ("ALTER TABLE allele_frequency_merge ADD UNIQUE(chr,chr_pos,allel
 theDb()->query ("INSERT IGNORE INTO allele_frequency_merge
  (chr,chr_pos,allele,num,denom)
  SELECT
- chr,chr_pos,allele,SUM(num),SUM(denom)
+ chr,chr_pos,allele,num,denom
  FROM allele_frequency
- GROUP BY chr,chr_pos,allele");
+ ORDER BY chr,chr_pos,allele,denom desc");
 print theDb()->affectedRows();
 print "\n";
 
@@ -84,7 +84,10 @@ $q=theDb()->query ("INSERT INTO variant_frequency
  LEFT JOIN allele_frequency_merge afm
   ON vcp.chr=afm.chr AND vcp.chr_pos=afm.chr_pos AND vcp.allele=afm.allele
  WHERE afm.chr IS NOT NULL
- ON DUPLICATE KEY UPDATE variant_frequency.num=variant_frequency.num+afm.num, variant_frequency.denom=variant_frequency.denom+afm.denom, f=variant_frequency.num/variant_frequency.denom");
+ ON DUPLICATE KEY UPDATE
+  variant_frequency.num=if(variant_frequency.denom>afm.denom,variant_frequency.num,afm.num),
+  variant_frequency.denom=if(variant_frequency.denom>afm.denom,variant_frequency.denom,afm.denom),
+  f=variant_frequency.num/variant_frequency.denom");
 if (theDb()->isError($q)) die ($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
@@ -94,7 +97,10 @@ $q=theDb()->query ("INSERT INTO variant_frequency
  (variant_id, num, denom, f)
  SELECT variant_id, num, denom, num/denom
  FROM variant_population_frequency vpf
- ON DUPLICATE KEY UPDATE variant_frequency.num=variant_frequency.num+vpf.num, variant_frequency.denom=variant_frequency.denom+vpf.denom, f=variant_frequency.num/variant_frequency.denom");
+ ON DUPLICATE KEY UPDATE
+  variant_frequency.num=if(variant_frequency.denom>vpf.denom,variant_frequency.num,vpf.num),
+  variant_frequency.denom=if(variant_frequency.denom>vpf.denom,variant_frequency.denom,vpf.denom),
+  f=variant_frequency.num/variant_frequency.denom");
 if (theDb()->isError($q)) die ($q->getMessage());
 print theDb()->affectedRows();
 print "\n";
