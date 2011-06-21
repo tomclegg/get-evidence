@@ -155,6 +155,51 @@ function eval_gentyp_data () {
     }
 }
 
+function eval_undisc_path () {
+    var hyp_dis_prev = 
+    	parseFloat(document.getElementById('hyp_dis_prev').value) / 100;
+    var hyp_frac_cause =
+    	parseFloat(document.getElementById('hyp_frac_cause').value) / 100;
+    var hyp_penet =
+    	parseFloat(document.getElementById('hyp_penet').value) / 100;
+    var hyp_var_hyp = document.getElementById('hyp_var_hyp').value;
+    var hyp_cont_var = document.getElementById('hyp_cont_var').value;
+    hyp_freq = "";
+    if (hyp_var_hyp == "dom") {
+	hyp_freq = hyp_dis_prev * hyp_frac_cause / hyp_penet;
+    } else if (hyp_var_hyp == "rec") {
+	hyp_freq = Math.sqrt(hyp_dis_prev * hyp_frac_cause / hyp_penet);
+    }
+    var hyp_cont_var = get_int_from('hyp_cont_var');
+    var hyp_cont_ref = get_int_from('hyp_cont_ref');
+    output = "";
+    if (isNaN(hyp_freq)) {
+	output = "Please enter some numbers for the hypothetical variant.";
+    } else {
+	output = "Hypothetical variant frequency: " + hyp_freq + "<BR \>\n";
+	if (isNaN(hyp_cont_var) || isNaN(hyp_cont_ref) || 
+	    hyp_cont_var < 0 || hyp_cont_ref < 0 || 
+	    hyp_cont_var + hyp_cont_ref <= 0) {
+	    output = output + "Please enter some numbers for observations " +
+		"in random controls (must be positive integers).<BR \>\n";
+	} else {
+	    hyp_cont_tot = hyp_cont_var + hyp_cont_ref;
+	    var prob_less_than_var = 0;
+	    for (var k = 0; k < hyp_cont_var; k++) {
+		var prob = n_choose_k(hyp_cont_tot, k) * 
+		    Math.pow(hyp_freq, k) * 
+		    Math.pow((1-hyp_freq), (hyp_cont_tot - k));
+	        prob_less_than_var += prob;
+	    }
+	    var p_value = 1 - prob_less_than_var;
+	    output = output +
+	        "Chance you would have at least this many observations for " +
+		"such a variant by chance: " + p_value;
+	}
+    }
+    document.getElementById('undisc_path_result').innerHTML = output;
+}
+
 function get_int_from (name) {
     int_data = 
 	parseInt(Math.round(parseFloat(document.getElementById(name).value)));
@@ -197,6 +242,15 @@ function prob_table(a, b, c, d) {
     var log_denominator = log_factorial(a) + log_factorial(b) + 
 	log_factorial(c) + log_factorial(d) + log_factorial(n);
     var log_result = log_numerator - log_denominator;
+    var result = Math.exp(log_result);
+    return result;
+}
+
+function n_choose_k(n, k) {
+    var log_n_fac = log_factorial(n);
+    var log_k_fac = log_factorial(k);
+    var log_n_minus_k_fac = log_factorial( n - k );
+    var log_result = log_n_fac - (log_k_fac + log_n_minus_k_fac);
     var result = Math.exp(log_result);
     return result;
 }
