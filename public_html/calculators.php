@@ -133,8 +133,11 @@ $page_content .= "<h2>Compare controls against a " .
 $page_content .=  "<h3>Hypothetical as-yet-undiscovered variant's data:</h3>" .
     "\n<TABLE><TR><TD>Disease prevalence:</TD><TD>" .
     "<input type='text' id='hyp_dis_prev' size=5>%</TD></TR>\n<TR><TD>" .
-    "Fraction of the disease caused by hypothetical variant:</TD><TD>" .
-    "<input type='text' id='hyp_frac_cause' size=5>%</TD></TR>\n" .
+    "Fraction of the disease caused by this gene:</TD><TD>" .
+    "<input type='text' id='hyp_gene_cause' size=5>%</TD></TR>\n" .
+    "<TR><TD>Within disease caused by this gene, fraction of disease<br/>" .
+    "attributable to this variant:</TD><TD>" .
+    "<input type='text' id='hyp_var_cause' size=5>%</TD></TR>\n" .
     "<TR><TD>Penetrance of hypothetical variant:</TD><TD>" . 
     "<input type='text' id='hyp_penet' size=5>%</TD></TR></TABLE>\n" .
     "<p><h4>Hypothetical variant is:</h4>\n" . 

@@ -158,17 +158,20 @@ function eval_gentyp_data () {
 function eval_undisc_path () {
     var hyp_dis_prev = 
     	parseFloat(document.getElementById('hyp_dis_prev').value) / 100;
-    var hyp_frac_cause =
-    	parseFloat(document.getElementById('hyp_frac_cause').value) / 100;
+    var hyp_gene_cause =
+    	parseFloat(document.getElementById('hyp_gene_cause').value) / 100;
+    var hyp_var_cause =
+	parseFloat(document.getElementById('hyp_var_cause').value) / 100;
     var hyp_penet =
     	parseFloat(document.getElementById('hyp_penet').value) / 100;
     var hyp_var_hyp = document.getElementById('hyp_var_hyp').value;
     var hyp_cont_var = document.getElementById('hyp_cont_var').value;
     hyp_freq = "";
     if (hyp_var_hyp == "dom") {
-	hyp_freq = hyp_dis_prev * hyp_frac_cause / hyp_penet;
+	hyp_freq = hyp_dis_prev * hyp_gene_cause * hyp_var_cause / hyp_penet;
     } else if (hyp_var_hyp == "rec") {
-	hyp_freq = Math.sqrt(hyp_dis_prev * hyp_frac_cause / hyp_penet);
+	hyp_freq = Math.sqrt(hyp_dis_prev * hyp_gene_cause / hyp_penet) *
+	    hyp_var_cause;
     }
     var hyp_cont_var = get_int_from('hyp_cont_var');
     var hyp_cont_ref = get_int_from('hyp_cont_ref');
