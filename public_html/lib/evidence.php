@@ -958,7 +958,7 @@ function evidence_get_assoc ($snap, $variant_id)
       // TODO: combine these into one array and add labels
       $row["quality_scores"] = str_split (str_pad ($row["variant_quality"], 7, "-"));
       $row["quality_comments"] = $row["variant_quality_text"] ? json_decode ($row["variant_quality_text"], true) : array();
-      $diseases = evidence_get_all_oddsratios ($rows);
+      $diseases = evidence_get_all_casecontrol ($rows);
       unset ($max_or_id);
       foreach ($diseases as $id => &$d) {
 	if (!isset ($max_or_id) ||
@@ -1175,7 +1175,7 @@ class evidence_row_renderer {
 	  $class3 = " delete_with_v{$row[variant_id]}_a{$row[article_pmid]}_g{$row[genome_id]}";
 	  $this->starttable = "<TABLE $id class=\"disease_table$class2$class3\">\n";
 	  $this->starttable .= "<TR><TH class=\"rowlabel\">$title</TH>";
-	  foreach (array ("case+", "case&ndash;", "control+", "control&ndash;", "odds&nbsp;ratio") as $x)
+	  foreach (array ("case+", "case&ndash;", "control+", "control&ndash;","p-value", "odds&nbsp;ratio") as $x)
 	    $this->starttable .= "<TH width=\"60\">&nbsp;$x</TH>";
 	  $this->starttable .= "</TR>\n";
 	  $this->rownumber = 0;
@@ -1204,11 +1204,11 @@ class evidence_row_renderer {
 	}
 
 	if ($row["disease_id"] != "0") {
-	  $tr = editable ("${id_prefix}f_summary_short__8x1__oddsratio",
+	  $tr = editable ("${id_prefix}f_summary_short__8x1__casecontrol",
 			  $row["summary_short"],
 			  $row["disease_name"] . "<BR />",
 			  array ("rownumber" => $this->rownumber,
-				 "tip" => "Indicate the contribution of this article to OR statistics for ".htmlspecialchars($row["disease_name"])."."));
+				 "tip" => "Indicate the contribution of this article to OR and p-value statistics for ".htmlspecialchars($row["disease_name"])."."));
 	  if ($tr != "") {
 	    if ($this->rownumber == 0)
 	      $html .= $this->starttable;
@@ -1444,7 +1444,7 @@ function evidence_get_variant_name (&$variant, $separator=" ", $shortp=false)
 }
 
 
-function evidence_get_all_oddsratios ($report)
+function evidence_get_all_casecontrol ($report)
 {
   $disease = array ();
   foreach ($report as $row) {
@@ -1475,13 +1475,15 @@ function evidence_get_all_oddsratios ($report)
     $disease[$id]["article_pmid"] = "*";
     $disease[$id]["genome_id"] = "*";
     $disease[$id]["figs"]["or"] = oddsratio_compute ($disease[$id]["figs"]);
+    $disease[$id]["figs"]["pval"] = 
+	fishersexact_compute ($disease[$id]["figs"]);
   }
   return $disease;
 }
 
-function evidence_render_oddsratio_summary_table ($report)
+function evidence_render_casecontrol_summary_table ($report)
 {
-  $disease =& evidence_get_all_oddsratios ($report);
+  $disease =& evidence_get_all_casecontrol ($report);
 
   if (!sizeof ($disease))
     return "";
