@@ -866,7 +866,7 @@ function evidence_get_report ($snap, $variant_id)
     }
     if ($row["in_pharmgkb"] == 'Y') { ++$autoscore_db; $why[] = "PharmGKB"; }
     if ($webhits_relevant > 0) { 
-	$autoscore_db += 2; $why[] = "relevant web hits"; 
+	$autoscore_db += 1; $why[] = "relevant web hits"; 
     } elseif ($webhits_unscored > 0) {
 	$autoscore_db += 1; $why[] = "potential web hits";
     }
