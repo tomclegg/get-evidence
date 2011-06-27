@@ -73,14 +73,15 @@ header('Content-Type: text/html; charset=UTF-8');
 		</div>
 
 		<div class="navigation">
+			<a href="/about">About</a>
+			<a href="/genomes">Genomes</a>
+			<a href="/guide_editing">Editing guide</a>
 			<a href="/edits">Recent changes</a>
 			<a href="/editors">Contributors</a>
-			<a href="/about">About</a>
-            <a href="/genomes">Genomes</a>
 			<a href="/download">Download</a>
-			<a href="/report">Reports</a>
-			<a href="/vis">Visualization</a>
 <?php if (isset($_SESSION) && array_key_exists("user",$_SESSION)): ?>
+			<a href="/report">Reports</a>
+			<a href="/calculators">Calculators</a>
 			<a href="/logout.php?return_url=<?=urlencode($_SERVER["REQUEST_URI"])?>"><u>Log out</u></a>
 <?php endif; ?>
 			<div class="clearer"><span></span></div>
