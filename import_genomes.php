@@ -93,8 +93,8 @@ foreach ($public_genomes as $g) {
 	}
 	if (isset($jvariant["gene"]) && isset($jvariant["amino_acid_change"]))
 	    $variant_names = array($jvariant["gene"] . " " . $jvariant["amino_acid_change"]);
-	else if (isset($jvariant["dbsnp"]))
-	    $variant_names = explode(',', $jvariant["dbsnp"]);
+	else if (isset($jvariant["dbSNP"]))
+	    $variant_names = explode(',', $jvariant["dbSNP"]);
 	else {
 	    if ($jvariant["GET-Evidence"])
 		print "(Why is this here?) $line";
@@ -103,7 +103,7 @@ foreach ($public_genomes as $g) {
 	foreach ($variant_names as $variant_name) {
 	    $rsid = null;
 	    if (preg_match ('/^rs(\d+)$/', $variant_name, $regs) ||
-		(isset ($jvariant["dbsnp"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbsnp"], $regs)))
+		(isset ($jvariant["dbSNP"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbSNP"], $regs)))
 		$rsid = $regs[1];
 	    $variant_id = evidence_get_variant_id ($variant_name);
 	    if ($variant_id)
