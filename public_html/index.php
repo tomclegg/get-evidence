@@ -224,7 +224,7 @@ foreach ($report as $row) {
 $gOut["content"] .= $renderer->html();
 
 
-$gOut["content"] .= evidence_render_oddsratio_summary_table ($report);
+$gOut["content"] .= evidence_render_casecontrol_summary_table ($report);
 
 
 $rsid_seen = array();

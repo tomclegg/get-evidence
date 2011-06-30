@@ -17,11 +17,13 @@ function quality_eval_suff ($variant_quality, $impact="pathogenic")
 
 function quality_eval_clinical($variant_quality) {
     // ---  High clinical importance requires:
-    // * Penetrance score 3 or greater (>=5% attributable risk)
+    // * Penetrance score 4 or greater 
+    // (moderate-high penetrance / >=20% attributable risk)
     // AND
     // * Severity >= 4 OR Severity >= 3 and Treatability >= 4
     // ---  Moderate clinical importance requires:
-    // * Penetrance score 2 or greater (>=1% attributable risk)
+    // * Penetrance score 3 or greater 
+    // (moderate penetrance / >=5% attributable risk)
     // AND
     // * Severity >= 3 OR Severity >= 2 and Treatability >= 3
     // ---  Low clinical importance
@@ -36,10 +38,10 @@ function quality_eval_clinical($variant_quality) {
                 $scores[$i] = -1;
             }
         }
-        if ($scores[6] >= 3 and ($scores[4] >= 4 or
+        if ($scores[6] >= 4 and ($scores[4] >= 4 or
             ($scores[4] >= 3 and $scores[5] >= 4))) {
             return "High";
-        } elseif ($scores[6] >= 2 and ($scores[4] >= 3 or
+        } elseif ($scores[6] >= 3 and ($scores[4] >= 3 or
             ($scores[4] >= 2 and $scores[5] >= 3))) {
             return "Moderate";
         } else {

@@ -17,8 +17,7 @@ import os
 import subprocess
 import sys
 import fcntl
-import gzip
-import bz2
+import simplejson as json
 from optparse import OptionParser
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from config_names import GENETESTS_DATA, GETEV_FLAT
@@ -26,6 +25,7 @@ from config_names import DBSNP_B36_SORTED, DBSNP_B37_SORTED
 from config_names import KNOWNGENE_HG18_SORTED, KNOWNGENE_HG19_SORTED
 from config_names import REFERENCE_GENOME_HG18, REFERENCE_GENOME_HG19
 from progresstracker import Logger, ProgressTracker
+import gff_trio_phase
 import get_metadata 
 import call_missing 
 import gff_twobit_query
@@ -33,8 +33,10 @@ import gff_dbsnp_query
 import gff_nonsynonymous_filter
 import gff_getevidence_map
 from conversion import cgivar_to_gff, gff_from_23andme
+from utils import autozip
 
 SCRIPT_DIR = os.path.dirname(sys.argv[0])
+DEFAULT_BUILD = 'b36'
 
 def detect_format(f_in):
     """Take str generator input, determine genome file format (GFF or CGIVAR)"""
@@ -97,28 +99,23 @@ def detect_format(f_in):
     print "Giving up after 100 lines... Can't figure out data format."
     return "UNKNOWN"
 
-def process_source(genome_in):
+def process_source(genome_in, metadata=dict()):
     """
     Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
     # Handle genome compression, get input, and make best guess of format type.
-    args = { 'genome_in': genome_in }
-    if re.search(r'\.gz$', genome_in):
-        source_input = gzip.GzipFile (genome_in, 'r')
-    elif re.search(r'\.bz2$', genome_in):
-        source_input = bz2.BZ2File (genome_in, 'r')
-    else:
-        source_input = open (genome_in, 'r')
-    in_type = detect_format(source_input)
+    source_input = autozip.file_open(genome_in, 'r')
+    metadata['input_type'] = detect_format(source_input)
 
     # Reset input and convert to GFF if necessary.
-    source_input.seek(0)
+    source_input.close()
+    source_input = autozip.file_open(genome_in, 'r')
 
-    if in_type == "GFF":
+    if metadata['input_type'] == "GFF":
         gff_input = source_input
-    elif in_type == "CGIVAR":
+    elif metadata['input_type'] == "CGIVAR":
         gff_input = cgivar_to_gff.convert(source_input)
-    elif in_type == "23ANDME":
+    elif metadata['input_type'] == "23ANDME":
         gff_input = gff_from_23andme.convert(source_input)
     else:
         print "ERROR: genome file format not recognized"
@@ -126,10 +123,10 @@ def process_source(genome_in):
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
     header = []
-    sort_cmd = ['sort', '--buffer-size=20%', '--key=1,1', '--key=4n,4']
+    sort_cmd = ['sort', '--buffer-size=20%', '--key=1,1', '--key=5n,5', '--key=4n,4']
     sort_out = subprocess.Popen(sort_cmd, stdin=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, bufsize=1)
-    genome_build = "b36"
+    genome_build = DEFAULT_BUILD
     b36_list = ["hg18", "36", "b36", "build36", "NCBI36"]
     b37_list = ["hg19", "37", "b37", "build37", "GRCh37"]
     for line in gff_input:
@@ -201,8 +198,10 @@ def genome_analyzer(genotype_file, server=None):
     args = { 'genotype_input': str(genotype_file),
              'miss_out': os.path.join(output_dir, 'missing_coding.json'),
              'sorted_out': os.path.join(output_dir, 'source_sorted.gff.gz'),
+             'nonsyn_out_tmp': os.path.join(output_dir, 'ns_tmp.gff.gz'),
              'nonsyn_out': os.path.join(output_dir, 'ns.gff.gz'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
+             'getev_genes_out': os.path.join(output_dir, 'get-ev_genes.json'),
              'metadata_out': os.path.join(output_dir, 'metadata.json'),
              'genome_stats': os.path.join(os.getenv('DATA'), 'genome_stats.txt'),
              'genetests': os.path.join(os.getenv('DATA'), GENETESTS_DATA),
@@ -216,19 +215,62 @@ def genome_analyzer(genotype_file, server=None):
     except:
         print "Unexpected error:", sys.exc_info()[0]
 
+    # Read metadata with uploaded file, if available.
+    try:
+        f_metadata = autozip.file_open(os.path.dirname(genotype_file) + 
+                                       '/metadata.json')
+        metadata_line = f_metadata.next()
+        genome_data = json.loads(metadata_line)
+    except IOError:
+        genome_data = dict()
+
     # Process and sort input genome data
     log.put ('#status 0/100 converting and sorting input file')
-    gff_in_gen = process_source(args['genotype_input'])
-    genome_data = { 'build': gff_in_gen.next() }
+    gff_in_gen = None
+    # Look for parents and, if possible, use these to phase genome.
+    if ('parent A' in genome_data and 'parent B' in genome_data):
+        parA_in_dir = os.path.join(
+            os.path.dirname(os.path.dirname(args['genotype_input'])),
+            genome_data['parent A'])
+        parB_in_dir = os.path.join(
+            os.path.dirname(os.path.dirname(args['genotype_input'])),
+            genome_data['parent B'])
+        if os.path.exists(parA_in_dir) and os.path.exists(parB_in_dir):
+            parA_files = os.listdir(parA_in_dir)
+            parA_file_match = [x for x in parA_files if re.match('genotype', x)]
+            parB_files = os.listdir(parB_in_dir)
+            parB_file_match = [x for x in parB_files if re.match('genotype', x)]
+            if parA_file_match and parB_file_match:
+                parA_input = os.path.join(parA_in_dir, parA_file_match[0])
+                parB_input = os.path.join(parB_in_dir, parB_file_match[0])
+                gff_parA_gen = process_source(parA_input)
+                gff_parB_gen = process_source(parB_input)
+                gff_child_gen = process_source(args['genotype_input'], 
+                                               genome_data)
+                parA_build = gff_parA_gen.next()
+                parB_build = gff_parB_gen.next()
+                genome_data['genome_build'] = gff_child_gen.next()
+                if (parA_build == genome_data['genome_build'] and 
+                    parB_build == genome_data['genome_build']):
+                    trio_phase = gff_trio_phase.PhaseTrio(gff_child_gen, 
+                                                          gff_parA_gen, 
+                                                          gff_parB_gen, False)
+                    gff_in_gen = trio_phase.call_phase()
+    # Set up if trio phasing couldn't be done.
+    if not gff_in_gen:
+        # We pass build as a yield (instead of in metadata) to force the 
+        # generator to read through the header portion of the input data.
+        gff_in_gen = process_source(args['genotype_input'], genome_data)
+        genome_data['genome_build'] = gff_in_gen.next()
 
     # Set up build-dependent file locations
-    if (genome_data['build'] == "b36"):
+    if (genome_data['genome_build'] == "b36"):
         args['dbsnp'] = os.path.join(os.getenv('DATA'), DBSNP_B36_SORTED)
         args['reference'] = os.path.join(os.getenv('DATA'), 
                                          REFERENCE_GENOME_HG18)
         args['transcripts'] = os.path.join(os.getenv('DATA'), 
                                            KNOWNGENE_HG18_SORTED)
-    elif (genome_data['build'] == "b37"):
+    elif (genome_data['genome_build'] == "b37"):
         args['dbsnp'] = os.path.join(os.getenv('DATA'), DBSNP_B37_SORTED)
         args['reference'] = os.path.join(os.getenv('DATA'), 
                                          REFERENCE_GENOME_HG19)
@@ -241,10 +283,10 @@ def genome_analyzer(genotype_file, server=None):
     chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
 
     # Process genome through a series of GFF-formatted string generators.
-    log.put('#status 4 looking up reference alleles and '
+    log.put('#status 20 looking up reference alleles and '
             'dbSNP IDs, computing nonsynonymous changes, '
             'cross-referencing GET-Evidence database')
-    progtrack = ProgressTracker(sys.stderr, [5, 99], expected=chrlist, 
+    progtrack = ProgressTracker(sys.stderr, [22, 99], expected=chrlist, 
                                 metadata=genome_data)
     # Record chromosomes seen and genome coverage.
     metadata_gen = get_metadata.genome_metadata(gff_in_gen,
@@ -266,16 +308,20 @@ def genome_analyzer(genotype_file, server=None):
                                                            args['transcripts'])
     # Pull off GET-Evidence hits
     nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, 
-                                       args['getev_flat'], 
-                                       output_file=args['getev_out'] + ".tmp", 
-                                       progresstracker=progtrack)
+                                 args['getev_flat'], 
+                                 transcripts_file=args['transcripts'],
+                                 gene_out_file=args['getev_genes_out'] + ".tmp",
+                                 output_file=args['getev_out'] + ".tmp", 
+                                 progresstracker=progtrack)
 
     # Printing to output, pulls data through the generator chain.
-    ns_out = gzip.open(args['nonsyn_out'], 'w')
+    ns_out = autozip.file_open(args['nonsyn_out_tmp'], 'w')
     for line in nonsyn_gen2:
         ns_out.write(line + "\n")
     ns_out.close()
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+    os.system("mv " + args['nonsyn_out_tmp'] + " " + args['nonsyn_out'])
+    os.system("mv " + args['getev_genes_out'] + ".tmp " + args['getev_genes_out'])
 
     # Print metadata
     metadata_f_out = open(args['metadata_out'], 'w')
@@ -297,22 +343,46 @@ def getev_reprocess(genotype_file, server=None):
     else:
         return None
     log.put('#status 0 Reprocessing data against GET-Evidence')
-    # Set up arguments used by processing commands and scripts.
-    args = { 'nonsyn_data': os.path.join(output_dir, 'ns.gff'),
+    args = { 'metadata': os.path.join(output_dir, 'metadata.json'), 
+             'nonsyn_data': os.path.join(output_dir, 'ns.gff'),
              'getev_out': os.path.join(output_dir, 'get-evidence.json'),
+             'getev_genes_out': os.path.join(output_dir, 'get-ev_genes.json'),
              'getev_flat': os.path.join(os.getenv('DATA'), GETEV_FLAT)
              }
+    # Read metadata file (need this to get build info for transcripts file)
+    try:
+        f_metadata = autozip.file_open(args['metadata'])
+        metadata = json.loads(f_metadata.next())
+        f_metadata.close()
+        if metadata['genome_build'] == 'b36':
+            args['transcripts'] = os.path.join(os.getenv('DATA'),
+                                               KNOWNGENE_HG18_SORTED)
+        elif metadata['genome_build'] == 'b37':
+            args['transcripts'] = os.path.join(os.getenv('DATA'),
+                                               KNOWNGENE_HG19_SORTED)
+        else:
+            raise KeyError
+    except (IOError, KeyError):
+        fcntl.flock(log_handle, fcntl.LOCK_UN)
+        log_handle.close()
+        genome_analyzer(genotype_file)
+        return
+    
     if (os.path.exists (args['nonsyn_data'] + '.gz')):
         args['nonsyn_data'] = args['nonsyn_data'] + '.gz'
 
     chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
     progtrack = ProgressTracker(log_handle, [1, 99], expected=chrlist)
+
     # Get GET-Evidence hits
-    gff_getevidence_map.match_getev_to_file(args['nonsyn_data'], 
-                                            args['getev_flat'], 
-                                            args['getev_out'] + ".tmp", 
-                                            progtrack)
+    gff_getevidence_map.match_getev_to_file(args['nonsyn_data'],
+                                            args['getev_flat'],
+                                            transcripts_file=args['transcripts'],
+                                            output_file=args['getev_out'] + ".tmp",
+                                            gene_out_file=args['getev_genes_out'] + ".tmp",
+                                            progresstracker=progtrack)
     os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+    os.system("mv " + args['getev_genes_out'] + ".tmp " + args['getev_genes_out'])
     os.rename(lockfile, logfile)
     log_handle.close()
     print "Finished reprocessing GET-Evidence hits for " + str(genotype_file)

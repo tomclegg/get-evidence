@@ -54,7 +54,7 @@ fi
 
 # knownGene/UCSC
 echo Getting knownGene, knownCanonical, kgXref, and refFlat from UCSC
-if [ ! -f ucsc.stamp ]; then
+if [ ! -f ucsc_kg.stamp ]; then
   $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/knownGene.txt.gz -OknownGene_hg18.txt.gz
   $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/knownCanonical.txt.gz -OknownCanonical_hg18.txt.gz
   $WGET http://hgdownload.cse.ucsc.edu/goldenPath/hg18/database/kgXref.txt.gz -OkgXref_hg18.txt.gz
@@ -71,11 +71,11 @@ if [ ! -f ucsc.stamp ]; then
   $GUNZIP -c knownCanonical_hg19.txt.gz > knownCanonical_hg19.txt
   $GUNZIP -c kgXref_hg19.txt.gz > kgXref_hg19.txt
   $GUNZIP -c refFlat_hg19.txt.gz > refFlat_hg19.txt
-  touch ucsc.stamp
+  touch ucsc_kg.stamp
 fi
 
 echo Attaching gene names to knownGene and sorting
-if [ ! -f ucsc_sort.stamp ]; then
+if [ ! -f ucsc_kg_sort.stamp ]; then
   perl $CORE/script/getCanonicalWithName.pl knownGene_hg18.txt knownCanonical_hg18.txt kgXref_hg18.txt refFlat_hg18.txt hgnc_genenames.txt | \
     grep -v "chr[0-9MXY]*_.*" | awk '{ if ( !( ($3 == "chrY") && (($7 >= 0 && $8 <= 2709520) || ($7 >= 57443437 && $8 <= 57772954 )) )) print }' | \
     sort --key=3,3 --key=5n,5 > knownGene_hg18_sorted.txt
@@ -86,7 +86,7 @@ if [ ! -f ucsc_sort.stamp ]; then
     # grep removes alternate assemblies and unplaced scaffolds
     # awk removes the chrY pseudoautosomal region (coordinates based on Complete Genomics data, 
     # Complete Genomics reports these as chrX and UCSC's transcripts have duplicate annotation)
-  touch ucsc_sort.stamp
+  touch ucsc_kg_sort.stamp
 fi
 
 echo Getting Polyphen 2 data and processing

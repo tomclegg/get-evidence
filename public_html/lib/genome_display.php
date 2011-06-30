@@ -12,10 +12,13 @@ class GenomeVariant {
                               'suff_eval' => false,
                               'clinical' => '',
                               'evidence' => '',
+                              'pph2_score' => '',
                               'variant_impact' => '',
                               'allele_freq' => '',
                               'expect_effect' => 0,
                               'zygosity' => '',
+                              'phase' => '',
+                              'variant_quality' => '',
                               'inheritance_desc' => '',
                               'summary_short' => '',
                               'autoscore' => '',
@@ -148,17 +151,54 @@ class GenomeVariant {
             $items[] = "In HuGENet GWAS";
         if (array_key_exists("in_pharmgkb", $data) && $data["in_pharmgkb"])
             $items[] = "In PharmGKB";
-        if (array_key_exists("disruptive", $data) && $data["disruptive"])
-            $items[] = "Disruptive amino acid change";
-        if (array_key_exists("nonsense", $data) && $data["nonsense"])
-            $items[] = "Nonsense mutation";
-        if (array_key_exists("frameshift", $data) and $data["frameshift"])
-            $items[] = "Frameshift";
-        if (array_key_exists("indel", $data) and $data["indel"]) {
-            $items[] = "Frame-preserving indel";
+        if (array_key_exists("webscore", $data) && $data["webscore"] != "N") {
+            if ($data["webscore"] == "-") {
+                $items[] = "Has unevaluated web hits";
+            } elseif ($data["webscore"] == "Y") {
+                $items[] = "Has confirmed web hits";
+            }
         }
-        if (array_key_exists("testable", $data) && $data["testable"] == 1) {
-            if (array_key_exists("reviewed", $data) && $data["reviewed"] == 1)
+        if (array_key_exists("pph2_score", $data) && $data["pph2_score"]) {
+            $pph2_string = "Polyphen 2: " . $data["pph2_score"];
+            if ($data["pph2_score"] >= 0.85)
+                $pph2_string = $pph2_string . " (probably damaging)";
+            elseif ($data["pph2_score"] >= 0.2)
+                $pph2_string = $pph2_string . " (possibly damaging)";
+            else
+                $pph2_string = $pph2_string . " (benign)";
+            $items[] = $pph2_string;
+        }
+        if ($data["aa_to"] || $data["aa_ins"]) {
+            // Live data from database
+            if ($data["aa_to"] && ($data["aa_to"] == "X" ||
+                                   $data["aa_to"] == "*"))
+                $items[] = "Nonsense mutation";
+            else if ($data["aa_ins"]) {
+                if ($data["aa_ins"] == "Shift" || 
+                    $data["aa_ins"] == "Frameshift")
+                    $items[] = "Frameshift";
+                else if (strlen($data["aa_del"] != strlen($data["aa_ins"])))
+                    $items[] = "Frame-preserving indel";
+            }
+        } else {
+            // Stored data from JSON report
+            if ( (array_key_exists("nonsense", $data) && $data["nonsense"]) ||
+                 (preg_match('/X$/', $data['amino_acid_change']) || 
+                  preg_match('/\*$/', $data['amino_acid_change'])) )
+                $items[] = "Nonsense mutation";
+            else if ( (array_key_exists("frameshift", $data) && 
+                       $data["frameshift"]) ||
+                      (preg_match('/Shift$/', $data['amino_acid_change']) || 
+                       preg_match('/Framshift$/', $data['amino_acid_change'])) )
+                $items[] = "Frameshift";
+            else if (! (array_key_exists("pph2_score", $data) && 
+                        $data["pph2_score"])) 
+                // Remainder: frame-preserving indels, large substitutions, 
+                // or otherwise unknown to Polyphen 2.
+                $items[] = "Polyphen 2: Unknown";
+        }
+        if (array_key_exists("testable", $data) && $data["testable"]) {
+            if (array_key_exists("reviewed", $data) && $data["reviewed"])
                 $items[] = "Testable gene in GeneTests with associated GeneReview";
             else
                 $items[] = "Testable gene in GeneTests";
@@ -182,12 +222,18 @@ class GenomeReport {
     public function __construct($genomeID) {
         $this->genomeID = $genomeID;
         $prefix = $GLOBALS['gBackendBaseDir'] . '/upload/' . $genomeID;
-        $this->sourcefile = $prefix . '/genotype.gff';
+        $this->sourcefile = $prefix . '/genotype';
         if (! file_exists($this->sourcefile)) {
             if (file_exists($this->sourcefile . '.gz')) {
                 $this->sourcefile = $this->sourcefile . '.gz';
-            } else if (file_exists($this->sourcefile . 'bz2')) {
-                $this->sourcefile = $this->sourcefile . 'bz2';
+            } else if (file_exists($this->sourcefile . '.bz2')) {
+                $this->sourcefile = $this->sourcefile . '.bz2';
+            } else if (file_exists($this->sourcefile . '.gff')) {
+                $this->sourcefile = $this->sourcefile . '.gff';
+            } else if (file_exists($this->sourcefile . '.gff.gz')) {
+                $this->sourcefile = $this->sourcefile . '.gff.gz';
+            } else if (file_exists($this->sourcefile . '.gff.bz2')) {
+                $this->sourcefile = $this->sourcefile . '.gff.bz2';
             }
          }
         $this->processedfile = $prefix . '-out/ns.gff.gz';
@@ -197,6 +243,7 @@ class GenomeReport {
         $this->variantsfile = $prefix . '-out/get-evidence.json';
         $this->coveragefile = $prefix . '-out/missing_coding.json';
         $this->metadatafile = $prefix . '-out/metadata.json';
+        $this->genereportfile = $prefix . '-out/get-ev_genes.json';
         $this->lockfile = $prefix . '-out/lock';
         $this->logfile = $prefix . '-out/log';
     }
@@ -323,7 +370,7 @@ class GenomeReport {
                 htmlspecialchars($url) . "\">" . 
                 preg_replace('{^https?://}', '', $url) . "</a>";
         }
-        $data_size = filesize ($this->sourcefile);
+        $data_size = @filesize ($this->sourcefile);
         if ($data_size) {
             $head_data["Download"] = "<a href=\"/genome_download.php?" . 
                 "download_genome_id=" . $this->genomeID . 
@@ -340,9 +387,60 @@ class GenomeReport {
                 "download_type=ns&amp;download_genome_id=" . $this->genomeID . 
                 "&amp;download_nickname=" . urlencode($realname) . 
                 "\">dbSNP and nsSNP report</a> (" . 
-                humanreadable_size(filesize($this->processedfile)) . ")";
+                humanreadable_size(@filesize($this->processedfile)) . ")";
         }
         return $head_data;
+    }
+
+    /**
+     * Read file and return metadata for genome
+     * @result array
+     */
+    public function &metadata() {
+        $fh = @fopen($this->metadatafile, 'r');
+        if (!$fh) { $out = false; return $out; }
+        $line = fgets($fh);
+        $metadata = json_decode($line, true);
+        fclose ($fh);
+        return $metadata;
+    }
+
+    /**
+     * Read gene report file for genome and return data
+     * @result array
+     */
+    public function &gene_report() {
+        $fh = @fopen($this->genereportfile, 'r');
+        if (!$fh) { $out = false; return $out; }
+        $gene_data = array();
+        while (($genedataline = fgets($fh)) !== false) {
+            $gene = json_decode($genedataline, true);
+            $variants = $gene['data'];
+            $gene['data'] = array();
+            foreach ($variants as $vardata) {
+                $vardata = new GenomeVariant($vardata);
+                $gene['data'][] = $vardata->data;
+            }
+            $gene_data[] = $gene;
+        }
+        fclose ($fh);
+        usort($gene_data, array($this, "cmp_gene_data"));
+        $gene_data = array_reverse($gene_data);
+        return $gene_data;
+    }
+
+    /**
+     * Sort function for gene report data
+     * @result int
+     */
+    private function cmp_gene_data($genedataA, $genedataB) {
+        if ($genedataA['effect_rank'] < $genedataB['effect_rank']) {
+            return -1;
+        } elseif ($genedataA['effect_rank'] > $genedataB['effect_rank']) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -415,13 +513,20 @@ class GenomeReport {
         $db_query = theDb()->getAll($db_cmd);
         // Store data to return when done.
         // Each value in variant_data should already contain (if exists): 
-        // 'genotype', 'ref_allele', 'chromosome', and 'coordinates', 
-        // 'autoscore', 'testable', and 'reviewed'
+        // 'genotype', 'ref_allele', 'chromosome', and 'coordinates'
         $name_map = array ('gene' => 'gene',
                            'aa_change_short' => 'amino_acid_change',
                            'impact' => 'variant_impact',
                            'inheritance' => 'variant_dominance',
+                           'pph2_score' => 'pph2_score',
+                           'genetests_testable' => 'testable',
+                           'genetests_reviewed' => 'reviewed',
+                           'autoscore' => 'autoscore',
+                           'aa_to' => 'aa_to',
+                           'aa_ins' => 'aa_ins',
                            'dbsnp_id' => 'dbSNP',
+                           'webscore' => 'webscore',
+                           'overall_frequency' => 'allele_freq',
                            'overall_frequency_n' => 'num',
                            'overall_frequency_d' => 'denom',
                            'in_omim' => 'in_omim',
@@ -441,8 +546,15 @@ class GenomeReport {
                 $flatdata = json_decode ($flat_summary, true);
                 foreach ($flatdata as $key => $value) {
                     if (array_key_exists($key, $name_map) && 
-                        $value && ! ($value == "-")) {
-                        $vardata[$name_map[$key]] = $value;
+                        $value && ! ($value == "-" && $key != 'webscore')) {
+                        // note -- "-" is meaningful for webscore, empty elsewhere
+                        if ($value == "Y" && 
+                            ($key == 'genetests_testable' || 
+                             $key == 'genetests_reviewed')) {
+                            $vardata[$name_map[$key]] = true;
+                        } else {
+                            $vardata[$name_map[$key]] = $value;
+                        }
                     }
                 }
                 $variant = new GenomeVariant($vardata);
@@ -474,8 +586,7 @@ class GenomeReport {
             // store necessary data and look up later.
             if (array_key_exists('variant_id', $variant_data)) {
                 $want = array('genotype', 'ref_allele', 'chromosome',
-                              'coordinates', 'autoscore', 'testable', 
-                              'reviewed');
+                              'coordinates');
                 $vardata_to_pass = array();
                 foreach ($want as $key) {
                     if (array_key_exists($key, $variant_data)) {
@@ -531,6 +642,8 @@ function genome_display($shasum, $oid, $is_admin=false) {
     $variants =& $genome_report->variants();
     if (is_array($variants)) {
         $coverage =& $genome_report->coverage_data();
+        $metadata =& $genome_report->metadata();
+        $gene_report =& $genome_report->gene_report();
 
         $returned_text .= "<div id='variant_table_tabs'><ul>\n"
             . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
@@ -538,13 +651,19 @@ function genome_display($shasum, $oid, $is_admin=false) {
         if ($coverage)
             $returned_text .=
                 "<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
+        if ($gene_report)
+            $returned_text .=
+                "<li><A href='#variant_table_tab_3'>Gene Report</A></li>\n";
+        if ($metadata)
+            $returned_text .=
+                "<li><A href='#variant_table_tab_4'>Metadata</A></li>\n";
         $returned_text .=
             "</ul>\n"
             . "<div id='variant_table_tab_0'>";
 
         $returned_text .= "<div style='float:right; margin-bottom: 3px' id='variant_filter_radio'>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show all</label>
-<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show rare (<i>f</i><10%) pathogenic variants</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio0' checked /><label for='variant_filter_radio0'>Show rare (<i>f</i><10%) pathogenic variants</label>
+<input type='radio' name='variant_filter_radio' id='variant_filter_radio1' /><label for='variant_filter_radio1'>Show all</label>
 </div><br clear=all />";
 
         usort($variants['suff'], "sort_variants");
@@ -637,7 +756,96 @@ function genome_display($shasum, $oid, $is_admin=false) {
             }
             $returned_text .= '</TBODY></TABLE>' . "\n";
         }
-
+        if ($gene_report) {
+            $returned_text .= "</div>\n<div id='variant_table_tab_3'>\n";
+            $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_genereport' style='width: 100%'><THEAD><TR>" .
+                "<TH class='Invisible ui-helper-hidden'>Effect rank</TH>" .
+                "<TH class='Unsortable'>Variant</TH>" .
+                "<TH class='Unsortable'>Phase/<BR />Zygosity</TH>" .
+                "<TH class='Unsortable'>Allele freq</TH>" .
+                "<TH class='Unsortable'>Impact</TH>" .
+                "<TH class='Unsortable'>Evaluation</TH>" .
+                "<TH class='Unsortable'>Summary / Info</TH>" .
+                "</TR></THEAD><TBODY>\n";
+            foreach ($gene_report as $gene_data) {
+                foreach ($gene_data['data'] as $variant) {
+                    if ($variant['phase'] != 'homozygous' && 
+                        $variant['phase'] != 'het unknown')
+                        $variant['phase'] = 'het ' . $variant['phase'];
+                    $returned_text .= "<TR>" . 
+                        '<TD class="ui-helper-hidden">' . 
+                            $gene_data['effect_rank'] . '</TD>' .
+                        '<TD><A HREF="' . $variant['name'] . '">' . 
+                            $variant['name'] . '</A></TD>' .
+                        '<TD>' . $variant['phase'] . '</TD>' .
+                        '<TD>' . $variant['allele_freq'] . '</TD>' .
+                        '<TD>' . $variant['inheritance_desc'] . '<BR />' .
+                            $variant["variant_impact"] . '</TD>';
+                    if ($variant['clinical'] and $variant['evidence']) {
+                        $returned_text .= "<TD>" . $variant["clinical"] . 
+                               " clinical importance, <BR />" . 
+                               strtolower($variant["evidence"]) . '</TD>' .
+                            '<TD>' . $variant['summary_short'] . '</TD>';
+                    } else {
+                        $returned_text .= '<TD>Insufficiently evaluated</TD>' .
+                            '<TD>Autoscore: ' . $variant['autoscore'] . 
+                            '<BR />' . $variant['autoscore_why'] . '</TD>';
+                    }
+                }
+            }
+            $returned_text .= "</TBODY></TABLE>\n";
+        }
+        if ($metadata) {
+            $returned_text .= "</div>\n<div id='variant_table_tab_4'>\n";
+            if (array_key_exists('input_type', $metadata)) {
+                $returned_text .= '<p>Input file format: ' .
+                    $metadata['input_type'] . '</p>' . "\n";
+            }
+            if (array_key_exists('genome_build', $metadata)) {
+                $returned_text .= '<p>Genome build: ' .
+                    $metadata['genome_build'] . '</p>' . "\n";
+            }
+            if (array_key_exists('called_num', $metadata) &&
+                array_key_exists('ref_nogap_num', $metadata) &&
+                array_key_exists('ref_all_num', $metadata)) {
+                $perc_callable = $metadata['called_num'] * 100.0 / 
+                    $metadata['ref_nogap_num'];
+                $perc_total = $metadata['called_num'] * 100.0 / 
+                    $metadata['ref_all_num'];
+                $returned_text .= '<p>Genome coverage: ' .
+                    number_format($metadata['called_num']) .
+                    ' bases (' . number_format($perc_callable, 1) .
+                    '% of callable positions, ' . 
+                    number_format($perc_total, 1) .
+                    '% of total positions)</p>' . "\n";
+            }
+            if (array_key_exists('called_coding_n', $metadata) &&
+                array_key_exists('ref_coding_n', $metadata)) {
+                $perc_coding = $metadata['called_coding_n'] * 100.0 /
+                    $metadata['ref_coding_n'];
+                if (array_key_exists('called_coding_clintest_n', $metadata) &&
+                    array_key_exists('ref_coding_clintest_n', $metadata)) {
+                    $perc_clintest = $metadata['called_coding_clintest_n'] * 
+                        100.0 / $metadata['ref_coding_clintest_n'];
+                    $returned_text .= '<p>Coding region coverage: ' .
+                        number_format($metadata['called_coding_n']) .
+                        ' bases (' . number_format($perc_coding, 1) .
+                        '% of all genes, ' . number_format($perc_clintest, 1) .
+                        '% of genes with clinical testing available)</p>' . 
+                        "\n";
+                } else {
+                    $returned_text .= '<p>Coding region coverage: ' .
+                        number_format($metadata['called_coding_n']) .
+                        ' bases (' . number_format($perc_coding, 1) .
+                        '% of all genes)</p>' . "\n";
+                }
+            }
+            if (array_key_exists('chromosomes', $metadata)) {
+                $returned_text .= '<p>Chromosomes: ' . 
+                    join(', ', $metadata['chromosomes']) . '</p>' . "\n";
+            }
+            $returned_text .= "\n";
+        }
         $returned_text .= "</div></div>\n";
     }
     return($returned_text);

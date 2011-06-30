@@ -6,15 +6,15 @@
 
 function oddsratio_compute ($figs, $htmlformat=FALSE)
 {
-    if ($figs["case_neg"] < 1) return $htmlformat ? "-<SPAN class=\"invisible\">.000</SPAN>" : "-";
     $control_neg = $figs["control_neg"];
     $control_pos = $figs["control_pos"];
-    if ($control_pos < 1) {
-	$control_pos = 1;
-	$control_neg++;
-    }
-    if ($control_neg == 0) return "-";
-    $or = sprintf ("%.3f", (($figs["case_pos"] / $figs["case_neg"]) /
+    $case_neg = $figs["case_neg"];
+    $case_pos = $figs["case_pos"];
+    if ($case_neg + $case_pos == 0 || $control_neg == 0) 
+	return "-";
+    if ($case_neg == 0 || $control_pos == 0)
+	return ($htmlformat) ? "∞" : INF;
+    $or = sprintf ("%.3f", (($case_pos / $case_neg) /
 			    ($control_pos / $control_neg)));
     if ($or > 1000) {
 	$or = round($or);

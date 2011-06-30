@@ -50,9 +50,16 @@ if (strlen($display_genome_ID) > 0) {
         $page_content .= "<hr>";
         $page_content .= "<h2>Upload a genome for analysis</h2>\n";
 	$page_content .= upload_warning();
-        $page_content .= "<p><A HREF=\"guide_upload_and_source_file_formats\">"
-                . "Upload file form guide</A></p>";
-        $page_content .= genome_entry_form();
+	if (getCurrentUser('tos_date_signed')) {
+	    $page_content .= "<p><A HREF=" . 
+		"\"guide_upload_and_source_file_formats\">" .
+		"Upload file form guide</A></p>";
+	    $page_content .= genome_entry_form();
+	} else {
+	    $page_content .= "<p>You have not signed the terms of service! " .
+		"Please click the link above and confirm that you have read " .
+		"and agree with these.";
+	}
     } else {
         $page_content .= "<P>If you log in with your OpenID, you can process "
 		    . "your own data by uploading it here.</P>";
@@ -121,7 +128,7 @@ function uploaded_genome_actions($result) {
             "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
             $result['shasum'] . "\">\n" .
             "<input type=\"hidden\" name=\"reproc_type\" value=\"getev\">\n" .
-            "<input type=\"submit\" value=\"Getev data reprocess\" " .
+            "<input type=\"submit\" value=\"Quick reprocess\" " .
             "class=\"button\" \/></form>\n";
     }
 
@@ -132,7 +139,7 @@ function uploaded_genome_actions($result) {
 	    "<input type=\"hidden\" name=\"reprocess_genome_id\" value=\"" .
 	    $result['shasum'] . "\">\n" .
 	    "<input type=\"hidden\" name=\"reproc_type\" value=\"full\">\n" .
-	    "<input type=\"submit\" value=\"Full data reprocess\" " .
+	    "<input type=\"submit\" value=\"Full reprocess\" " .
 	    "class=\"button\" \/></form>\n";
     }
 
@@ -181,7 +188,7 @@ function genome_entry_form() {
  onsubmit="closeKeepAlive();">
 <table><tr> 
 <td><label class="label">Filename<br> 
-<input type="hidden" name="MAX_FILE_SIZE" value="500000000"> 
+<input type="hidden" name="MAX_FILE_SIZE" value="524288000"> 
 <input type="file" class="file" name="genotype" id="genotype" /></label></td> 
 <td>OR</td>
 	<td><label class="label">File location on server (use file:/// syntax)<br> 

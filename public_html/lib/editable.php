@@ -6,6 +6,7 @@
 
 require_once (dirname(dirname(dirname(__FILE__)))."/textile-2.0.0/classTextile.php");
 require_once ("lib/oddsratio.php");
+require_once ("lib/fishersexact.php");
 
 $gTheTextile = new Textile;
 $gDisableEditing = FALSE;
@@ -15,8 +16,8 @@ function editable($id, $content, $title="", $options=false)
   global $gDisableEditing;
   global $gTheTextile;
 
-  if (ereg ('__oddsratio$', $id))
-    return editable_oddsratio ($id, $content, $title, $options);
+  if (ereg ('__casecontrol$', $id))
+    return editable_casecontrol ($id, $content, $title, $options);
   else if (ereg ('__f_variant_quality', $id))
     return editable_quality ($id, $content, $title, $options);
   else {
@@ -68,7 +69,7 @@ function editable($id, $content, $title="", $options=false)
 	  "</SPAN>");
 }
 
-function editable_oddsratio ($id, $content, $title, $options)
+function editable_casecontrol ($id, $content, $title, $options)
 {
   global $gDisableEditing;
   $editable = !$gDisableEditing && getCurrentUser();
@@ -101,6 +102,9 @@ function editable_oddsratio ($id, $content, $title, $options)
       $html .= "<TD>{$cell}</TD>\n";
     }
   }
+  $PVAL = fishersexact_compute($figs, true);
+  if ($PVAL != "-") $PVAL = "<STRONG>$PVAL</STRONG>";
+  $html .= "<TD>$PVAL</TD>\n";
   $OR = oddsratio_compute($figs, true);
   if ($OR != "-") $OR = "<STRONG>$OR</STRONG>";
   $html .= "<TD>$OR</TD>\n";

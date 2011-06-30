@@ -74,6 +74,7 @@ def process_ts_missing(removed_transcripts, examined_regions, genetests_names,
                 missing_regions.append( str(region[1]) + "-" +
                                         str(region[2]) )
                 total_uncovered += region[2] - (region[1] - 1)
+            del(examined_regions[old_ts])
         # Must have been skipped entirely -- if so, it's all missing.         
         else:
             for i in range(len(old_ts.data["coding_starts"])):

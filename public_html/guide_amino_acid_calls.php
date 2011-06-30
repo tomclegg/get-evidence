@@ -12,6 +12,7 @@ Any variants which occur within coding region is analyzed to see if it causes an
 h3. Other guides
 
 * "Guide to editing":guide_editing: Explains how to edit variant evaluations.
+* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
 * "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
 * "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 * "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants

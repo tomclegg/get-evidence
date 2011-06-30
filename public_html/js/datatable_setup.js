@@ -21,14 +21,24 @@ var datatables_options = {
 	'aaSorting': [[3,'asc']],
 	'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
 	'iDisplayLength': -1
+    },
+    'variant_table_genereport': {
+	'bProcessing': true,
+        'bAutoWidth': false,
+	'aaSorting': [[0, 'desc']],
+        'aLengthMenu': [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, "All"]],
+        'iDisplayLength': -1,
+	'aoColumnDefs': [{'aTargets': [1,5], 'sWidth': '15%'},
+                         {'aTargets': [2,4], 'sWidth': '10%'},
+                         {'aTargets': [3], 'sWidth': '5%'}]
     }
 };
 var datatables_objects = {};
 var variant_table_showall = false;
 var variant_table = false;
 var variant_table_filter = function(){return true;};
-var variant_table_filters = [function(oSettings, aData, iDataIndex) { return true; },
-			     function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); }];
+var variant_table_filters = [function(oSettings, aData, iDataIndex) { return !(aData[5]>0.1) && /pathogenic/i.exec(aData[4]); },
+			     function(oSettings, aData, iDataIndex) { return true; }];
 
 jQuery(document).ready(function($){
 	$.fn.dataTableExt.afnFiltering.push(function(oSettings, aData, iDataIndex) {
