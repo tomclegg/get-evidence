@@ -10,6 +10,7 @@ To facilitate automatic reporting of variants, we ask that users score variants 
 h3. Other guides
 
 * "Guide to editing":guide_editing: Explains how to edit variant evaluations.
+* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
 * "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 * "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
 * "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads

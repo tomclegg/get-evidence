@@ -73,14 +73,15 @@ header('Content-Type: text/html; charset=UTF-8');
 		</div>
 
 		<div class="navigation">
+			<a href="/about">About</a>
+			<a href="/genomes">Genomes</a>
+			<a href="/guide_editing">Editing guide</a>
 			<a href="/edits">Recent changes</a>
 			<a href="/editors">Contributors</a>
-			<a href="/about">About</a>
-            <a href="/genomes">Genomes</a>
 			<a href="/download">Download</a>
-			<a href="/report">Reports</a>
-			<a href="/vis">Visualization</a>
 <?php if (isset($_SESSION) && array_key_exists("user",$_SESSION)): ?>
+			<a href="/report">Reports</a>
+			<a href="/calculators">Calculators</a>
 			<a href="/logout.php?return_url=<?=urlencode($_SERVER["REQUEST_URI"])?>"><u>Log out</u></a>
 <?php endif; ?>
 			<div class="clearer"><span></span></div>
@@ -90,10 +91,10 @@ header('Content-Type: text/html; charset=UTF-8');
 
 	<div class="main">
 		
-			<div class="content"><?php if (ereg ("evidence-dev", $_SERVER["HTTP_HOST"])) { ?>
+			<div class="content"><?php if (!(ereg ("evidence.personalgenomes.org", $_SERVER["HTTP_HOST"]))) { ?>
 
 <div class="redalert">
-<P>Note: This is <strong>not</strong> the real GET-Evidence site.  It is a <strong>development sandbox</strong>.  If you expect the site to be stable and you want your edits to be saved, use <A href="http://evidence.personalgenomes.org/">evidence.personalgenomes.org</A> instead.</P>
+<P>Note: This is <strong>not</strong> the real GET-Evidence site.  It is a <strong>development sandbox</strong>.  If you expect the site to be stable and you want your edits to be saved, use <A href="http://evidence.personalgenomes.org<?=$_SERVER['REQUEST_URI']?>">evidence.personalgenomes.org<?=$_SERVER['REQUEST_URI']?></A> instead.</P>
 </div>
 
 

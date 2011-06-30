@@ -9,6 +9,7 @@ GET-evidence variant evaluations can be edited by anyone&mdash;our only requirem
 
 h3. Other guides
 
+* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
 * "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
 * "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
 * "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
@@ -28,7 +29,7 @@ h2. Where to start?
 
 h3. Which variants need editing?
 
-A great place to start is the "public genomes":genomes that we have uploaded -- if you scroll down you'll find a list of "Insufficiently reviewed variants". These are variants which do not have enough scores and impact information filled in to allow us to automatically sort them. We sort these using "autoscore", which prioritizes variants based on their presence in variant-specific lists (indicating there is published literature available), gene-specific lists (indicating potential for that gene to cause disease), and computational evidence (reflecting automatic prediction whether a variant may cause disease).
+A great place to start is the "public genomes":genomes that we have uploaded -- if you scroll down you'll find a list of "Insufficiently reviewed variants". These are variants which do not have enough scores and impact information filled in to allow us to automatically sort them. We sort these using "autoscore":guide_autoscore, which prioritizes variants based on their presence in variant-specific lists (indicating there is published literature available), gene-specific lists (indicating potential for that gene to cause disease), and computational evidence (reflecting automatic prediction whether a variant may cause disease).
 
 Two other places to try are the "visualization":vis page and the "reports":report page. The "visualization":vis is interactive: you can find variants that appear to lack evaluations in this graph (they should lack summaries) and then open up and edit that variant's page. On the "reports":report page you can find various lists of GET-evidence entries. "Summaries needed" lists variants that have been marked pathogenic but lack summaries. "Variants with genome evidence and web search results" lists variants that have been found in one of the published genomes and have web search results (indicating that someone somewhere said something about that variant). These are good starting points for looking for variants that need more evaluation.
 

@@ -181,5 +181,6 @@ CREATE TABLE IF NOT EXISTS eb_users (
   is_admin TINYINT NOT NULL DEFAULT 0
 )');
   theDb()->query ('ALTER TABLE eb_users ADD is_admin TINYINT NOT NULL DEFAULT 0');
+  theDb()->query ('ALTER TABLE eb_users ADD tos_date_signed INTEGER UNSIGNED;');
 }
 ?>

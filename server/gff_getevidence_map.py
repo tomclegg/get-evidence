@@ -13,7 +13,7 @@ import gzip
 import os
 import re
 import sys
-from utils import doc_optparse, gff
+from utils import autozip, doc_optparse, gff
 from config_names import GENETESTS_DATA
 from utils.substitution_matrix import blosum100
 
@@ -37,7 +37,7 @@ def read_getev_flat(getev_flatfile):
     items_wanted = ['gene', 'aa_change_short', 'summary_short', 'impact', \
             'inheritance', 'dbsnp_id', 'in_omim', 'in_gwas', 'in_pharmgkb', \
             'variant_quality', 'overall_frequency_n', 'overall_frequency_d', \
-            'n_articles', 'variant_id']
+            'pph2_score', 'n_articles', 'variant_id']
 
     # Create two dicts to be returned, storing data we want.
     # If possible, getev_by_aa is used with gene and amino acid change as key.
@@ -51,14 +51,9 @@ def read_getev_flat(getev_flatfile):
             if item in data and data[item]:
                 stored_data[item] = data[item]
         if 'gene' in stored_data and 'aa_change_short' in stored_data:
-            # Don't bother storing if we can tell autoscore isn't high enough.
-            if 'autoscore' in data and data['autoscore'] < 2:
-                continue 
             aa_key = stored_data['gene'] + '-' + stored_data['aa_change_short']
             getev_by_aa[aa_key] = stored_data
         elif 'dbsnp_id' in stored_data:
-            if 'autoscore' in data and data['autoscore'] < 1:
-                continue
             dbsnp_key = stored_data['dbsnp_id']
             getev_by_dbsnp[dbsnp_key] = stored_data
     return getev_by_aa, getev_by_dbsnp
@@ -88,11 +83,23 @@ def read_genetests(genetests_file):
                     genes_rev.add(gene)
     return genes_clin, genes_rev
 
+def read_transcripts(transcript_file):
+    """Return a dict containing transcript data with UCSC ID as key"""
+    transcripts = dict()
+    f_in = open(transcript_file)
+    for line in f_in:
+        data = line.rstrip('\n').split()
+        transcript_data = { 'chrom': data[2],
+                            'start': int(data[4]),
+                            'end': int(data[5]) }
+        transcripts[data[1]] = transcript_data
+    return transcripts
 
 def copy_output_data(getev_data, output_data):
     """Copy data to output using names recognized by genome_display.php"""
     name_map = {    'overall_frequency_n': 'num',
                     'overall_frequency_d': 'denom',
+                    'pph2_score': 'pph2_score',
                     'impact': 'variant_impact',
                     'quality': 'variant_quality',
                     'summary_short': 'summary_short',
@@ -181,10 +188,19 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
         score_comp = 1
         data["indel"] = True
     elif aa_from and aa_to:
-        for i in range(len(aa_from)):
-            if blosum.value(aa_from[i], aa_to[i]) <= -4:
+        if ('pph2_score' in data and data['pph2_score'] and 
+            data['pph2_score'] != '-'):
+            if float(data['pph2_score']) >= 0.85:
+                score_comp = 2
+            elif float(data['pph2_score']) >= 0.2:
                 score_comp = 1
-                data["disruptive"] = True
+        else:
+            score_comp = 1
+    # Less one point if allele frequency is greater than 5%
+    if ('num' in data and 'denom' in data and 
+        ((int(data['num']) * 1.0) / int(data['denom']) > 0.05) and
+        score_comp > 0):
+        score_comp = score_comp - 1
 
     # Make sure none exceed 2, then return the sum (which is the autoscore).
     score_var_database = min(2, score_var_database)
@@ -232,8 +248,135 @@ def suff_eval(variant_data):
             return False
         return True
 
+def eval_scores(variant_quality):
+    scores = list(variant_quality)
+    for i in range(len(scores)):
+        if scores[i] == '-':
+            scores[i] = 0
+        elif scores[i] == '!':
+            scores[i] = -1
+        else:
+            scores[i] = int(scores[i])
+    if (scores[6] >= 4 and (scores[4] >= 4 or
+                            (scores[4] >= 3 and scores[5] >= 4))):
+        clin_importance = "High"
+    elif (scores[6] >= 3 and (scores[4] >= 3 or
+                              (scores[4] >= 2 and scores[5] >= 3))):
+        clin_importance = "Moderate"
+    else:
+        clin_importance = "Low"
+    evidence_sum = scores[0] + scores[1] + scores[2] + scores[3]
+    if ( (scores[2] >= 4 or scores[3] >= 4) and evidence_sum >= 8 ):
+        evidence_eval = "Well-established"
+    elif ( (scores[2] >= 3 or scores[3] >= 3) and evidence_sum >= 5 ):
+        evidence_eval = "Likely"
+    else:
+        evidence_eval = "Uncertain";
+    return (evidence_eval, clin_importance)
 
-def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
+def impact_rank(variant):
+    # Impact rank is my vague attempt to sort evaluated and autoscored
+    # variants together. I'm not happy with it, but needed something to
+    # combine for gene level ranking.  -- MPB 5/11
+    impact_rank = 0
+    if suff_eval(variant):
+        evidence_eval, clin_importance = eval_scores(variant['variant_quality'])
+        if evidence_eval == 'Well-established':
+            impact_rank += 2
+        elif evidence_eval == 'Likely':
+            impact_rank += 1
+        if clin_importance == 'High':
+            impact_rank += 2
+        if clin_importance == 'Moderate':
+            impact_rank += 1
+        if variant['variant_impact'] == 'pathogenic':
+            impact_rank += 2
+        elif (variant['variant_impact'] == 'protective' or
+              variant['variant_impact'] == 'pharmacogenetic'):
+            impact_rank += 1
+    else:
+        if 'variant_impact' in variant:
+            if variant['variant_impact'] == 'pathogenic':
+                impact_rank += 3
+            elif (variant['variant_impact'] == 'protective' or
+                  variant['variant_impact'] == 'pharmacogenetic'):
+                impact_rank += 1
+            elif (variant['variant_impact'] == 'benign'):
+                impact_rank = 0
+                return impact_rank
+        if variant['autoscore'] >= 4:
+            impact_rank += 2
+        elif variant['autoscore'] >= 2:
+            impact_rank += 1
+        if ('num' in variant and 'denom' in variant and variant['denom'] > 0):
+            freq = int(variant['num']) * 1.0 / int(variant['denom'])
+            if freq > 0.1:
+                impact_rank = impact_rank * 0.5
+    return impact_rank
+
+def gene_report(f_out, gene, gene_data):
+    # Make all variants have 'phase' info
+    for variant in gene_data:
+        variant['impact_rank'] = impact_rank(variant)
+        if not 'phase' in variant:
+            if len(variant['genotype'].split('/')) > 1:
+                variant['phase'] = 'het unknown'
+            else:
+                variant['phase'] = 'homozygous'
+
+    # Figure out how interesting the gene is.
+    # Effect rank is my vague attempt to sort out variants with necessary 
+    # zygosities (any dominant, homozygous recessive) in a way that includes 
+    # compound hets. It's gene level, the max of the combined set of: 
+    # (1) all homozygous impact_ranks
+    # (2) all dominant het impact_ranks
+    # (3) 50% of non-recessive, non-dominant impact_ranks
+    # (3) average of compound het 'impact_rank'
+    # (4) 50% of average of potentially compound (unphased) 'impact_rank'
+    # Note that 50% is used as a compromise for unknown variants.
+    #    -- MPB 5/11
+    effect_ranks = [ 0 ]
+    for variant in gene_data:
+        if variant['phase'] == 'homozygous':
+            effect_ranks.append(impact_rank(variant))                     # (1)
+        else:
+            if ('variant_dominance' in variant and
+                variant['variant_dominance'] == 'dominant'):
+                effect_ranks.append(impact_rank(variant))                 # (2)
+            else:
+                if ('variant_dominance' in variant and
+                    variant['variant_dominance'] != 'recessive'):
+                    effect_ranks.append(impact_rank(variant) * 0.5)
+                if variant['phase'] == 'het unknown':
+                    for variant2 in gene_data:
+                        if variant == variant2:
+                            continue
+                        avg_impact = (impact_rank(variant) + 
+                                      impact_rank(variant2)) / 2.0
+                        effect_ranks.append(avg_impact * 0.5)             # (4)
+                else:
+                    for variant2 in gene_data:
+                        if variant['phase'] == variant2['phase']:
+                            continue
+                        avg_impact = (impact_rank(variant) +
+                                      impact_rank(variant2)) / 2.0
+                        var1_phase_data = variant['phase'].split('-')
+                        var2_phase_data = variant['phase'].split('-')
+                        if (var1_phase_data[0] == var2_phase_data[0]):
+                            effect_ranks.append(avg_impact)               # (3)
+                        else:
+                            effect_ranks.append(avg_impact * 0.5)         # (4)
+    max_impact = max([v['impact_rank'] for v in gene_data])
+    effect_rank = max(effect_ranks)
+    if (max_impact > 1 or effect_rank > 0):
+        output = { 'gene': gene,
+                   'data': gene_data,
+                   'effect_rank': max(effect_ranks) }
+        f_out.write(json.dumps(output) + '\n')
+
+def match_getev(gff_in, getev_flat, transcripts_file=None,
+                gene_out_file=None, output_file=None, 
+                progresstracker=None):
     """String generator returning JSON-formatted data from GET-Evidence
 
     Required inputs:
@@ -257,8 +400,13 @@ def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
 
     # Set up optional output, will not be compressed.
     f_json_out = None
+    f_gene_out = None
     if output_file:
         f_json_out = open(output_file, 'w')
+    if gene_out_file and transcripts_file:
+        gene_data = dict()
+        f_gene_out = open(gene_out_file, 'w')
+        transcripts = read_transcripts(transcripts_file)
 
     # Set up BLOSUM100 matrix to score amino acid disruptiveness.
     blosum_matrix = blosum100()
@@ -279,13 +427,48 @@ def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
         # Ignore regions called as matching reference.
         if record.feature == 'REF':
             continue
+
+        # If producing a gene report, output finished genes
+        if f_gene_out:
+            to_remove = []
+            for gene in gene_data:
+                if not gene in transcripts:
+                    # Remove genes we don't recognize
+                    to_remove.append(gene)
+                else:
+                    if transcripts[gene]['end'] < record.end:
+                        gene_report(f_gene_out, gene, gene_data[gene])
+                        to_remove.append(gene)
+            for gene in to_remove:
+                gene_data.pop(gene)
+
         # Track progress if a ProgressTracker was passed to us
         if progresstracker: 
             progresstracker.saw(record.seqname)
 
-        # Parse GFF attributes to find the alleles and, if present, dbSNP IDs.
-        alleles = record.attributes['alleles'].strip('"').split('/')
+        # Store data for JSON output as dict.
+        output = dict()
+
+        # Parse GFF attributes to find the alleles, reference allele, phase, and dbSNP.
+        alleles = record.attributes['alleles'].strip('"').split('/') # don't sort!
+        if len(alleles) == 1:
+            output['genotype'] = alleles[0]
+        elif len(alleles) > 2 or len(alleles) < 1:
+            # Not sure what to do with >2 or 0 alleles! Skip it.
+            continue
+        else:
+            output['genotype'] = '/'.join(sorted(alleles))
         ref_allele = record.attributes['ref_allele'].strip('"')
+        output['ref_allele'] = ref_allele
+        if 'phase' in record.attributes:
+            # Add phase attribute for the non-reference allele;
+            # if both non-reference, treat as unphased.
+            phase_data = record.attributes['phase'].strip().split('/')
+            if len(alleles) == 2 and len(phase_data) == 2:
+                if alleles[0] == ref_allele:
+                    output['phase'] = phase_data[1]
+                elif alleles[1] == ref_allele:
+                    output['phase'] = phase_data[0]
         dbsnp_ids = []
         if 'db_xref' in record.attributes or 'Dbxref' in record.attributes:
             if 'db_xref' in record.attributes:
@@ -296,35 +479,19 @@ def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
                 data = entry.split(':')
                 if re.match('dbsnp', data[0]) and re.match('rs', data[1]):
                     dbsnp_ids.append(data[1])
-
-        # We wouldn't know what to do with more than 2 alleles, so pass this.
-        if len(alleles) > 2:
-            continue
-
-        # Store data for JSON output as dict. 
-        output = dict()
+            if dbsnp_ids:
+                output["dbSNP"] = ",".join(dbsnp_ids)
         
         # Default presence in GET-Evidence is false, set as true later 
         # if a match is found.
         output['GET-Evidence'] = False
         
-        # Store position data, genotype (if heterozygous, alleles are separated 
-        # by a '/'), ref allele, and dbSNP IDs (if present).
+        # Store position data
         output['chromosome'] = record.seqname
         if record.start == record.end:
             output['coordinates'] = str(record.start)
         else:
             output['coordinates'] = str(record.start) + "-" + str(record.end)
-        if len(alleles) == 1:
-            output['genotype'] = alleles[0]
-        elif len(alleles) > 2 or len(alleles) < 1:
-            # Not sure what to do with >2 or 0 alleles! Skip it.
-            continue
-        else:
-            output['genotype'] = '/'.join(sorted(alleles))
-        output['ref_allele'] = ref_allele
-        if dbsnp_ids:
-            output["dbSNP"] = ",".join(dbsnp_ids)
 
         # If there is an amino acid change reported, look it up based on this.
         if "amino_acid" in record.attributes:
@@ -380,6 +547,14 @@ def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
                     f_json_out.write(json_output + '\n')
                 else:
                     yield json_output
+            # TODO: print when beyond end of gene, not when new one seen
+            if f_gene_out and 'ucsc_trans' in record.attributes:
+                # We take 1st & ignore multiple transcripts (which are rare)
+                gene = record.attributes['ucsc_trans'].split(',')[0]
+                if gene in gene_data:
+                    gene_data[gene].append(output)
+                else:
+                    gene_data[gene] = [ output ]
         else:
             # If no gene data at all, try dbsnp ID.
             if "dbSNP" in output:
@@ -410,8 +585,11 @@ def match_getev(gff_in, getev_flat, output_file=None, progresstracker=None):
                     yield json_output
     if f_json_out:
         f_json_out.close()
+    if f_gene_out:
+        f_gene_out.close()
 
-def match_getev_to_file(gff_in, getev_flat, output_file, progresstracker=False):
+def match_getev_to_file(gff_in, getev_flat, output_file, transcripts_file=None, 
+                        gene_out_file=None, progresstracker=False):
     """Outputs JSON-formatted data from GET-Evidence to output_file
 
     This calls match_getev (a string generator) and writes results to file.
@@ -437,7 +615,12 @@ def match_getev_to_file(gff_in, getev_flat, output_file, progresstracker=False):
         # Treat as writeable file object
         f_out = output_file
 
-    out = match_getev(gff_in, getev_flat, progresstracker=progresstracker)
+    if transcripts_file and gene_out_file:
+        out = match_getev(gff_in, getev_flat, transcripts_file=transcripts_file,
+                          gene_out_file=gene_out_file, 
+                          progresstracker=progresstracker)
+    else:
+        out = match_getev(gff_in, getev_flat, progresstracker=progresstracker)
     for line in out:
         f_out.write(line + "\n")
     f_out.close()
