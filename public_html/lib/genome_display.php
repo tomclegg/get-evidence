@@ -370,7 +370,7 @@ class GenomeReport {
                 htmlspecialchars($url) . "\">" . 
                 preg_replace('{^https?://}', '', $url) . "</a>";
         }
-        $data_size = filesize ($this->sourcefile);
+        $data_size = @filesize ($this->sourcefile);
         if ($data_size) {
             $head_data["Download"] = "<a href=\"/genome_download.php?" . 
                 "download_genome_id=" . $this->genomeID . 
@@ -387,7 +387,7 @@ class GenomeReport {
                 "download_type=ns&amp;download_genome_id=" . $this->genomeID . 
                 "&amp;download_nickname=" . urlencode($realname) . 
                 "\">dbSNP and nsSNP report</a> (" . 
-                humanreadable_size(filesize($this->processedfile)) . ")";
+                humanreadable_size(@filesize($this->processedfile)) . ")";
         }
         return $head_data;
     }
