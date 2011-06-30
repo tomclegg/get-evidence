@@ -35,7 +35,6 @@ def predict_nonsynonymous(gff_input, twobit_path, transcript_path, progresstrack
         # Have to do this after calling the first record to
         # get the iterator to read through the header data
         if not header_done:
-            yield "##gff-version " + gff_data.data[0]
             yield "##genome-build " + gff_data.data[1]
             yield "# Produced by: gff_nonsynonymous_filter.py"
             yield "# Date: " + datetime.datetime.now().isoformat(' ')
@@ -67,6 +66,7 @@ def predict_nonsynonymous(gff_input, twobit_path, transcript_path, progresstrack
         # otherwise, cycle through
         nonsyn_inferences = []
         splice_inferences = []
+        ucsc_transcripts = []
         is_nonsynonymous = is_splice = False
         
         for data in transcripts:
@@ -78,6 +78,7 @@ def predict_nonsynonymous(gff_input, twobit_path, transcript_path, progresstrack
             if i[0] == "nonsynonymous coding":
                 nonsyn_inferences.append("%s %s" % (d[0], i[2]))
                 is_nonsynonymous = True
+                ucsc_transcripts.append(data[1]) 
             elif i[0] == "splice site":
                 splice_inferences.append("%s %s " % (d[0], i[2]))
                 is_splice = True
@@ -90,6 +91,7 @@ def predict_nonsynonymous(gff_input, twobit_path, transcript_path, progresstrack
                 unique_inferences = unique(nonsyn_inferences)
                 unique_inferences.sort(key=str.lower)
                 record.attributes["amino_acid"] = "/".join(unique_inferences)
+                record.attributes["ucsc_trans"] = ",".join(ucsc_transcripts)
             if len(splice_inferences) > 0:
                 # Not going to report splice sites for now, but leaving the
                 # code here because we hope to later. - Madeleine 2010/11/29

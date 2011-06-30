@@ -61,32 +61,53 @@ class GenomeData:
         if len(data) < 9 or data[8] == '.' or data[8] == '':
             return parsed
         attributes_data = data[8].split(';')
+        attributes = dict()
         for attribute in attributes_data:
-            attribute_data = attribute.split()
-            # print attributes_data
-            if attribute_data[0] == 'alleles':
-                parsed['alleles'] = attribute_data[1].split('/')
-                if (len(parsed['alleles']) == 1 and 
-                    self._should_double(parsed['chrom'], parsed['start'],
-                                        parsed['end'])):
-                    parsed['alleles'].append(parsed['alleles'][0])
-                for i in range(len(parsed['alleles'])):
-                    if parsed['alleles'][i] == '-':
-                        parsed['alleles'][i] = ''
-            if attribute_data[0] == 'amino_acid':
-                gene_changes = '-'.join(attribute_data[1:]).split('/')
-                parsed['amino_acid'] = gene_changes[0]
+            if re.match('\w+\W+.*$', attribute):
+                attribute_data = re.match('([^ \t]+)[ \t]+(.*)$', attribute).groups()
+                attributes[attribute_data[0]] = attribute_data[1]
+        if 'ref_allele' in attributes:
+            parsed['ref_allele'] = attributes['ref_allele']
+            if parsed['ref_allele'] == '-':
+                parsed['ref_allele'] = ''
+        else:
+            return parsed
+        if 'alleles' in attributes:
+            parsed['alleles'] = attributes['alleles'].split('/')
+            if (len(parsed['alleles']) == 1 and 
+                self._should_double(parsed['chrom'], parsed['start'],
+                                    parsed['end'])):
+                parsed['alleles'].append(parsed['alleles'][0])
+            for i in range(len(parsed['alleles'])):
+                if parsed['alleles'][i] == '-':
+                    parsed['alleles'][i] = ''
+            # Don't try to assign amino_acid, dbsnp, or getev_id for het cases
+            # where both alleles are nonreference. The two annotations get 
+            # confused with each other, unfortunately, because those attributes 
+            # haven't been stored cleanly on a per-allele basis. - MPB 4/11
+            if (len(parsed['alleles']) > 1 and
+                parsed['alleles'][0] != parsed['alleles'][1] and
+                parsed['alleles'][0] != parsed['ref_allele'] and
+                parsed['alleles'][1] != parsed['ref_allele']):
+                return parsed
+        else:
+            return parsed
+        if 'amino_acid' in attributes:
+            # Ignore any beyond first transcript
+            aa_data = attributes['amino_acid'].split('/')[0].split()
+            if (len(aa_data) == 2):
+                parsed['amino_acid'] = '-'.join(aa_data)
                 if self.getev and parsed['amino_acid'] in self.getev:
                     parsed['getev_id'] = self.getev[parsed['amino_acid']]
-            if attribute_data[0] == 'db_xref':
-                dbsnp_data = attribute_data[1].split(',')
-                for dbsnp_datum in dbsnp_data:
-                    dbsnp_split = dbsnp_datum.split(':')
-                    if self.getev and dbsnp_split[1] in self.getev:
-                        parsed['getev_id'] = self.getev[dbsnp_split[1]]
-                        parsed['dbsnp'] = dbsnp_split[1]
-                    else:
-                        parsed['dbsnp'] = dbsnp_split[1]
+        if 'db_xref' in attributes:
+            dbsnp_data = attributes['db_xref'].split(',')
+            for dbsnp_datum in dbsnp_data:
+                dbsnp_split = dbsnp_datum.split(':')
+                if self.getev and dbsnp_split[1] in self.getev:
+                    parsed['getev_id'] = self.getev[dbsnp_split[1]]
+                    parsed['dbsnp'] = dbsnp_split[1]
+                else:
+                    parsed['dbsnp'] = dbsnp_split[1]
         return parsed
 
     def readline(self):
@@ -168,8 +189,13 @@ class GenomeData:
                 not position['ref']):
                 var_pos = position
                 return position['alleles'], var_pos
-            elif (position['start'] < start and 
-                  position['end'] > end and position['ref']):
+            # The following test requires the edges of a reference region to
+            # extend beyond the target position if the target is an insertion.
+            elif (position['ref'] and
+                  ((start != end and 
+                    position['start'] <= start and 
+                    position['end'] >= end and position['ref']) or 
+                   (position['start'] < start and position['end'] > end))):
                 ref_genotype = twobit_ref[position['chrom']][start:end]
                 if self._should_double(chrom, start, end):
                     return [ref_genotype, ref_genotype], var_pos
@@ -281,8 +307,11 @@ class GenomeSet:
         end = max(pos['end'] for pos in var_positions)
         for genome in self.genomes:
             for position in genome.data:
-                # overlaps our known variant start to end?
-                if position['start'] <= end and position['end'] >= start:
+                # overlaps our known variant? This test is written so insertions
+                # at start or end will be "overlapping".
+                if ((position['start'] < end and position['end'] > start) or
+                    (position['start'] == position['end'] and 
+                     position['start'] >= start and position['end'] <= end)):
                     # not ref - a variant?
                     if not position['ref']:
                         # later than our known end!
@@ -296,7 +325,10 @@ class GenomeSet:
         chrom = var_positions[0]['chrom']
         start = var_positions[0]['start']
         end = var_positions[0]['end']
+        is_mult = False
         for position in var_positions:
+            if start != position['start'] or end != position['end']:
+                is_mult = True
             start = min(start, position['start'])
 
         # Check each genome for required region, get genotype in target region
@@ -320,16 +352,20 @@ class GenomeSet:
                     if genotype != ref_genotype:
                         if not genotype in var_genotypes:
                             var_genotypes.append(genotype)
-                        if 'amino_acid' in var_pos:
-                            genotype_info[genotype] = var_pos['amino_acid']
-                        elif 'dbsnp' in var_pos:
-                            genotype_info[genotype] = var_pos['dbsnp']
-                        else:
-                            genotype_info[genotype] = 'none'
-                        if 'getev_id' in var_pos:
-                            genotype_to_ID[genotype] = var_pos['getev_id']
-                        else:
-                            genotype_to_ID[genotype] = 'unknown'
+                        if (not genotype in genotype_info or 
+                            genotype_info[genotype] == 'none'):
+                            if 'amino_acid' in var_pos:
+                                genotype_info[genotype] = var_pos['amino_acid']
+                            elif 'dbsnp' in var_pos:
+                                genotype_info[genotype] = var_pos['dbsnp']
+                            else:
+                                genotype_info[genotype] = 'none'
+                        if (not genotype in genotype_to_ID or 
+                            genotype_to_ID[genotype] == 'unknown'):
+                            if 'getev_id' in var_pos:
+                                genotype_to_ID[genotype] = var_pos['getev_id']
+                            else:
+                                genotype_to_ID[genotype] = 'unknown'
                     if genotype in counts:
                         counts[genotype] += 1
                     else:

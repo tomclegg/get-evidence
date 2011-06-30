@@ -6,6 +6,8 @@ import bz2
 
 def file_open(filename, mode='r'):
     """Return file obj, with compression if appropriate extension is given"""
+    if not isinstance(filename, basestring):
+        return filename
     if re.search("\.zip", filename):
         archive = zipfile.ZipFile(filename, mode)
         if mode == 'r':

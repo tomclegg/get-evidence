@@ -129,7 +129,7 @@ def process_split_position(data, cgi_input):
         assert a1_end == a2_end
         # Default feature type is indel unless lengths are all the same.
         feat_type = "INDEL"
-        if len(a1_seq) == 1 and len(a2_seq) == 1: 
+        if len(a1_seq) == 1 and len(a2_seq) == 1 and a1_end == a1_start_1based:
             feat_type = "SNP"
         elif len(a1_seq) == len(a2_seq) == len(r1_seq): 
             feat_type = "SUB"
