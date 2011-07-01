@@ -13,8 +13,8 @@ function fishersexact_compute ($figs, $htmlformat=FALSE)
     if ( ($figs["case_neg"] + $figs["case_pos"]) < 1 || 
 	 ($figs["control_neg"] + $figs["control_pos"]) < 1)
 	return $htmlformat ? "-<SPAN class=\"invisible\">.000</SPAN>" : "-";
-    
-    $fisher_p_sum = 0.1;
+    // Keep track of start -- if we exceed 2 seconds, quit.
+    $fisher_timestart = microtime(TRUE);
 
     $fisher_a = $figs["case_pos"];
     $fisher_b = $figs["case_neg"];
@@ -29,6 +29,8 @@ function fishersexact_compute ($figs, $htmlformat=FALSE)
     $fisher_sum = $fisher_a + $fisher_b + $fisher_c + $fisher_d;
     // Sum over all scenarios with at-least-as-extreme p-values
     for ($fisher_newa = 0; $fisher_newa <= $fisher_sum; $fisher_newa++) {
+	if (microtime(TRUE) - $fisher_timestart > 2)
+	    return $htmlformat ? "-<SPAN class=\"invisible\">.000</SPAN>" : "-";
 	if ($fisher_newa == $fisher_a) {
 	    continue;
 	}
