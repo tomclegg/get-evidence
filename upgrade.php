@@ -22,9 +22,9 @@ if (theDb()->getOne ("select 1 from variants where variant_aa_del is null or var
 	theDb()->query ("update variants set variant_aa_ins=? where variant_aa_to=? and variant_aa_ins is null", array ($short, $long));
     }
     print "\n";
-    $n = theDb()->getOne ("select count(*) from variants where variant_aa_del is null or variant_aa_ins is null");
+    $n = theDb()->getOne ("select count(*) from variants where variant_rsid is null and (variant_aa_del is null or variant_aa_ins is null)");
     if ($n > 0) {
-	print "WARNING: you have $n rows in your variants table with NULL in either variant_aa_del or variant_aa_ins.\n";
+	print "WARNING: you have $n rows in your variants table with no rsid and NULL in either variant_aa_del or variant_aa_ins.\n";
     }
 }
 else {
