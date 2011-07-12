@@ -1,5 +1,4 @@
-<?php
-    ;
+<?php ; // -*- mode: java; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*-
 
 // Copyright 2009-2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
@@ -357,8 +356,21 @@ function evidence_get_variant_id ($gene,
 			variant_aa_$to=?",
 			 array ($gene, $aa_pos, $aa_from, $aa_to));
     if (!theDb()->isError($q) &&
-	theDb()->affectedRows())
-      return theDb()->getOne ("SELECT LAST_INSERT_ID()");
+	theDb()->affectedRows()) {
+      $id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
+      if ($from == 'from') {
+        // Make sure "del" and "ins" are filled in for all new entries
+        // (use of "from" and "to" can be phased out once "del" and
+        // "ins" can be counted on)
+        theDb()->query ("UPDATE variants
+                         SET
+                         variant_aa_del=?,
+                         variant_aa_ins=?
+                         WHERE variant_id=?",
+                        array (aa_short_form($aa_from), aa_short_form($aa_to), $id));
+      }
+      return $id;
+    }
   }
   return theDb()->getOne ("SELECT variant_id FROM variants
 				WHERE variant_gene=?
