@@ -1,4 +1,4 @@
-<?php
+<?php ; // -*- mode: java; c-basic-offset: 4; tab-width: 8; indent-tabs-mode: nil; -*-
 
 include "lib/setup.php";
 include "lib/genome_display.php";
@@ -10,13 +10,21 @@ $display_genome_ID = "";
 if (isset ($_REQUEST['display_genome_id']))
     $display_genome_ID = $_REQUEST['display_genome_id'];
 
-if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
+else if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
     if (strlen($matches[0]) == 40)
         $display_genome_ID = $matches[0];
     else
 	$display_genome_ID = theDb()->getOne
 	    ("SELECT shasum FROM private_genomes WHERE private_genome_id=?",
 	     array ($matches[0]));
+}
+
+else if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $_SERVER['QUERY_STRING'], $matches)) {
+    $display_genome_ID = theDb()->getOne
+	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND oid IN (?,?) ORDER BY private_genome_id DESC',
+	     array ($matches[0], $public_data_user, $pgp_data_user));
+    if (!$display_genome_ID)
+        $display_genome_ID = -1;
 }
 
 $user = getCurrentUser();
@@ -34,9 +42,7 @@ if (strlen($display_genome_ID) > 0) {
         $page_content .= genome_display($display_genome_ID, $permission,
 					getCurrentUser('is_admin'));
     } else {
-        $page_content .= "Sorry, for some reason you've requested a " .
-	    "genome you don't have access to. " .
-	    "Perhaps you've been logged off?<br>\n";
+        $page_content .= "<DIV class=\"redalert\"><P>Sorry, we don't seem to have the report you requested.  Perhaps it has been deleted, or it isn't public and you don't have permission to see it, or you have been logged out.</P></DIV>\n";
     }
 } else {
     $page_content .= "<h2>PGP genomes</h2>";
