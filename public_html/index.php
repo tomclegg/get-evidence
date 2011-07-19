@@ -1,5 +1,4 @@
-<?php
-  ;
+<?php ; // -*- mode: java; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*-
 
 // Copyright 2009-2011 Clinical Future, Inc.
 // Authors: see git-blame(1)

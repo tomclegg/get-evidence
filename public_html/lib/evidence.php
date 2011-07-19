@@ -1236,6 +1236,7 @@ class evidence_row_renderer {
 			     $row["summary_short"],
 			     $summary . "<BR />",
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
+          $html .= "<div class=\"bionotate\" bnkey=\"".htmlentities($row['article_pmid'])."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']."\"></div>\n";
 	}
 
 	else if ($row["genome_id"] != "0") {
