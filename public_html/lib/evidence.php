@@ -1236,7 +1236,16 @@ class evidence_row_renderer {
 			     $row["summary_short"],
 			     $summary . "<BR />",
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
-          $html .= "<div class=\"bionotate\" bnkey=\"".htmlentities($row['article_pmid'])."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']."\"></div>\n";
+          $bionotate_key = htmlentities($row['article_pmid']."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']);
+          if (preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}',
+                          @file_get_contents ('http://genome2.ugr.es/bionotate2/projects/get-e/annotate/'.$bionotate_key),
+                          $regs)) {
+            $xml = $regs[1];
+            $html .= "<div class=\"bionotate ui-helper-hidden\" bnkey=\"{$bionotate_key}\">$xml</div>\n";
+            if (getCurrentUser()) {
+              $html .= "<div class=\"bionotate-button-container\"><a href=\"http://genome2.ugr.es/bionotate2/projects/get-e/annotate/{$bionotate_key}\" class=\"bionotate-button\">Annotate this abstract using <strong>bionotate</strong></a><br />&nbsp;</div>\n";
+            }
+          }
 	}
 
 	else if ($row["genome_id"] != "0") {
