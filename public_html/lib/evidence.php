@@ -705,6 +705,31 @@ function evidence_get_report ($snap, $variant_id)
       if (!$v[0][$x])
 	$v[0][$x] = 0;
 
+  // Fetch the latest annotated abstract from bionotate for each
+  // article_pmid (if we haven't cached it yet)
+
+  foreach ($v as &$row) {
+    if ($snap == 'latest' && $row['article_pmid'] > 0 && $row['disease_id'] == 0) {
+      if (!preg_match ('{^<\?xml}i', $row['summary_long']) &&
+          isset($_SERVER['REMOTE_ADDR']) // Avoid doing this during update_flat_summary, etc.
+          ) {
+        $bionotate_key = htmlentities($row['article_pmid']."-".
+                                      $v[0]['variant_gene']."-".
+                                      $v[0]['variant_aa_del'].
+                                      $v[0]['variant_aa_pos'].
+                                      $v[0]['variant_aa_ins']);
+        if (preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}',
+                        $html = file_get_contents ('http://genome2.ugr.es/bionotate2/projects/get-e/annotate/'.$bionotate_key),
+                        $regs)) {
+          $xml = $regs[1];
+          theDb()->query ("UPDATE snap_$snap SET summary_long=? WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0",
+                          array ($xml, $variant_id, $row['article_pmid']));
+          $row['summary_long'] = $xml;
+        }
+      }
+    }
+  }
+
   // Make sure for every pmid>0 row all of the article=A, disease=D
   // rows are there too (and ditto for article=0, genome=0)
 
@@ -1236,14 +1261,13 @@ class evidence_row_renderer {
 			     $row["summary_short"],
 			     $summary . "<BR />",
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
-          $bionotate_key = htmlentities($row['article_pmid']."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']);
-          if (preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}',
-                          @file_get_contents ('http://genome2.ugr.es/bionotate2/projects/get-e/annotate/'.$bionotate_key),
-                          $regs)) {
-            $xml = $regs[1];
-            $html .= "<div class=\"bionotate ui-helper-hidden\" bnkey=\"{$bionotate_key}\">$xml</div>\n";
+          if (preg_match ('{^<\?xml}i', $row['summary_long'])) {
+            $bionotate_key = htmlentities($row['article_pmid']."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']);
+            $html .= "<div class=\"bionotate ui-helper-hidden\" bnkey=\"{$bionotate_key}\">".
+              $row['summary_long'].
+              "</div>\n";
             if (getCurrentUser()) {
-              $html .= "<div class=\"bionotate-button-container\"><a href=\"http://genome2.ugr.es/bionotate2/projects/get-e/annotate/{$bionotate_key}\" class=\"bionotate-button\">Annotate this abstract using <strong>bionotate</strong></a><br />&nbsp;</div>\n";
+              $html .= "<div class=\"bionotate-button-container\" bnkey=\"${bionotate_key}\"><button class=\"bionotate-button\">Annotate this abstract using <strong>bionotate</strong></button><br />&nbsp;</div>\n";
             }
           }
 	}

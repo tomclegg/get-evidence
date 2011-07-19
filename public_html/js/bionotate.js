@@ -22,6 +22,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     if (!$(div).html().length)
                         //  No xml.
                         return;
+                    $(div).attr('snippet_xml', $(div).html());
                     var $annot = $($.parseXML ($(div).html()));
                     var text = $annot.find('feed>text').text();
                     var annots = [];
@@ -54,6 +55,18 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     $(div).html('<span><p>'+text+'</p></span>');
                     $(div).addClass('bionotate_visible').show();
                 });
-            $('.bionotate-button').button();
+            $('.bionotate-button').button().click(function(e){
+                    var $form = $('form.bionotate-form');
+                    var bnkey = $(e.target).parents('div[bnkey]').attr('bnkey');
+                    $form.find('input[name=SNIPPET_XML]').attr('value',$('div[bnkey='+bnkey+']').attr('snippet_xml'));
+                    $form.find('input[name=save_to_url]').attr('value',document.location.href.replace(/([^\/])\/([^\/].*)?$/, '$1/bionotate-save.php'));
+                    $form.attr('action', 'http://genome2.ugr.es/bionotate2/projects/get-e/annotate/'+bnkey);
+                    if (e.shiftKey)
+                        $form.attr('method', 'GET');
+                    $form.submit();
+                    return false;
+                });
+            $('body').append('<form class="bionotate-form" action="#" method="post"><input type="hidden" name="SNIPPET_XML" value=""/><input type="hidden" name="save_to_url" value=""/></form>');
+
         });
 })(jQuery);
