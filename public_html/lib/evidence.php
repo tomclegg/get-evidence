@@ -719,7 +719,7 @@ function evidence_get_report ($snap, $variant_id)
                                       $v[0]['variant_aa_pos'].
                                       $v[0]['variant_aa_ins']);
         if (preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}',
-                        $html = file_get_contents ('http://genome2.ugr.es/bionotate2/projects/get-e/annotate/'.$bionotate_key),
+                        $html = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/'.$bionotate_key),
                         $regs)) {
           $xml = $regs[1];
           theDb()->query ("UPDATE snap_$snap SET summary_long=? WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0",
@@ -729,6 +729,7 @@ function evidence_get_report ($snap, $variant_id)
       }
     }
   }
+  unset($row);
 
   // Make sure for every pmid>0 row all of the article=A, disease=D
   // rows are there too (and ditto for article=0, genome=0)
@@ -1267,7 +1268,17 @@ class evidence_row_renderer {
               $row['summary_long'].
               "</div>\n";
             if (getCurrentUser()) {
-              $html .= "<div class=\"bionotate-button-container\" bnkey=\"${bionotate_key}\"><button class=\"bionotate-button\">Annotate this abstract using <strong>bionotate</strong></button><br />&nbsp;</div>\n";
+              global $gBioNotateSecret;
+              $q_oid = htmlentities(getCurrentUser("oid"));
+              $oidcookie = md5($gBioNotateSecret . getCurrentUser("oid"));
+              $q_snippet = htmlentities($row['summary_long']);
+              $html .= "<div class=\"bionotate-button-container\" bnkey=\"${bionotate_key}\" oid=\"${q_oid}\" oidcookie=\"${oidcookie}\" snippet_xml=\"$q_snippet\" article_pmid=\"{$row['article_pmid']}\" variant_id=\"{$row['variant_id']}\"><button class=\"bionotate-button\">Annotate this abstract using <strong>bionotate</strong></button><br />&nbsp;</div>\n";
+              $html .= "<span class=\"csshide\">";
+              $html .= "<span class=\"editable\" id=\"${id_prefix}f_summary_long__\">{$row['summary_long']}</span>";
+              $html .= "<span id=\"preview_${id_prefix}f_summary_long__\"></span>";
+              $html .= "<input id=\"orig_${id_prefix}f_summary_long__\" value=\"".htmlentities($row['summary_long'])."\"/>";
+              $html .= "<input id=\"edited_${id_prefix}f_summary_long__\" name=\"edited_${id_prefix}f_summary_long__\" value=\"".htmlentities($row['summary_long'])."\"/>";
+              $html .= "</span>";
             }
           }
 	}

@@ -22,7 +22,6 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     if (!$(div).html().length)
                         //  No xml.
                         return;
-                    $(div).attr('snippet_xml', $(div).html());
                     var $annot = $($.parseXML ($(div).html()));
                     var text = $annot.find('feed>text').text();
                     var annots = [];
@@ -57,16 +56,18 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                 });
             $('.bionotate-button').button().click(function(e){
                     var $form = $('form.bionotate-form');
-                    var bnkey = $(e.target).parents('div[bnkey]').attr('bnkey');
-                    $form.find('input[name=SNIPPET_XML]').attr('value',$('div[bnkey='+bnkey+']').attr('snippet_xml'));
-                    $form.find('input[name=save_to_url]').attr('value',document.location.href.replace(/([^\/])\/([^\/].*)?$/, '$1/bionotate-save.php'));
-                    $form.attr('action', 'http://genome2.ugr.es/bionotate2/projects/get-e/annotate/'+bnkey);
-                    if (e.shiftKey)
-                        $form.attr('method', 'GET');
+                    var $div = $(e.target).parents('div[bnkey]');
+                    var bnkey = $div.attr('bnkey');
+                    var variant_id = $div.attr('variant_id');
+                    var article_pmid = $div.attr('article_pmid');
+                    $form.find('input[name=oid]').attr('value',$div.attr('oid'));
+                    $form.find('input[name=oidcookie]').attr('value',$div.attr('oidcookie'));
+                    $form.find('input[name=save_to_url]').attr('value',document.location.href.replace(/([^\/])\/([^\/].*)?$/, '$1/bionotate-save.php?variant_id='+variant_id+'&article_pmid='+article_pmid));
+                    $form.attr('action', 'http://genome2.ugr.es/bionotate2/GET-Evidence/'+bnkey);
                     $form.submit();
                     return false;
                 });
-            $('body').append('<form class="bionotate-form" action="#" method="post"><input type="hidden" name="SNIPPET_XML" value=""/><input type="hidden" name="save_to_url" value=""/></form>');
+            $('body').append('<form class="bionotate-form" action="#" method="GET"><input type="hidden" name="oid" value=""/><input type="hidden" name="oidcookie" value=""/><input type="hidden" name="save_to_url" value=""/></form>');
 
         });
 })(jQuery);
