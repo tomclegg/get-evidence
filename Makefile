@@ -23,7 +23,7 @@ public_html/DataTables-1.8.1: DataTables-1.8.1.zip
 	cd public_html && unzip ../DataTables-1.8.1.zip
 	touch $@
 
-public_html/jquery-ui:
+public_html/jquery-ui: jquery-ui-1.8.14.custom.zip
 	mkdir -p public_html/jquery-ui && cd public_html/jquery-ui && unzip ../../jquery-ui-1.8.14.custom.zip
 
 public_html/js/wz_tooltip.js:
