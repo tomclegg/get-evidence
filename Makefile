@@ -1,7 +1,7 @@
 CACHEDIR=$(shell pwd)/tmp
 
 daily: update_editors_summary dump_database data_local
-install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js DataTables-1.7.4.zip public_html/DataTables-1.7.4 public_html/jquery-ui update_editors_summary
+install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js DataTables-1.8.1.zip public_html/DataTables-1.8.1 public_html/jquery-ui update_editors_summary
 
 php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
@@ -16,15 +16,15 @@ textile-2.0.0:
 	tar xzf textile-2.0.0.tar.gz
 	patch -p0 <textile-2.0.0-php-5.2.4.patch
 
-DataTables-1.7.4.zip:
-	wget -c http://www.datatables.net/releases/DataTables-1.7.4.zip
+DataTables-1.8.1.zip:
+	wget -c http://www.datatables.net/releases/DataTables-1.8.1.zip
 
-public_html/DataTables-1.7.4: DataTables-1.7.4.zip
-	cd public_html && unzip ../DataTables-1.7.4.zip
+public_html/DataTables-1.8.1: DataTables-1.8.1.zip
+	cd public_html && unzip ../DataTables-1.8.1.zip
 	touch $@
 
 public_html/jquery-ui:
-	mkdir -p public_html/jquery-ui && cd public_html/jquery-ui && unzip ../../jquery-ui-1.8.6.custom.zip
+	mkdir -p public_html/jquery-ui && cd public_html/jquery-ui && unzip ../../jquery-ui-1.8.14.custom.zip
 
 public_html/js/wz_tooltip.js:
 ######## Walter Zorn's tooltip library seems to be homeless, so we
