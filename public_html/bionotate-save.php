@@ -9,9 +9,9 @@ include "lib/setup.php";
 
 $variant_name = evidence_get_variant_name($_REQUEST['variant_id'], '-', true);
 $bionotate_key = $_REQUEST['article_pmid'] . '-' . $variant_name;
-if (!preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}',
-                 $html = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/'.$bionotate_key.'?oid='.urlencode(getCurrentUser('oid'))),
-                 $regs))
+$html_or_xml = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/retrieve/'.$bionotate_key.'?oid='.urlencode(getCurrentUser('oid')));
+if (!preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}', $html_or_xml, $regs) &&
+    !preg_match ('{^(<\?xml .*)}i', $html_or_xml, $regs))
   exit ("No snippet found at .../$bionotate_key");
 $xml = $regs[1];
 
