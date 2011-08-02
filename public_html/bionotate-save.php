@@ -5,15 +5,14 @@
 
 include "lib/setup.php";
 
-// error_log(json_encode($_REQUEST));
-
 $variant_name = evidence_get_variant_name($_REQUEST['variant_id'], '-', true);
 $bionotate_key = $_REQUEST['article_pmid'] . '-' . $variant_name;
 $html_or_xml = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/retrieve/'.$bionotate_key.'?oid='.urlencode(getCurrentUser('oid')));
 if (!preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}', $html_or_xml, $regs) &&
-    !preg_match ('{^(<\?xml .*)}i', $html_or_xml, $regs))
+    !preg_match ('{^(<\?xml .*)}is', $html_or_xml, $regs))
   exit ("No snippet found at .../$bionotate_key");
-$xml = $regs[1];
+$xml = preg_replace('{>\r?\n *<}', '><', $regs[1]);
+error_log($xml);
 
 $edit = theDb()->getRow ("SELECT * FROM edits WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0 AND edit_oid=? ORDER BY edit_id DESC LIMIT 1",
 			 array ($_REQUEST['variant_id'], $_REQUEST['article_pmid'], getCurrentUser('oid')));

@@ -718,7 +718,7 @@ function evidence_get_report ($snap, $variant_id)
                                       $v[0]['variant_aa_del'].
                                       $v[0]['variant_aa_pos'].
                                       $v[0]['variant_aa_ins']);
-        if (preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}',
+        if (preg_match ('{SNIPPET_XML = "(.*?)";?\r?\n}s',
                         $html = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/'.$bionotate_key),
                         $regs)) {
           $xml = $regs[1];

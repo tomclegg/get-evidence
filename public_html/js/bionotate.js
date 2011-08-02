@@ -23,7 +23,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                         //  No xml.
                         return;
                     var $annot = $($.parseXML ($(div).html()));
-                    var text = $annot.find('feed>text').text();
+                    var text = $annot.find('feed text').text();
                     var annots = [];
                     $annot.find('annotations entry').each(function(i,e){
                             var $e = $(e);
