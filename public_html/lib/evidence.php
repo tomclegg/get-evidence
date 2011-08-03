@@ -1265,14 +1265,12 @@ class evidence_row_renderer {
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
           if (preg_match ('{^<\?xml}i', $row['summary_long'])) {
             $bionotate_key = htmlentities($row['article_pmid']."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']);
-            $html .= "<div class=\"bionotate ui-helper-hidden\" bnkey=\"{$bionotate_key}\">".
-              $row['summary_long'].
-              "</div>\n";
+            $q_snippet = htmlentities($row['summary_long']);
+            $html .= "<div class=\"bionotate ui-helper-hidden\" bnkey=\"{$bionotate_key}\" snippet_xml=\"$q_snippet\"></div>\n";
             if (getCurrentUser()) {
               global $gBioNotateSecret;
               $q_oid = htmlentities(getCurrentUser("oid"));
               $oidcookie = md5($gBioNotateSecret . getCurrentUser("oid"));
-              $q_snippet = htmlentities($row['summary_long']);
               $html .= "<div class=\"bionotate-button-container\" bnkey=\"${bionotate_key}\" oid=\"${q_oid}\" oidcookie=\"${oidcookie}\" snippet_xml=\"$q_snippet\" article_pmid=\"{$row['article_pmid']}\" variant_id=\"{$row['variant_id']}\"><button class=\"bionotate-button\">Annotate this abstract using <strong>bionotate</strong></button><br />&nbsp;</div>\n";
               $html .= "<span class=\"csshide\">";
               $html .= "<span class=\"editable editable-bionotate\" bnkey=\"${bionotate_key}\" id=\"${id_prefix}f_summary_long__\">{$row['summary_long']}</span>";
