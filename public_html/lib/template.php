@@ -1,7 +1,7 @@
 <?php
     ;
 
-// Copyright 2010 Clinical Future, Inc.
+// Copyright 2010-2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
 
 global $gOut;
@@ -57,6 +57,8 @@ header('Content-Type: text/html; charset=UTF-8');
 <script type="text/javascript" src="/js/report.js"></script>
 <script type="text/javascript" src="/js/show-what.js"></script>
 <script type="text/javascript" src="/js/datatable_setup.js"></script>
+<script type="text/javascript" src="/js/bionotate.js"></script>
+<link rel="stylesheet" type="text/css" href="bionotate.css" />
 <title><?php frag("title"); ?></title>
 </head>
 

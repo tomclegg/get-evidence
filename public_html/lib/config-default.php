@@ -5,6 +5,7 @@ $gDbDatabase = "evidence";
 $gDbUser = "evidence";
 $gDbPassword = "shakespeare";
 $gBackendBaseDir = "/home/trait";
+$gBioNotateSecret = "";		// use `pwgen -s 64 1` or similar
 
 $pgp_data_user = "https://profiles.google.com/PGP.uploader";
 $public_data_user = "https://profiles.google.com/Public.Genome.Uploader";

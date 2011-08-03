@@ -1,0 +1,53 @@
+/*
+  Copyright 2011 Clinical Future, Inc.
+  Authors: see git-blame(1)
+  */
+
+.bionotate_visible {
+    border: 3px solid #ddd;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    -moz-border-radius:10px 10px;
+    -webkit-border-radius:10px 10px;
+    border-radius:10px 10px;
+}
+
+/*
+  Copied/adapted from bionotate:
+  */
+
+.bionotate_visible p {
+    padding-bottom: 0;
+}
+.bionotate span[color='1']{
+    background: #bbf1c4;
+    font-style: normal;
+}
+.bionotate span[color='2']{
+    background: #ffee9f;
+    font-style: normal;
+}
+.bionotate span[color='3']{
+    background: #e5c4e7;
+    font-style: normal;
+}
+.bionotate span[color='4']{
+    background: #fddbab;
+    font-style: normal;
+}
+.bionotate span[color='5']{
+    background: #95e6f4;
+    font-style: normal;
+}
+.bionotate span[color='6']{
+    background: #d5fd76;
+    font-style: normal;
+}
+.bionotate span[color='7']{
+    background: #dcdcdc;
+    font-style: normal;
+}
+.bionotate span[color='8']{
+    background: #e1bfaa;
+    font-style: normal;
+}
