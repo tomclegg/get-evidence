@@ -36,6 +36,9 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     else if ($(div).hasClass('bionotate_visible'))
                         // Already rendered.
                         return;
+                    else if (!($(div).attr('snippet_xml')))
+                        // No xml.
+                        return;
                     else
                         xml = $(div).attr('snippet_xml');
                     var $annot = $($.parseXML (xml));
@@ -67,7 +70,9 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                         if (text_done != text_halfdone && text_halfdone != text)
                             text = text_done;
                     }
-                    $(div).html('<span><p>'+text+'</p></span>');
+                    var conclusion = $($.parseXML(jQuery('div.bionotate').attr('snippet_xml'))).find('question id:contains(variance-disease-relation)').parent().find('answer').text();
+                    var conclusion_text = $(schema).find('question:contains(variance-disease-relation)').find('answers answer:contains('+conclusion+')').find('text').text();
+                    $(div).html('<span><p>'+text+'</p><p>&nbsp;<br />Variant/disease relation: <b>'+conclusion_text+'</b></p></span>');
                     $(div).addClass('bionotate_visible').show();
                 });
             $('body').append('<form class="bionotate-form" action="#" method="GET"><input type="hidden" name="oid" value=""/><input type="hidden" name="oidcookie" value=""/><input type="hidden" name="save_to_url" value=""/></form>');
