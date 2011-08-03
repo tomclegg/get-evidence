@@ -56,8 +56,10 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
 	if ($field == "variant_quality_text") {
 	  $saved = json_decode ($row[$field], true);
 	  $preview = array();
-	  foreach ($saved as $s) {
-	    $preview[] = editable_quality_preview ($s);
+	  if (is_array ($saved)) {
+	      foreach ($saved as $s) {
+		  $preview[] = editable_quality_preview ($s);
+	      }
 	  }
 	  $response["saved__{$edit_id}__{$field}"] = $saved;
 	  $response["preview__{$edit_id}__{$field}"] = $preview;
