@@ -292,6 +292,8 @@ function editable_get_draft ()
 			    if (saved != $('orig_'+e.id).value) {
 				if (e.hasClassName ("5star"))
 				    editable_5star_click (e.id, saved);
+				else if (e.hasClassName ("editable-bionotate"))
+				    jQuery('div.bionotate[bnkey='+jQuery(e).attr('bnkey')+']').trigger('bionotate-render',{xml:saved});
 				else
 				    editable_click(e);
 				if ($('edited_'+e.id))

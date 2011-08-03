@@ -18,7 +18,7 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
   // given edit and newer ("n") submissions from other users (danger
   // of conflict)
 
-  $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, (d.variant_impact <> a.variant_impact OR d.variant_dominance <> a.variant_dominance OR d.variant_quality <> a.variant_quality OR d.variant_quality_text <> a.variant_quality_text OR d.summary_short <> a.summary_short OR d.summary_long <> a.summary_long OR d.talk_text <> a.talk_text OR d.article_pmid <> a.article_pmid) draft_differs
+  $q =& theDb()->query ("SELECT d.*, n.edit_id newer_edit_id, not (d.variant_impact <=> a.variant_impact AND d.variant_dominance <=> a.variant_dominance AND d.variant_quality <=> a.variant_quality AND d.variant_quality_text <=> a.variant_quality_text AND d.summary_short <=> a.summary_short AND d.summary_long <=> a.summary_long AND d.talk_text <=> a.talk_text AND d.article_pmid <=> a.article_pmid) draft_differs
 			FROM edits a
 			LEFT JOIN edits d ON d.previous_edit_id=a.edit_id AND d.edit_oid=? AND d.is_draft
 			LEFT JOIN snap_latest n ON n.variant_id=a.variant_id AND n.article_pmid=a.article_pmid AND n.genome_id=a.genome_id AND n.disease_id=a.disease_id
@@ -26,7 +26,7 @@ foreach (explode ("-", $_GET["edit_ids"]) as $edit_id) {
 			array(getCurrentUser("oid"), $edit_id));
   while ($row =& $q->fetchRow()) {
     if ($row["edit_id"]) {
-      if (!$row[draft_differs]) {
+      if (!$row['draft_differs']) {
 	// draft saved, but content is identical -- just delete it
 	theDb()->query ("DELETE FROM edits WHERE edit_id=? AND edit_oid=?",
 			array($row["edit_id"], getCurrentUser("oid")));

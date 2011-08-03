@@ -107,7 +107,7 @@ foreach ($_POST as $param => $newvalue)
 			       array($previous_edit_id));
     if (theDb()->isError($oldrow) || !$oldrow) {
       // TODO: convey error on client side
-      $response["errors"][] = "item you're editing doesn't exist";
+      $response["errors"][] = "item you're editing ($previous_edit_id) doesn't exist";
       continue;
     }
     $newrow = $oldrow;
