@@ -720,8 +720,9 @@ function evidence_get_report ($snap, $variant_id)
                                       $v[0]['variant_aa_ins']);
         if (preg_match ('{SNIPPET_XML = "(.*?)";?\r?\n}s',
                         $html = @file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/retrieve/'.$bionotate_key),
-                        $regs)) {
-          $xml = $regs[1];
+                        $regs) ||
+            preg_match ('{^(<\?xml .*)}is', $html, $regs)) {
+          $xml = preg_replace('{>\\r?\\n\\s*}', '>', $regs[1]);
           theDb()->query ("UPDATE snap_$snap SET summary_long=? WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0",
                           array ($xml, $variant_id, $row['article_pmid']));
           $row['summary_long'] = $xml;
