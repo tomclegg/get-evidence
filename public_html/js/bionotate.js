@@ -14,15 +14,21 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     bionotate_color[$(e).find('name').text()] = $(e).find('color').text();
                 });
 
-            $('.bionotate').each(function(i,div){
+            $('.bionotate').bind('bionotate-render', function(event, data){
+                    var div = this;
                     var bnkey = $(div).attr('bnkey');
-                    if ($(div).hasClass('bionotate_visible'))
+                    var xml;
+                    if (data && data.xml)
+                        xml = data.xml;
+                    else if ($(div).hasClass('bionotate_visible'))
                         // Already rendered.
                         return;
-                    if (!$(div).html().length)
+                    else if (!$(div).html().length)
                         //  No xml.
                         return;
-                    var $annot = $($.parseXML ($(div).html()));
+                    else
+                        xml = $(div).html();
+                    var $annot = $($.parseXML (xml));
                     var text = $annot.find('feed text').text();
                     var annots = [];
                     $annot.find('annotations entry').each(function(i,e){
@@ -54,6 +60,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     $(div).html('<span><p>'+text+'</p></span>');
                     $(div).addClass('bionotate_visible').show();
                 });
+            $('.bionotate').each(function(i,div){$(div).trigger('bionotate-render')});
             $('.bionotate-button').button().click(function(e){
                     var $form = $('form.bionotate-form');
                     var $div = $(e.target).parents('div[bnkey]');

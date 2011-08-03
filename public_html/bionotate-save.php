@@ -11,11 +11,16 @@ $html_or_xml = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence
 if (!preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}', $html_or_xml, $regs) &&
     !preg_match ('{^(<\?xml .*)}is', $html_or_xml, $regs))
   exit ("No snippet found at .../$bionotate_key");
-$xml = preg_replace('{>\r?\n *<}', '><', $regs[1]);
-error_log($xml);
+$xml = preg_replace('{>\\r?\\n\\s*}', '>', $regs[1]);
 
-$edit = theDb()->getRow ("SELECT * FROM edits WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0 AND edit_oid=? ORDER BY edit_id DESC LIMIT 1",
-			 array ($_REQUEST['variant_id'], $_REQUEST['article_pmid'], getCurrentUser('oid')));
+$snap_row = theDb()->getRow ("SELECT * FROM snap_latest WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0 LIMIT 1",
+                         array ($_REQUEST['variant_id'], $_REQUEST['article_pmid']));
+if (theDb()->isError($snap_row))
+  exit($edit->getMessage());
+
+$edit = theDb()->getRow ("SELECT * FROM edits WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0 AND edit_oid=? AND previous_edit_id=? ORDER BY edit_id DESC LIMIT 1",
+			 array ($_REQUEST['variant_id'], $_REQUEST['article_pmid'], getCurrentUser('oid'), $snap_row['edit_id']));
+
 if (theDb()->isError($edit))
   exit($edit->getMessage());
 
@@ -24,10 +29,7 @@ if ($edit && $edit['is_draft']) {
                   array ($xml, $edit['edit_id']));
 }
 else {
-  $edit = theDb()->getRow ("SELECT * FROM snap_latest WHERE variant_id=? AND article_pmid=? AND genome_id=0 AND disease_id=0 LIMIT 1",
-                           array ($_REQUEST['variant_id'], $_REQUEST['article_pmid']));
-  if (theDb()->isError($edit))
-    exit($edit->getMessage());
+  $edit = $snap_row;
   $edit['edit_oid'] = getCurrentUser('oid');
   $edit['previous_edit_id'] = $edit['edit_id'];
   $edit['is_draft'] = 1;
@@ -53,4 +55,4 @@ else {
     exit("edit_id $edit_id does not make sense");
   }
 }
-header("Location: /{$variant_name}");
+header("Location: /{$variant_name}#a".$_REQUEST['article_pmid']);
