@@ -70,7 +70,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                         if (text_done != text_halfdone && text_halfdone != text)
                             text = text_done;
                     }
-                    var conclusion = $($.parseXML(jQuery('div.bionotate').attr('snippet_xml'))).find('question id:contains(variance-disease-relation)').parent().find('answer').text();
+                    var conclusion = $annot.find('question id:contains(variance-disease-relation)').parent().find('answer').text();
                     var conclusion_text = $(schema).find('question:contains(variance-disease-relation)').find('answers answer:contains('+conclusion+')').find('text').text();
                     $(div).html('<span><p>'+text+'</p><p>&nbsp;<br />Variant/disease relation: <b>'+conclusion_text+'</b></p></span>');
                     $(div).addClass('bionotate_visible').show();
