@@ -69,6 +69,10 @@ $q = theDb()->query ("SELECT q.variant_id variant_id, v.*
   ON v.variant_id=q.variant_id");
 while ($row =& $q->fetchRow()) {
     $r = yahoo_boss_lookup ($row["variant_id"]);
+    if (!$r) {
+	print "Lookup failed; stopping.";
+	exit;
+    }
     yahoo_boss_update_external ($row["variant_id"]);
     printf ("%8d %s %s%d%s (%d)\n",
 	    $r["hitcount"],
