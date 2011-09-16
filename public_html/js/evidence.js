@@ -283,14 +283,14 @@ function variant_report_progress_update()
 	onSuccess: function(transport)
 	{
 	    var j = transport.responseJSON;
-	    if (j) {
-		if (typeof j.progress != 'undefined')
+	    if (j && j.status) {
+		if (typeof j.status.progress != 'undefined')
 		    jQuery('#variant_report_progress').progressbar('value', 100*j.progress);
-		if (typeof j.status != 'undefined') {
-		    if (j.status == 'finished')
+		if (typeof j.status.status != 'undefined') {
+		    if (j.status.status == 'finished')
 			window.location.href = window.location.href;
 		    else
-			jQuery('#variant_report_status').html(j.status);
+			jQuery('#variant_report_status').html(j.status.status);
 		}
 		if (j.log) {
 		    jQuery('#debuginfotext').html(('Log file: '+j.logfilename+'\n\n'+j.log+'\n\n').escapeHTML());

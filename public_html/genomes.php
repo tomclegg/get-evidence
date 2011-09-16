@@ -36,9 +36,17 @@ if (strlen($display_genome_ID) > 0) {
     $permission = $genome_report->permission($user['oid'], 
 					      getCurrentUser('is_admin'));
     if ($permission) {
-	if (isset($_REQUEST["json"])) {
+	if (isset($_REQUEST["json"]) ||
+            (isset($_REQUEST['format']) && $_REQUEST['format'] == 'json')) {
 	    header ("Content-type: application/json");
-	    print json_encode($genome_report->status());
+            $report = array ('input_sha1' => $genome_report->genomeID,
+                             'status' => $genome_report->status(),
+                             'header_data' => $genome_report->header_data(),
+                             'metadata' => $genome_report->metadata(),
+                             'variants' => $genome_report->variants(),
+                             'coverage_data' => $genome_report->coverage_data()
+                             );
+	    print json_encode($report);
 	    exit;
 	}
         $page_content .= genome_display($display_genome_ID, $permission,
