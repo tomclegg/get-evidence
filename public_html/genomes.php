@@ -9,22 +9,24 @@ $page_content = "";  // all html output stored here
 $display_genome_ID = "";
 if (isset ($_REQUEST['display_genome_id']))
     $display_genome_ID = $_REQUEST['display_genome_id'];
+else if (!preg_match ('{=}', $_SERVER['QUERY_STRING']))
+    $display_genome_ID = $_SERVER['QUERY_STRING'];
 
-else if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
+if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $display_genome_ID, $matches)) {
+    $display_genome_ID = theDb()->getOne
+	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND oid IN (?,?) ORDER BY private_genome_id DESC',
+	     array ($matches[0], $public_data_user, $pgp_data_user));
+    if (!$display_genome_ID)
+        $display_genome_ID = -1;
+}
+
+else if (preg_match ('{^[a-f\d]+$}', $display_genome_ID, $matches)) {
     if (strlen($matches[0]) == 40)
         $display_genome_ID = $matches[0];
     else
 	$display_genome_ID = theDb()->getOne
 	    ("SELECT shasum FROM private_genomes WHERE private_genome_id=?",
 	     array ($matches[0]));
-}
-
-else if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $_SERVER['QUERY_STRING'], $matches)) {
-    $display_genome_ID = theDb()->getOne
-	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND oid IN (?,?) ORDER BY private_genome_id DESC',
-	     array ($matches[0], $public_data_user, $pgp_data_user));
-    if (!$display_genome_ID)
-        $display_genome_ID = -1;
 }
 
 $user = getCurrentUser();
