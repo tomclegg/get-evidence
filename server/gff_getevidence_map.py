@@ -78,8 +78,16 @@ def read_genetests(genetests_file):
             genes = data[4].strip().split('|')
             for gene in genes: 
                 genes_clin.add(gene)
-                # If data[6] isn't 'na', it's a link to an associated review.
-                if data[6] != 'na':
+    f_in.close()
+    # Check for review separately: sometimes these are on different lines.
+    f_in = open(genetests_file)
+    for line in f_in:
+        data = line.rstrip('\n').split('\t')
+        # If data[6] isn't 'na', it's a link to an associated review.
+        if data[6] != 'na':
+            genes = data[4].strip().split('|')
+            for gene in genes:
+                if gene in genes_clin:
                     genes_rev.add(gene)
     return genes_clin, genes_rev
 
@@ -106,7 +114,10 @@ def copy_output_data(getev_data, output_data):
                     'variant_quality': 'variant_quality',
                     'inheritance': 'variant_dominance',
                     'variant_id': 'variant_id',
-                    'n_articles': 'n_articles'
+                    'n_articles': 'n_articles',
+                    'n_web_pos': 'n_web_pos',
+                    'n_web_uneval': 'n_web_uneval',
+                    'n_web_neg': 'n_web_neg',
                     }
     for name in name_map:
         if name in getev_data:
@@ -166,7 +177,9 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
         score_var_database += 1
     if "in_pharmgkb" in data and data["in_pharmgkb"]:
         score_var_database += 1
-    
+    if ('n_web_pos' in data or 'n_web_uneval' in data):
+        score_var_database += 1
+
     # Add scores from gene specific databases.
     if "testable" in data and data["testable"] == 1:
         if "reviewed" in data and data["reviewed"] == 1:
