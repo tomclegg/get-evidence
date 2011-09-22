@@ -13,7 +13,7 @@ function yahoo_boss_lookup ($variant_id)
 			      array ($variant_id));
     if (!$cache || theDb()->isError ($cache)) $cache = array();
 
-    $xml = $cache["xml"];
+    $xml = isset($cache["xml"]) ? $cache["xml"] : null;
     if (!$xml) {
 	if (!getenv("APIKEY"))
 	    return FALSE;
@@ -57,8 +57,10 @@ function yahoo_boss_lookup ($variant_id)
 	if (preg_match ('/<resultset_web\b[^<]*\sdeephits="?(\d+)"?/s', $xml))
 	    theDb()->query ("REPLACE INTO yahoo_boss_cache SET variant_id=?, xml=?, retrieved=NOW()",
 			    array ($variant_id, $cache["xml"]));
+	else
+	    return null;
     }
-    if (!is_numeric ($cache["hitcount"])) {
+    if (!isset ($cache["hitcount"]) || !is_numeric ($cache["hitcount"])) {
 	if (preg_match ('/<resultset_web\b[^<]*\sdeephits="?(\d+)"?/s',
 			$cache["xml"],
 			$regs)) {
@@ -109,7 +111,7 @@ function yahoo_boss_update_external ($variant_id)
     $content = "";
     $skipped_hits = 0;
 
-    if ($cache["hitcount"] > 0) {
+    if (isset($cache["hitcount"]) && $cache["hitcount"] > 0) {
 	preg_match_all ('{<result>.*?</result>}is', $cache["xml"], $matches,
 			PREG_PATTERN_ORDER);
 	foreach ($matches[0] as $result) {

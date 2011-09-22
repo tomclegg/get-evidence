@@ -9,22 +9,24 @@ $page_content = "";  // all html output stored here
 $display_genome_ID = "";
 if (isset ($_REQUEST['display_genome_id']))
     $display_genome_ID = $_REQUEST['display_genome_id'];
+else if (!preg_match ('{=}', $_SERVER['QUERY_STRING']))
+    $display_genome_ID = $_SERVER['QUERY_STRING'];
 
-else if (preg_match ('{^[a-f\d]+$}', $_SERVER['QUERY_STRING'], $matches)) {
+if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $display_genome_ID, $matches)) {
+    $display_genome_ID = theDb()->getOne
+	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND oid IN (?,?) ORDER BY private_genome_id DESC',
+	     array ($matches[0], $public_data_user, $pgp_data_user));
+    if (!$display_genome_ID)
+        $display_genome_ID = -1;
+}
+
+else if (preg_match ('{^[a-f\d]+$}', $display_genome_ID, $matches)) {
     if (strlen($matches[0]) == 40)
         $display_genome_ID = $matches[0];
     else
 	$display_genome_ID = theDb()->getOne
 	    ("SELECT shasum FROM private_genomes WHERE private_genome_id=?",
 	     array ($matches[0]));
-}
-
-else if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $_SERVER['QUERY_STRING'], $matches)) {
-    $display_genome_ID = theDb()->getOne
-	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND oid IN (?,?) ORDER BY private_genome_id DESC',
-	     array ($matches[0], $public_data_user, $pgp_data_user));
-    if (!$display_genome_ID)
-        $display_genome_ID = -1;
 }
 
 $user = getCurrentUser();
@@ -34,9 +36,17 @@ if (strlen($display_genome_ID) > 0) {
     $permission = $genome_report->permission($user['oid'], 
 					      getCurrentUser('is_admin'));
     if ($permission) {
-	if (isset($_REQUEST["json"])) {
+	if (isset($_REQUEST["json"]) ||
+            (isset($_REQUEST['format']) && $_REQUEST['format'] == 'json')) {
 	    header ("Content-type: application/json");
-	    print json_encode($genome_report->status());
+            $report = array ('input_sha1' => $genome_report->genomeID,
+                             'status' => $genome_report->status(),
+                             'header_data' => $genome_report->header_data(),
+                             'metadata' => $genome_report->metadata(),
+                             'variants' => $genome_report->variants(),
+                             'coverage_data' => $genome_report->coverage_data()
+                             );
+	    print json_encode($report);
 	    exit;
 	}
         $page_content .= genome_display($display_genome_ID, $permission,
