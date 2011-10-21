@@ -285,7 +285,7 @@ function variant_report_progress_update()
 	    var j = transport.responseJSON;
 	    if (j && j.status) {
 		if (typeof j.status.progress != 'undefined')
-		    jQuery('#variant_report_progress').progressbar('value', 100*j.progress);
+		    jQuery('#variant_report_progress').progressbar('value', 100*j.status.progress);
 		if (typeof j.status.status != 'undefined') {
 		    if (j.status.status == 'finished')
 			window.location.href = window.location.href;
@@ -306,7 +306,8 @@ function variant_report_progress_setup()
     var div = '#variant_report_progress';
     if (!jQuery(div).length)
 	return;
-    if (jQuery(div).attr('value')) val = parseFloat(jQuery(div).attr('value'));
+    if (jQuery(div).attr('initial-value'))
+	val = parseFloat(jQuery(div).attr('initial-value'));
     jQuery(div).progressbar();
     jQuery(div).progressbar('value', val * 100);
     jQuery(div).css('width', '100px');
