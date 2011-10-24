@@ -55,14 +55,18 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     var lastx = null;
                     for(var i=0; i<annots.length; i++) {
                         var annot = annots[i];
-                        if (lastx && parseFloat(annot[1]) > lastx)
-                            continue;
-
-                        lastx = parseFloat(annot[0]);
                         var startword = annot[0].split('.')[0]-1;
                         var startchar = annot[0].split('.')[1];
                         var stopword = annot[1].split('.')[0]-1;
                         var stopchar = annot[1].split('.')[1];
+
+                        if (lastx &&
+                            (parseInt(stopword) > parseInt(lastx[0]) ||
+                             (parseInt(stopword) == parseInt(lastx[0]) &&
+                              parseInt(stopchar) > parseInt(lastx[1]))))
+                            continue;
+
+                        lastx = [startword, startchar];
                         var stopre = new RegExp ('^((\\S+\\s+){'+stopword+'}\\S{'+stopchar+'})');
                         var text_halfdone = text.replace(stopre, '$1</span>');
                         var startre = new RegExp ('^((\\S+\\s+){'+startword+'}\\S{'+startchar+'})');
