@@ -31,6 +31,17 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     var div = this;
                     var bnkey = $(div).attr('bnkey');
                     var xml;
+                    var $annot;
+                    var text;
+                    var annots = [];
+                    var transitions = [];
+                    var current_colors = {};
+                    var n_colors = 0;
+                    var i;
+                    var annot, startword, startchar, stopword, stopchar;
+                    var tword, tchar, tcolor, ttype;
+                    var spancolor;
+
                     if (data && data.xml)
                         xml = data.xml;
                     else if ($(div).hasClass('bionotate_visible'))
@@ -41,9 +52,14 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                         return;
                     else
                         xml = $(div).attr('snippet_xml');
-                    var $annot = $($.parseXML (xml));
-                    var text = $annot.find('feed text').text();
-                    var annots = [];
+                    try {
+                        $annot = $($.parseXML (xml));
+                    } catch (e) {
+                        console.log ('Failed to parse XML');
+                        console.log (e);
+                        return;
+                    }
+                    text = $annot.find('feed text').text();
                     $annot.find('annotations entry').each(function(i,e){
                             var $e = $(e);
                             var annot = $e.find('range').text().split(' ');
@@ -52,26 +68,63 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                             annots.push(annot);
                         });
                     annots.sort(function(a,b){return b[0]-a[0]});
-                    var lastx = null;
-                    for(var i=0; i<annots.length; i++) {
-                        var annot = annots[i];
-                        if (lastx && parseFloat(annot[1]) > lastx)
-                            continue;
+                    for(i=0; i<annots.length; i++) {
+                        annot = annots[i];
+                        startword = annot[0].split('.')[0]-1;
+                        startchar = annot[0].split('.')[1]-0;
+                        stopword = annot[1].split('.')[0]-1;
+                        stopchar = annot[1].split('.')[1]-0;
+                        transitions.push([startword, startchar, bionotate_color[annot.type], 'start'],
+                                         [stopword, stopchar, bionotate_color[annot.type], 'stop']);
+                    }
+                    transitions.sort(function(a,b){
+                            return (a[0]==b[0] ? a[1]-b[1] : a[0]-b[0]);
+                        });
+                    for (i=transitions.length-1; i>=0; i--) {
+                        tword = transitions[i][0];
+                        tchar = transitions[i][1];
+                        tcolor = transitions[i][2];
+                        ttype = transitions[i][3];
+                        var insertme;
 
-                        lastx = parseFloat(annot[0]);
-                        var startword = annot[0].split('.')[0]-1;
-                        var startchar = annot[0].split('.')[1];
-                        var stopword = annot[1].split('.')[0]-1;
-                        var stopchar = annot[1].split('.')[1];
-                        var stopre = new RegExp ('^((\\S+\\s+){'+stopword+'}\\S{'+stopchar+'})');
-                        var text_halfdone = text.replace(stopre, '$1</span>');
-                        var startre = new RegExp ('^((\\S+\\s+){'+startword+'}\\S{'+startchar+'})');
-                        var text_done = text_halfdone.replace(startre, '$1<span color="'+bionotate_color[annot.type]+'">');
-                        if (text_done != text_halfdone && text_halfdone != text)
-                            text = text_done;
+                        if (ttype == 'start' && n_colors == 1)
+                            insertme = '<span color="'+tcolor+'">';
+                        else if (n_colors % 2 == 1) {
+                            spancolor = 'multi';
+                            if (ttype == 'stop') {
+                                // tcolor is the color that is
+                                // obscuring the desired color to the
+                                // left of point -- the span tag needs
+                                // the color that has just been freed
+                                // up.
+                                for(var c in current_colors) {
+                                    if (current_colors[c] > 0 && tcolor != c) {
+                                        spancolor = c;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                                spancolor = tcolor;
+                            insertme = '</span><span color="'+spancolor+'">';
+                        }
+                        else if (ttype == 'stop' && n_colors == 0)
+                            insertme = '</span>';
+                        else
+                            insertme = '</span><span color="multi">';
+
+                        var tre = new RegExp ('^((\\S+\\s+){'+tword+'}\\S{'+tchar+'})');
+                        var text_new = text.replace(tre, '$1'+insertme);
+                        if (text_new != text) {
+                            text = text_new;
+                            if (!current_colors[tcolor])
+                                current_colors[tcolor] = 0;
+                            current_colors[tcolor] += (ttype == 'stop' ? 1 : -1);
+                            n_colors += (ttype == 'start' ? -1 : 1);
+                        }
                     }
                     var conclusion = $annot.find('question id:contains(variance-disease-relation)').parent().find('answer').text();
-                    var conclusion_text = $(schema).find('question:contains(variance-disease-relation)').find('answers answer:contains('+conclusion+')').find('text').text();
+                    var conclusion_text = $(schema).find('question:contains(variance-disease-relation)').find('answers answer:contains("'+conclusion+'")').find('text').text();
                     $(div).html('<span><p>'+text+'</p><p>&nbsp;<br />Variant/disease relation: <b>'+conclusion_text+'</b></p></span>');
                     $(div).addClass('bionotate_visible').show();
                 });
