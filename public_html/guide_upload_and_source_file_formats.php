@@ -19,6 +19,11 @@ h3. General instructions
 
 We use a variant of GFF files for genome processing. Files may be uploaded as plain text (with a .gff extension) or compressed with gzip (.gff.gz extension). If you click the "download" option at the top of a genome report you will see an example of input data we have used. We make a lot of assumptions about input data, so please read our descriptions below to be sure your data is processed properly.
 
+A header line in the file should specify genome build in the following manner:
+@##genome-build 37@
+
+If unspecified, the processing currently assumes build 36. Either build 36 or build 37 may be used.
+
 *Columns must be tab separated* ("\\t" character) and should have the following data:
 
 # Chromosome (e.g. "chr1", "chr12", "chrX", "chrM". Must be h18 / build 36.)
@@ -30,8 +35,6 @@ We use a variant of GFF files for genome processing. Files may be uploaded as pl
 # Strand (ignored, *we assume to be "+"*)
 # Frame (ignored, "." may be used to leave the field empty)
 # Attributes: semicolon separated features, described further below
-
-*Currently we assume hg18 / build 36 positions* and are unable to interpret hg19 / build 37 data. 
 
 The variant and reference sequences for each position are contained within the final "Attributes" column. Attributes in this column should be separated by semicolons. Within each, data is separated by whitespace, and the first value is taken to be the variable name.
 
