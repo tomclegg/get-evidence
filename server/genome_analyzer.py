@@ -114,7 +114,7 @@ def process_source(genome_in, metadata=dict(), options=dict()):
     if metadata['input_type'] == "GFF":
         gff_input = source_input
     elif metadata['input_type'] == "CGIVAR":
-        gff_input = cgivar_to_gff.convert(source_input)
+        gff_input = cgivar_to_gff.convert(source_input, options)
     elif metadata['input_type'] == "23ANDME":
         gff_input = gff_from_23andme.convert(source_input)
     else:
