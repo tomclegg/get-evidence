@@ -2,7 +2,7 @@
 # Filename: gff_getevidence_map.py
 
 """
-usage: %prog nssnp.gff getev_flatfile.tsv [output_file]
+usage: %prog nssnp.gff getev_flatfile.json[.gz] [output_file]
 """
 
 # Match to GET-Evidence's JSON flatfile dump, 
@@ -531,22 +531,27 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
                             output["autoscore"] = autoscore(output, 
                                                             blosum_matrix,
                                                             aa_from, aa_to)
+                            output["suff_eval"] = suff_eval(output)
+                            output["dbSNP"] = dbsnp_id
                             # Quit after first hit passing threshold
-                            if output["autoscore"] >= 2 or suff_eval(output):
-                                output["dbSNP"] = dbsnp_id
+                            if output["autoscore"] >= 2 or output["suff_eval"]:
                                 break
-            # Calculate autoscore, yield json data if at least 2.
-            output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
-            if output["autoscore"] >= 2 or suff_eval(output):
-                # This barfs on Unicode sometimes.
-                try:
-                    json_output = str(json.dumps(output, ensure_ascii=False))
-                except:
-                    continue
-                if f_json_out:
-                    f_json_out.write(json_output + '\n')
-                else:
-                    yield json_output
+
+            # Calculate autoscore, if not already done during dbSNP selection process
+            if not ("autoscore" in output):
+                output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
+                output["suff_eval"] = suff_eval(output)
+
+            # This barfs on Unicode sometimes.
+            try:
+                json_output = str(json.dumps(output, ensure_ascii=False))
+            except:
+                continue
+            if f_json_out:
+                f_json_out.write(json_output + '\n')
+            else:
+                yield json_output
+
             # TODO: print when beyond end of gene, not when new one seen
             if f_gene_out and 'ucsc_trans' in record.attributes:
                 # We take 1st & ignore multiple transcripts (which are rare)
@@ -565,15 +570,15 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
                         getev_data = getev_by_dbsnp[dbsnp_id]
                         copy_output_data(getev_data, output)
                         output["autoscore"] = autoscore(output)
+                        output["suff_eval"] = suff_eval(output)
+                        output["dbSNP"] = dbsnp_id
                         # Quit after first hit passing threshold
-                        if output["autoscore"] >= 2 or suff_eval(output):
-                            output["dbSNP"] = dbsnp_id
+                        if output["autoscore"] >= 2 or output["suff_eval"]:
                             break
-                    break  # quit after first hit
-            output["autoscore"] = autoscore(output)
-            # Autoscore bar is lower here because you can only get points if 
-            # the dbSNP ID is in one of the variant specific databases (max 2).
-            if output["autoscore"] >= 1 or suff_eval(output):
+
+            # If no gene data and dbSNP id is not listed in
+            # GET-Evidence, don't output.
+            if "autoscore" in output:
                 # This barfs on Unicode sometimes.
                 try:
                     json_output = str(json.dumps(output, ensure_ascii=False))
