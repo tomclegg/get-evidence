@@ -118,7 +118,8 @@ def process_source(genome_in, metadata=dict(), options=dict()):
     elif metadata['input_type'] == "23ANDME":
         gff_input = gff_from_23andme.convert(source_input)
     else:
-        print "ERROR: genome file format not recognized"
+        raise Exception("input format not recognized")
+    print >> sys.stderr, "file format:", metadata['input_type']
 
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
