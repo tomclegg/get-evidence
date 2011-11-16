@@ -646,7 +646,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
         $gene_report =& $genome_report->gene_report();
 
         $returned_text .= "<div id='variant_table_tabs'><ul>\n"
-            . "<li><A href='#variant_table_tab_0'>Evaluated variants</A></li>\n"
+            . "<li><A href='#variant_table_tab_0'>Genome report</A></li>\n"
             . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n";
         if ($coverage)
             $returned_text .=
