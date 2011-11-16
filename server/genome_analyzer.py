@@ -252,8 +252,8 @@ def genome_analyzer(genotype_file, server=None, options=dict()):
             if parA_file_match and parB_file_match:
                 parA_input = os.path.join(parA_in_dir, parA_file_match[0])
                 parB_input = os.path.join(parB_in_dir, parB_file_match[0])
-                gff_parA_gen = process_source(parA_input, options=options)
-                gff_parB_gen = process_source(parB_input, options=options)
+                gff_parA_gen = process_source(parA_input, dict(), options=options)
+                gff_parB_gen = process_source(parB_input, dict(), options=options)
                 gff_child_gen = process_source(args['genotype_input'], 
                                                genome_data, options=options)
                 parA_build = gff_parA_gen.next()
