@@ -99,7 +99,7 @@ def detect_format(f_in):
     print "Giving up after 100 lines... Can't figure out data format."
     return "UNKNOWN"
 
-def process_source(genome_in, metadata=dict()):
+def process_source(genome_in, metadata=dict(), options=dict()):
     """
     Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
@@ -114,21 +114,28 @@ def process_source(genome_in, metadata=dict()):
     if metadata['input_type'] == "GFF":
         gff_input = source_input
     elif metadata['input_type'] == "CGIVAR":
-        gff_input = cgivar_to_gff.convert(source_input)
+        gff_input = cgivar_to_gff.convert(source_input, options)
     elif metadata['input_type'] == "23ANDME":
         gff_input = gff_from_23andme.convert(source_input)
     else:
-        print "ERROR: genome file format not recognized"
+        raise Exception("input format not recognized")
+    print >> sys.stderr, "file format:", metadata['input_type']
 
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
     header = []
-    sort_cmd = ['sort', '--buffer-size=20%', '--key=1,1', '--key=5n,5', '--key=4n,4']
+    sort_cmd = ['sort',
+                '--buffer-size='+options.sort_buffer_size,
+                '--key=1,1', '--key=5n,5', '--key=4n,4']
     sort_out = subprocess.Popen(sort_cmd, stdin=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, bufsize=1)
     genome_build = DEFAULT_BUILD
     b36_list = ["hg18", "36", "b36", "build36", "NCBI36"]
     b37_list = ["hg19", "37", "b37", "build37", "GRCh37"]
+
+    if options.chromosome:
+        chromosome_stripped = options.chromosome.lstrip('chr')
+
     for line in gff_input:
         if not header_done:
             if re.match('#', line):
@@ -145,6 +152,8 @@ def process_source(genome_in, metadata=dict()):
                         raise Exception("genome build uninterpretable")
             else:
                 header_done = True
+        elif options.chromosome and not re.match(r"(?i)^(chr)?%s\s" % chromosome_stripped, line):
+            pass
         else:
             sort_out.stdin.write(str(line.rstrip('\n')) + '\n')
     sort_out.stdin.close()
@@ -186,7 +195,7 @@ def processing_init(genotype_file, server=None):
         os.dup2(log_handle.fileno(), sys.stdout.fileno())
     return [output_dir, log, log_handle, lockfile, logfile]
 
-def genome_analyzer(genotype_file, server=None):
+def genome_analyzer(genotype_file, server=None, options=dict()):
     """Perform analyses on genotype_file"""
     init_stuff = processing_init(genotype_file, server)
     if init_stuff:
@@ -243,10 +252,10 @@ def genome_analyzer(genotype_file, server=None):
             if parA_file_match and parB_file_match:
                 parA_input = os.path.join(parA_in_dir, parA_file_match[0])
                 parB_input = os.path.join(parB_in_dir, parB_file_match[0])
-                gff_parA_gen = process_source(parA_input)
-                gff_parB_gen = process_source(parB_input)
+                gff_parA_gen = process_source(parA_input, dict(), options=options)
+                gff_parB_gen = process_source(parB_input, dict(), options=options)
                 gff_child_gen = process_source(args['genotype_input'], 
-                                               genome_data)
+                                               genome_data, options=options)
                 parA_build = gff_parA_gen.next()
                 parB_build = gff_parB_gen.next()
                 genome_data['genome_build'] = gff_child_gen.next()
@@ -260,7 +269,7 @@ def genome_analyzer(genotype_file, server=None):
     if not gff_in_gen:
         # We pass build as a yield (instead of in metadata) to force the 
         # generator to read through the header portion of the input data.
-        gff_in_gen = process_source(args['genotype_input'], genome_data)
+        gff_in_gen = process_source(args['genotype_input'], genome_data, options=options)
         genome_data['genome_build'] = gff_in_gen.next()
 
     # Set up build-dependent file locations
@@ -279,8 +288,11 @@ def genome_analyzer(genotype_file, server=None):
     else:
         raise Exception("genome build data is invalid")
 
-    # It might be more elegant to extract this from metadata.
-    chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
+    if options.chromosome:
+        chrlist = [options.chromosome]
+    else:
+        # It might be more elegant to extract this from metadata.
+        chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
 
     # Process genome through a series of GFF-formatted string generators.
     log.put('#status 20 looking up reference alleles and '
@@ -288,40 +300,54 @@ def genome_analyzer(genotype_file, server=None):
             'cross-referencing GET-Evidence database')
     progtrack = ProgressTracker(sys.stderr, [22, 99], expected=chrlist, 
                                 metadata=genome_data)
-    # Record chromosomes seen and genome coverage.
-    metadata_gen = get_metadata.genome_metadata(gff_in_gen,
-                                                args['genome_stats'],
-                                                progresstracker=progtrack)
-    # Report coding regions that lack coverage.
-    missing_gen = call_missing.report_uncovered(metadata_gen,
-                                                args['transcripts'], 
-                                                args['genetests'], 
-                                                output_file=args['miss_out'],
-                                                progresstracker=progtrack)
-    # Find reference allele.
-    twobit_gen = gff_twobit_query.match2ref(missing_gen, args['reference'])
-    # Look up dbSNP IDs
-    dbsnp_gen = gff_dbsnp_query.match2dbSNP(twobit_gen, args['dbsnp'])
-    # Check for nonsynonymous SNP
-    nonsyn_gen = gff_nonsynonymous_filter.predict_nonsynonymous(dbsnp_gen, 
-                                                           args['reference'], 
-                                                           args['transcripts'])
-    # Pull off GET-Evidence hits
-    nonsyn_gen2 = gff_getevidence_map.match_getev(nonsyn_gen, 
-                                 args['getev_flat'], 
-                                 transcripts_file=args['transcripts'],
-                                 gene_out_file=args['getev_genes_out'] + ".tmp",
-                                 output_file=args['getev_out'] + ".tmp", 
-                                 progresstracker=progtrack)
 
-    # Printing to output, pulls data through the generator chain.
-    ns_out = autozip.file_open(args['nonsyn_out_tmp'], 'w')
-    for line in nonsyn_gen2:
-        ns_out.write(line + "\n")
-    ns_out.close()
-    os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
-    os.system("mv " + args['nonsyn_out_tmp'] + " " + args['nonsyn_out'])
-    os.system("mv " + args['getev_genes_out'] + ".tmp " + args['getev_genes_out'])
+    if not options.chromosome:
+
+        # Record chromosomes seen and genome coverage.
+        gff_in_gen = get_metadata.genome_metadata(gff_in_gen,
+                                                  args['genome_stats'],
+                                                  progresstracker=progtrack)
+
+        # Report coding regions that lack coverage.
+        gff_in_gen = call_missing.report_uncovered(gff_in_gen,
+                                                   args['transcripts'], 
+                                                   args['genetests'], 
+                                                   output_file=args['miss_out'],
+                                                   progresstracker=progtrack)
+
+    if options.metadata_only:
+        for line in gff_in_gen:
+            pass
+
+    else:
+        # Find reference allele.
+        gff_in_gen = gff_twobit_query.match2ref(gff_in_gen, args['reference'])
+
+        # Look up dbSNP IDs
+        gff_in_gen = gff_dbsnp_query.match2dbSNP(gff_in_gen, args['dbsnp'])
+
+        # Check for nonsynonymous SNP
+        gff_in_gen = gff_nonsynonymous_filter.predict_nonsynonymous(gff_in_gen, 
+                                                                    args['reference'], 
+                                                                    args['transcripts'])
+
+        # Pull off GET-Evidence hits
+        gff_in_gen = gff_getevidence_map.match_getev(gff_in_gen,
+                                                     args['getev_flat'], 
+                                                     transcripts_file=args['transcripts'],
+                                                     gene_out_file=args['getev_genes_out'] + ".tmp",
+                                                     output_file=args['getev_out'] + ".tmp", 
+                                                     progresstracker=progtrack)
+
+        # Printing to output, pulls data through the generator chain.
+        ns_out = autozip.file_open(args['nonsyn_out_tmp'], 'w')
+        for line in gff_in_gen:
+            ns_out.write(line + "\n")
+        ns_out.close()
+
+        os.system("mv " + args['getev_out'] + ".tmp " + args['getev_out'])
+        os.system("mv " + args['nonsyn_out_tmp'] + " " + args['nonsyn_out'])
+        os.system("mv " + args['getev_genes_out'] + ".tmp " + args['getev_genes_out'])
 
     # Print metadata
     metadata_f_out = open(args['metadata_out'], 'w')
@@ -371,7 +397,10 @@ def getev_reprocess(genotype_file, server=None):
     if (os.path.exists (args['nonsyn_data'] + '.gz')):
         args['nonsyn_data'] = args['nonsyn_data'] + '.gz'
 
-    chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
+    if options.chromosome:
+        chrlist = [options.chromosome]
+    else:
+        chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
     progtrack = ProgressTracker(log_handle, [1, 99], expected=chrlist)
 
     # Get GET-Evidence hits
@@ -412,15 +441,25 @@ def main():
     parser.add_option("-g", "--genome", dest="genome_data",
                       help="GENOME_DATA to process",
                       metavar="GENOME_DATA")
+    parser.add_option("-C", "--chromosome", dest="chromosome",
+                      help="single chromosome to process",
+                      metavar="CHROMOSOME")
+    parser.add_option("-M", "--metadata-only", dest="metadata_only", action="store_true",
+                      help="do not call nsSNPs, just produce statistics",
+                      metavar="METADATA_ONLY")
+    parser.add_option("--sort-buffer-size", dest="sort_buffer_size",
+                      help="control --buffer-size option to sort(1)",
+                      metavar="SORT_BUFFER_SIZE")
     parser.add_option("--getevonly", action="store_true", dest="getev_only", 
                       default=False, help="Reprocess against GET-Evidence only")
+    parser.set_defaults(sort_buffer_size="20%")
     option, args = parser.parse_args()
-    
+
     if option.genome_data and not option.is_server:
         if option.getev_only:
             getev_reprocess(option.genome_data)
         else:
-            genome_analyzer(option.genome_data)
+            genome_analyzer(option.genome_data, options=option)
     elif option.is_server:
         if option.stderr:
             errout = open(option.stderr, 'a+', 0)

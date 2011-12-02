@@ -164,7 +164,7 @@ def process_split_position(data, cgi_input):
             for line in out: 
                 yield line
 
-def convert(cgi_input):
+def convert(cgi_input, options=dict()):
     """Generator that converts CGI var data to GFF-formated strings"""
     # Set up CGI input. Default is to assume a str generator.
     cgi_data = cgi_input
@@ -173,6 +173,7 @@ def convert(cgi_input):
      
     build = DEFAULT_BUILD    
     header_done = False
+    saw_chromosome = False
     for line in cgi_data:
         # Handle the header, get the genome build if you can.
         if not header_done:
@@ -194,6 +195,15 @@ def convert(cgi_input):
 
         # Handle data
         data = line.rstrip('\n').split("\t")
+
+        if options.chromosome:
+            if data[3] != options.chromosome:
+                if saw_chromosome:
+                    # Assume all base calls for a single chromosome are in a contiguous block
+                    break
+                continue
+            saw_chromosome = True
+
         if data[2] == "all" or data[1] == "1":
             # The output from process_full_position is a str.
             out = process_full_position(data)
