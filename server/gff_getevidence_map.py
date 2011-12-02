@@ -13,6 +13,7 @@ import gzip
 import os
 import re
 import sys
+import datetime
 from utils import autozip, doc_optparse, gff
 from config_names import GENETESTS_DATA
 from utils.substitution_matrix import blosum100
@@ -432,7 +433,16 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
     else:
         gff_data = gff.input(gff_in)
 
+    header_done = False
+
     for record in gff_data:
+        # Have to do this after calling the first record to
+        # get the iterator to read through the header data 
+        if (not header_done) and f_json_out:
+            yield "##genome-build " + gff_data.data[1]
+            yield "# File creation date: " + datetime.datetime.now().isoformat(' ')
+            header_done = True
+
         # If outputing JSON to file, yield GFF data as it's read.
         if f_json_out:
             yield str(record)
