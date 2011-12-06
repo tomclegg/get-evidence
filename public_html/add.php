@@ -45,6 +45,17 @@ if (getCurrentUser()) {
     $response["please_reload"] = true;
     $response["variant_key"] = "$gene ".aa_short_form("$aa_from$aa_pos$aa_to");
   }
+  else if (preg_match ('{^rs[0-9]+$}', $_POST["rsid"])) {
+    $variant_id = evidence_get_variant_id ($_POST["rsid"],
+					   false, false, false,
+					   true);
+    $edit_id = evidence_get_latest_edit ($variant_id, 0, 0, 0, true);
+    $response["latest_edit_v${variant_id}a0g0"] = $edit_id;
+    $response["latest_edit_id"] = $edit_id;
+    $response["variant_id"] = $variant_id;
+    $response["please_reload"] = true;
+    $response["variant_key"] = $_POST["rsid"];
+  }
   else {
     error_log ("Invalid variant specified, ".json_encode($regs));
     die ("Invalid variant specified");

@@ -30,16 +30,22 @@ $_GET["q"] = trim ($_GET["q"], "\" \t\n\r\0");
 if ($x = preg_replace ('{\b(\d+)(?:_(\d+))?del([A-Z]+)ins([A-Z]+[a-z]*)$}', '$3$1$4', $_GET["q"]))
   $_GET["q"] = $x;
 
+$aa = false;
+$rsid = false;
+
 if (ereg ("^[0-9]+$", $_GET["q"]))
   $variant_id = $_GET["q"];
 else if (ereg ("^(rs[0-9]+)(;([0-9]+))?$", $_GET["q"], $regs)) {
-  $variant_id = evidence_get_variant_id ($regs[1]);
-  $variant_name = evidence_get_variant_name ($variant_id, "-", true);
-  if ($regs[1] != $variant_name) {
-    header ("Location: $variant_name");
-    exit;
+  $rsid = $regs[1];
+  $variant_id = evidence_get_variant_id ($rsid);
+  if ($variant_id) {
+    $variant_name = evidence_get_variant_name ($variant_id, "-", true);
+    if ($regs[1] != $variant_name) {
+      header ("Location: $variant_name");
+      exit;
+    }
+    $max_edit_id = $regs[3];
   }
-  $max_edit_id = $regs[3];
 }
 else if (preg_match ("{^([-A-Za-z0-9_]+)[- \t\n]+([A-Za-z]+[0-9]+[A-Za-z\\*]+)(;([0-9]+))?\$}", $_GET["q"], $regs) &&
 	 aa_sane ($regs[2])) {
@@ -64,13 +70,22 @@ else if (preg_match ("{^([-A-Za-z0-9_]+)[- \t\n]+([A-Z]+)([0-9]+)([A-Za-z\\*]+)(
 }
 
 
-if (!$variant_id && $aa) {
+if (!$variant_id && ($aa || $rsid)) {
   header ("HTTP/1.1 404 Not found");
-  $gOut["title"] = "$gene $aa_short - GET-Evidence";
+  if ($aa) {
+    $variant_name = "$gene $aa_short";
+    $variant_name_long = "<P>($gene $aa_long)</P>";
+  }
+  else {
+    $variant_name = $rsid;
+    $variant_name_long = "";
+  }
+  
+  $gOut["title"] = "$variant_name - GET-Evidence";
   $gOut["content"] = <<<EOF
-<H1>$gene $aa_short</H1>
+<H1>$variant_name</H1>
 
-<P>($gene $aa_long)</P>
+$variant_name_long
 
 <P>There is no GET-Evidence entry for this variant.</P>
 
@@ -82,7 +97,7 @@ EOF
       $gOut["content"] .= <<<EOF
 &nbsp;
 
-<BUTTON onclick="return evidence_add_variant('$gene','$aa_short');">Create new entry</BUTTON>
+<BUTTON onclick="return evidence_add_variant('$gene','$aa_short','$rsid');">Create new entry</BUTTON>
 EOF
 ;
   go();
