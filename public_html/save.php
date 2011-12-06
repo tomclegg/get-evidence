@@ -1,5 +1,4 @@
-<?php
-    ;
+<?php ; // -*- mode: java; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*-
 
 // Copyright 2010 Clinical Future, Inc.
 // Authors: see git-blame(1)
@@ -163,7 +162,16 @@ foreach ($_POST as $param => $newvalue)
   $q = theDb()->query ("UPDATE edits SET $field_id=?, edit_timestamp=NOW()
 			WHERE edit_id=? AND edit_oid=? AND is_draft=1",
 		       array($newvalue, $edit_id, getCurrentUser("oid")));
-  if (!theDb()->isError($q)) {
+  if (theDb()->isError($q)) {
+    $response["errors"][] = $q->getMessage();
+  }
+  else if (theDb()->affectedRows() < 1 &&
+	   !theDb()->getOne("SELECT $field_id=? FROM edits WHERE edit_id=?", array($newvalue, $edit_id))) {
+    $response["errors"][] = "Your edits were not saved. $field_id";
+    if (!getCurrentUser("oid"))
+      $response["need_login"] = true;
+  }
+  else {
     if (isset ($oddsratio_params[$param]) &&
 	ereg ('^{', $newvalue)) {
       $saved_values = json_decode ($newvalue, true);
@@ -208,8 +216,6 @@ foreach ($_POST as $param => $newvalue)
       $response["preview_".ereg_replace("^edited_","",$param)] = $preview;
     }
   }
-  else
-    $response["errors"][] = $q->getMessage();
 
   if ($_POST["submit_flag"])
     $edits_to_submit[$edit_id] = 1;

@@ -19,7 +19,7 @@ function message_update (newtext)
 
 function message_init()
 {
-    if ($('message').innerHTML) {
+    if ($('message') && $('message').innerHTML) {
 	message_current = { text: $('message_init').innerHTML };
     }
 }
