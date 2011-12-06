@@ -115,7 +115,8 @@ Make sure genome analysis server is executable:
  cd ~/get-evidence/server/
  chmod +x genome_analyzer.py
 
-Modify php.ini settings to enable genome uploads. In ubuntu you can
+Modify php.ini settings to enable genome uploads and extend idle
+session timeouts beyond the default 24 minutes. In ubuntu you can
 either edit /etc/php5/apache2/php.ini or create
 /etc/php5/conf.d/get-evidence.ini with the following values:
 
@@ -123,6 +124,8 @@ either edit /etc/php5/apache2/php.ini or create
  max_input_time = 600
  post_max_size = 512M
  upload_max_filesize = 512M
+ memory_limit = 128M
+ session.gc_maxlifetime = 172800
 
 If you use debian PHP modifications, make sure your
 /usr/lib/php5/maxlifetime script checks all *.ini files in config
