@@ -124,6 +124,23 @@ either edit /etc/php5/apache2/php.ini or create
  post_max_size = 512M
  upload_max_filesize = 512M
 
+If you use debian PHP modifications, make sure your
+/usr/lib/php5/maxlifetime script checks all *.ini files in config
+directories (like PHP itself does), not just php.ini.  You might need
+to make this change:
+
+ -for ini in /etc/php5/*/php.ini; do
+ +for ini in /etc/php5/*/*.ini; do
+
+Alternatively, you can create a php.ini file in a new
+/etc/php5/get-evidence/ directory, and put the session.gc_maxlifetime
+setting in there as well.  PHP will ignore it but the debian script
+will pay attention to it, even if your modified maxlifetime script
+gets overwritten by an upgrade.
+
+ sudo mkdir /etc/php5/get-evidence
+ echo 'session.gc_maxlifetime = 172800' | sudo tee /etc/php5/get-evidence/php.ini
+
 Populate the upload directory with its initial directory structure:
 
  cd ~/get-evidence/server/script/
