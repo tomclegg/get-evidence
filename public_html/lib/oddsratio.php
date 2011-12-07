@@ -13,7 +13,7 @@ function oddsratio_compute ($figs, $htmlformat=FALSE)
     if ($case_neg + $case_pos == 0 || $control_neg == 0) 
 	return "-";
     if ($case_neg == 0 || $control_pos == 0)
-	return ($htmlformat) ? "∞" : INF;
+	return ($htmlformat ? "∞" : "INF");
     $or = sprintf ("%.3f", (($case_pos / $case_neg) /
 			    ($control_pos / $control_neg)));
     if ($or > 1000) {
