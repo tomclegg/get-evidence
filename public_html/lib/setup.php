@@ -25,7 +25,10 @@ require_once ("lib/user.php");
 require_once ("lib/blosum.php");
 
 global $gOut;
-$gOut = array("site_title" => "GET-Evidence");
+$gOut = array("site_title" => "GET-Evidence",
+	      "nosidebar" => false,
+	      "noheader" => false,
+	      "nofooter" => false);
 
 function go()
 {
