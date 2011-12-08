@@ -1,7 +1,10 @@
 CACHEDIR=$(shell pwd)/tmp
 
+default-target:
+	@echo 'There is no default target here.'
+	@echo 'You probably want either "make daily" or "make install".'
 daily: update_editors_summary dump_database data_local
-install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js DataTables-1.8.1.zip public_html/DataTables-1.8.1 public_html/jquery-ui update_editors_summary
+install: php-openid-2.2.2 textile-2.0.0 public_html/js/wz_tooltip.js public_html/js/tip_balloon.js DataTables-1.8.1.zip public_html/DataTables-1.8.1 public_html/jquery-ui
 
 php-openid-2.2.2:
 	[ -d php-openid/.git ] || git clone http://github.com/openid/php-openid.git
@@ -82,7 +85,7 @@ latest_flat.gz: latest_flat
 vis_data:
 	cd get_evidence_vis && ./ProcessTableForVis.pl ../public_html/latest-flat.tsv nsSNP-freq.gff >../public_html/latest_vis_data.tsv.tmp
 	cd public_html && mv latest_vis_data.tsv.tmp latest_vis_data.tsv
-DATADIR:=$(shell . server/script/config-local.sh && echo $$DATA)
+DATADIR:=$(shell . server/script/config-local.sh 2>/dev/null && echo $$DATA)
 analysis_data_tarball.locator: $(DATADIR)/b130_SNPChrPosOnRef_36_3_sorted.bcp $(DATADIR)/b132_SNPChrPosOnRef_37_1_sorted.bcp \
  $(DATADIR)/knownGene_hg18_sorted.txt $(DATADIR)/knownGene_hg19_sorted.txt \
  $(DATADIR)/hg18.2bit $(DATADIR)/hg19.2bit \
