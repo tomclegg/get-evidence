@@ -93,6 +93,7 @@ foreach ($_POST as $param => $newvalue)
   if (!($edit_id = $response["edit_id__$previous_edit_id"]) &&
       !($client_sent_edit_id = $_POST["edit_id__$previous_edit_id"])) {
     if ($no_previous_edit_id) {
+      error_log ("no previous edit_id: $variant_id, $article_pmid, $genome_id, $disease_id");
       theDb()->query ("INSERT INTO edits
 			SET edit_timestamp=NOW(), edit_oid=?, is_draft=1,
 			variant_id=?, article_pmid=?, genome_id=?, disease_id=?",
@@ -105,10 +106,11 @@ foreach ($_POST as $param => $newvalue)
     $oldrow = theDb()->getRow ("SELECT * FROM edits WHERE edit_id=? AND is_draft=0",
 			       array($previous_edit_id));
     if (theDb()->isError($oldrow) || !$oldrow) {
-      // TODO: convey error on client side
       $response["errors"][] = "item you're editing ($previous_edit_id) doesn't exist";
       continue;
     }
+    if ($oldrow[$field_id] == $newvalue)
+	continue;
     $newrow = $oldrow;
     $newrow["previous_edit_id"] = $oldrow["edit_id"];
     if ($oldrow["is_delete"])
@@ -129,13 +131,11 @@ foreach ($_POST as $param => $newvalue)
     $q = theDb()->query ("INSERT INTO edits SET edit_timestamp=NOW() $columnlist",
 			 $valuelist);
     if (theDb()->isError($q)) {
-      // TODO: convey error on client side
       $response["errors"][] = $q->getMessage();
       continue;
     }
     $new_edit_id = theDb()->getOne ("SELECT LAST_INSERT_ID()");
     if ($new_edit_id < 1) {
-      // TODO: convey error on client side
       $response["errors"][] = "edit_id $edit_id does not make sense";
       continue;
     }
@@ -222,10 +222,10 @@ foreach ($_POST as $param => $newvalue)
 }
 
 if (!$response["errors"]) {
-  foreach ($edits_to_submit as $edit_id => $x) {
+  foreach ($edits_to_submit as $edit_id => $x)
     evidence_submit ($edit_id);
+  if ($_POST["submit_flag"])
     $response["please_reload"] = true;
-  }
   if (isset ($_POST["signoff_flag"]) &&
       $_POST["signoff_flag"] &&
       $_POST["signoff_flag"] != "false")
