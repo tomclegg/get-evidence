@@ -23,6 +23,15 @@ function frag($tag)
      }
 }
 
+function scripttag($jsfile)
+{
+    if (file_exists("js/$jsfile.js"))
+	$jsfile = "$jsfile.js";
+    if (file_exists("js/$jsfile"))
+	$jsfile = "$jsfile?" . filemtime("js/$jsfile");
+    return "<script type=\"text/javascript\" src=\"/js/$jsfile\"></script>\n";
+}
+
 header('Content-Type: text/html; charset=UTF-8');
 
 ?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
@@ -49,14 +58,11 @@ header('Content-Type: text/html; charset=UTF-8');
 <script type="text/javascript">
   jQuery.noConflict();
 </script>
-<script type="text/javascript" src="/js/addEvent.js"></script>
-<script type="text/javascript" src="/js/message.js"></script>
-<script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
-<script type="text/javascript" src="/js/evidence.js"></script>
-<script type="text/javascript" src="/js/report.js"></script>
-<script type="text/javascript" src="/js/show-what.js"></script>
-<script type="text/javascript" src="/js/datatable_setup.js"></script>
-<script type="text/javascript" src="/js/bionotate.js"></script>
+<?php
+foreach(split(' ','addEvent message edit-autosave-submit evidence report show-what datatable_setup bionotate') as $jsfile) {
+    echo scripttag($jsfile);
+}
+?>
 <link rel="stylesheet" type="text/css" href="bionotate.css" />
 <title><?php frag("title"); ?></title>
 </head>
