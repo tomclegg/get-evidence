@@ -124,6 +124,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                         }
                     }
                     var conclusion = $annot.find('question id:contains(variance-disease-relation)').parent().find('answer').text();
+                    if (!conclusion) conclusion = 'other';
                     var conclusion_text = $(schema).find('question:contains(variance-disease-relation)').find('answers answer:contains("'+conclusion+'")').find('text').text();
                     $(div).html('<span><p>'+text+'</p><p>&nbsp;<br />Variant/disease relation: <b>'+conclusion_text+'</b></p></span>');
                     $(div).addClass('bionotate_visible').show();
