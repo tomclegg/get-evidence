@@ -700,7 +700,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
         $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff'><THEAD><TR>"
             . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
             . "<TH>Variant</TH>"
-            . "<TH class='SortNumeric SortDescFirst'>Autoscore</TH>"
+            . "<TH class='SortNumeric SortDescFirst'>Prioritization score</TH>"
             . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
             . "<TH class='Unsortable'>Num of<BR />articles</TH>"
             . "<TH class='Unsortable'>Zygosity and Autoscore Reasons</TH>"
@@ -788,7 +788,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
                             '<TD>' . $variant['summary_short'] . '</TD>';
                     } else {
                         $returned_text .= '<TD>Insufficiently evaluated</TD>' .
-                            '<TD>Autoscore: ' . $variant['autoscore'] . 
+                            '<TD>Prioritization score: ' . $variant['autoscore'] . 
                             '<BR />' . $variant['autoscore_why'] . '</TD>';
                     }
                 }
