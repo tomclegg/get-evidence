@@ -1,5 +1,4 @@
-<?php
-    ;
+<?php ; // -*- mode: java; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*-
 
 // Copyright 2010-2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
@@ -22,6 +21,15 @@ function frag($tag)
      {
        call_user_func ("print_$tag", $tag);
      }
+}
+
+function scripttag($jsfile)
+{
+    if (file_exists("js/$jsfile.js"))
+	$jsfile = "$jsfile.js";
+    if (file_exists("js/$jsfile"))
+	$jsfile = "$jsfile?" . filemtime("js/$jsfile");
+    return "<script type=\"text/javascript\" src=\"/js/$jsfile\"></script>\n";
 }
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -50,14 +58,11 @@ header('Content-Type: text/html; charset=UTF-8');
 <script type="text/javascript">
   jQuery.noConflict();
 </script>
-<script type="text/javascript" src="/js/addEvent.js"></script>
-<script type="text/javascript" src="/js/message.js"></script>
-<script type="text/javascript" src="/js/edit-autosave-submit.js"></script>
-<script type="text/javascript" src="/js/evidence.js"></script>
-<script type="text/javascript" src="/js/report.js"></script>
-<script type="text/javascript" src="/js/show-what.js"></script>
-<script type="text/javascript" src="/js/datatable_setup.js"></script>
-<script type="text/javascript" src="/js/bionotate.js"></script>
+<?php
+foreach(split(' ','addEvent message edit-autosave-submit evidence report show-what datatable_setup bionotate') as $jsfile) {
+    echo scripttag($jsfile);
+}
+?>
 <link rel="stylesheet" type="text/css" href="bionotate.css" />
 <title><?php frag("title"); ?></title>
 </head>
@@ -68,6 +73,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 <div class="container">
 
+    <?php if (!$gOut["noheader"]) { ?>
 	<div class="header">
 		
 		<div class="title">
@@ -90,6 +96,7 @@ header('Content-Type: text/html; charset=UTF-8');
 		</div>
 
 	</div>
+    <?php } ?>
 
 	<div class="main">
 		
@@ -106,7 +113,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
         </div>
 
-<?php if (!ereg ('^/vis', $_SERVER["REQUEST_URI"])) { ?>
+<?php if (!$gOut["nosidebar"]) { ?>
 		<div class="sidenav">
 
 <?php
@@ -127,36 +134,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 			<h1>Log in</h1>
 			<div>
-<?php
-			global $gOpenidEasyProviders;
-			foreach ($gOpenidEasyProviders as $url => $name) {
-?>
-				<form action="/openid_start.php" method="post">
-				<input type="hidden" name="return_url" value="<?=htmlentities($_SERVER["REQUEST_URI"])?>">
-				<input type="hidden" name="auth_url" id="auth_url" value="<?=htmlentities($url)?>">
-				<input type="submit" value="<?=htmlentities($name)?> login" class="button" />
-				</form>
-				<br />
-<?php
-			}
-?>
-			<form action="/openid_start.php" method="post">
-			<input type="hidden" name="return_url" value="<?=htmlentities($_SERVER["REQUEST_URI"])?>">
-				  OpenID URL:<br /><input type="text" name="auth_url" class="styled" id="auth_url"
-<?php
-			if (isset($_SESSION) && array_key_exists ("auth_url", $_SESSION)):
-			  print " value=\"" . htmlentities($_SESSION["auth_url"]) . "\"";
-			endif;
-?>
-
-			  />&nbsp;<input type="submit" value="Log in" class="button" />
-			</form>
-<?php
-			if (isset($_SESSION) && array_key_exists ("auth_error", $_SESSION)):
-			  print "<br />" . htmlspecialchars($_SESSION["auth_error"]);
-			  unset ($_SESSION["auth_error"]);
-			endif;
-?>
+			<?php require('lib/loginform.php'); ?>
 			</div>
 <?php		endif; ?>
 
@@ -182,11 +160,13 @@ header('Content-Type: text/html; charset=UTF-8');
 
 </div>
 
+    <?php if (!$gOut["nofooter"]) { ?>
 <div class="footer">Data available under <A href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</A>.  Web application &copy; 2010 Clinical Future, Inc.</div>
 <!--
 Template from <a href="http://arcsin.se">Arcsin</a>
 Current oid <?php echo getCurrentUser("oid"); ?>
 -->
+    <?php } ?>
 
 </body>
 </html>

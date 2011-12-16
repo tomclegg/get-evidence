@@ -24,14 +24,15 @@ function evidence_add_article (v, a)
     return false;
 }
 
-function evidence_add_variant (gene, aa_change)
+function evidence_add_variant (gene, aa_change, rsid)
 {
     var x = {
 	    method: 'post',
 	    parameters:
 	    {
 		variant_gene: gene,
-		variant_aa_change: aa_change
+		variant_aa_change: aa_change,
+		rsid: rsid
 	    },
 	    onSuccess: function(transport)
 	    {

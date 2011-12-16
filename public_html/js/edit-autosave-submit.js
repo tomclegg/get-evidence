@@ -238,26 +238,38 @@ function editable_save (submit_flag, want_preview)
 
     editable_save_request = $('mainform').request({
 	    onSuccess: function(transport) {
-		if (!transport.responseJSON)
-		    // TODO: show error in message box
+		var resp = transport.responseJSON;
+		if (!resp)
+		    return window.alert ("Save failed -- received bogus response from server.");
+		if (resp.need_login) {
+		    if (window.confirm('Your session has timed out.  I will open a pop-up window so you can log in, then return here and click Save again.')) {
+			window.open('/login');
+		    }
 		    return;
-		editable_save_result = transport.responseJSON;
+		}
+		if (resp.errors &&
+		    resp.errors.length > 0) {
+		    window.alert('Sorry, there were errors while saving your edits.\n\n' + resp.errors.join('\n\n'));
+		    return;
+		}
+
+		editable_save_result = resp;
 		editable_save_result.last_save_time = transport.request.parameters.save_time;
 		editable_check_unsaved_all ();
 		if (editable_save_result.please_signoff)
 		    curator_signoff(editable_save_result.please_signoff);
 		else if (editable_save_result.please_reload)
 		    window.location.reload();
-		// TODO: show errors (if any) in message box
-
-		$$('.editable').each(function(e){
-			p = eval('transport.responseJSON.preview_'+e.id);
-			if (p)
-			    $('preview_'+e.id).update(p);
-		    });
+		else {
+		    $$('.editable').each(function(e){
+			    p = eval('transport.responseJSON.preview_'+e.id);
+			    if (p)
+				$('preview_'+e.id).update(p);
+			});
+		}
 	    },
 	    onFailure: function(transport) {
-		// TODO: show error in message box
+		window.alert('Sorry, an error occurred while saving your edits.');
 	    },
 	    parameters: params
 	});
