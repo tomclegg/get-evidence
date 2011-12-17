@@ -99,7 +99,7 @@ def detect_format(f_in):
     print "Giving up after 100 lines... Can't figure out data format."
     return "UNKNOWN"
 
-def process_source(genome_in, metadata=dict(), options=dict()):
+def process_source(genome_in, metadata=dict(), options=None):
     """
     Take source, uncompress, sort, and convert to GFF as needed, yield GFF
     """
@@ -124,16 +124,19 @@ def process_source(genome_in, metadata=dict(), options=dict()):
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
     header = []
-    sort_cmd = ['sort',
-                '--buffer-size='+options.sort_buffer_size,
-                '--key=1,1', '--key=5n,5', '--key=4n,4']
+    if options and options.sort_buffer_size:
+        sort_cmd = ['sort',
+                    '--buffer-size=' + options.sort_buffer_size,
+                    '--key=1,1', '--key=5n,5', '--key=4n,4']
+    else:
+        sort_cmd = ['sort', '--key=1,1', '--key=5n,5', '--key=4n,4']
     sort_out = subprocess.Popen(sort_cmd, stdin=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, bufsize=1)
     genome_build = DEFAULT_BUILD
     b36_list = ["hg18", "36", "b36", "build36", "NCBI36"]
     b37_list = ["hg19", "37", "b37", "build37", "GRCh37"]
 
-    if options.chromosome:
+    if options and options.chromosome:
         chromosome_stripped = options.chromosome.lstrip('chr')
 
     for line in gff_input:
@@ -152,7 +155,8 @@ def process_source(genome_in, metadata=dict(), options=dict()):
                         raise Exception("genome build uninterpretable")
             else:
                 header_done = True
-        elif options.chromosome and not re.match(r"(?i)^(chr)?%s\s" % chromosome_stripped, line):
+        elif (options and options.chromosome and not 
+              re.match(r"(?i)^(chr)?%s\s" % chromosome_stripped, line)):
             pass
         else:
             sort_out.stdin.write(str(line.rstrip('\n')) + '\n')
@@ -195,7 +199,7 @@ def processing_init(genotype_file, server=None):
         os.dup2(log_handle.fileno(), sys.stdout.fileno())
     return [output_dir, log, log_handle, lockfile, logfile]
 
-def genome_analyzer(genotype_file, server=None, options=dict()):
+def genome_analyzer(genotype_file, server=None, options=None):
     """Perform analyses on genotype_file"""
     init_stuff = processing_init(genotype_file, server)
     if init_stuff:
@@ -288,7 +292,7 @@ def genome_analyzer(genotype_file, server=None, options=dict()):
     else:
         raise Exception("genome build data is invalid")
 
-    if options.chromosome:
+    if options and options.chromosome:
         chrlist = [options.chromosome]
     else:
         # It might be more elegant to extract this from metadata.
@@ -301,7 +305,7 @@ def genome_analyzer(genotype_file, server=None, options=dict()):
     progtrack = ProgressTracker(sys.stderr, [22, 99], expected=chrlist, 
                                 metadata=genome_data)
 
-    if not options.chromosome:
+    if not options or not options.chromosome:
 
         # Record chromosomes seen and genome coverage.
         gff_in_gen = get_metadata.genome_metadata(gff_in_gen,
@@ -315,7 +319,7 @@ def genome_analyzer(genotype_file, server=None, options=dict()):
                                                    output_file=args['miss_out'],
                                                    progresstracker=progtrack)
 
-    if options.metadata_only:
+    if options and options.metadata_only:
         for line in gff_in_gen:
             pass
 
@@ -361,7 +365,7 @@ def genome_analyzer(genotype_file, server=None, options=dict()):
     print "Finished processing file " + str(genotype_file)
 
 
-def getev_reprocess(genotype_file, server=None):
+def getev_reprocess(genotype_file, server=None, options=None):
     """Redo analysis against GET-Evidence data"""
     init_stuff = processing_init(genotype_file, server)
     if init_stuff:
@@ -397,7 +401,7 @@ def getev_reprocess(genotype_file, server=None):
     if (os.path.exists (args['nonsyn_data'] + '.gz')):
         args['nonsyn_data'] = args['nonsyn_data'] + '.gz'
 
-    if options.chromosome:
+    if options and options.chromosome:
         chrlist = [options.chromosome]
     else:
         chrlist = ['chr' + str(x) for x in range(1, 22) + ['X', 'Y']]
@@ -457,7 +461,7 @@ def main():
 
     if option.genome_data and not option.is_server:
         if option.getev_only:
-            getev_reprocess(option.genome_data)
+            getev_reprocess(option.genome_data, options=option)
         else:
             genome_analyzer(option.genome_data, options=option)
     elif option.is_server:
