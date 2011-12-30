@@ -577,7 +577,11 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
             try:
                 json_output = str(json.dumps(output, ensure_ascii=False))
             except:
-                continue
+                output['summary_short'] = ('Summary for this variant not ' +
+                            'displayed. It may contain a Unicode character ' +
+                            'preventing it from being properly processed.')
+                json_output = str(json.dumps(output, ensure_ascii=False))
+
             if f_json_out:
                 f_json_out.write(json_output + '\n')
             else:
