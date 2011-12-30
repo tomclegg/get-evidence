@@ -13,6 +13,7 @@ import zipfile
 from optparse import OptionParser
 
 DEFAULT_BUILD = "b36"
+DEFAULT_SOFTWARE_VER = "2.0.1.5"
 
 def autozip_file_open(filename, mode='r'):
     """Return file obj, with compression if appropriate extension is given"""
@@ -37,14 +38,16 @@ def autozip_file_open(filename, mode='r'):
     else:
         return open(filename, mode)
 
-def process_full_position(data):
+def process_full_position(data, software_ver):
     """Return GFF-formated string for when all alleles called on same line"""
     chrom, begin, end, feat_type, ref_allele, var_allele = data[3:9]
 
     # Skip regions that are unmatchable, uncovered, or pseudoautosomal-in-X.
     if (data[6] == "no-ref" 
-            or re.match("no-call",data[6]) 
-            or re.match("PAR-called-in-X",data[6])):
+        or re.match("no-call",data[6]) 
+        or re.match("PAR-called-in-X",data[6])
+        or (int(software_ver[0]) > 1 and len(data) > 11 and
+            re.match("VQLOW",data[11]))):
         return None
 
     # GFF uses 1-based start & 1-based end, CGI has 0-based start, 1-based end.
@@ -67,8 +70,12 @@ def process_full_position(data):
         if not var_allele: 
             var_allele = '-'
         dbsnp_data = []
-        if data[11]: 
-            dbsnp_data = data[11].split(";")
+        if int(software_ver[0]) > 1:
+            if data[13]:
+                dbsnp_data = data[13].split(";")
+        else:
+            if data[11]: 
+                dbsnp_data = data[11].split(";")
         attributes = "alleles " + var_allele + ";ref_allele " \
                         + ref_allele + dbsnp_string(dbsnp_data)
     # Output GFF-formatted string
@@ -76,7 +83,7 @@ def process_full_position(data):
               end, ".", "+", ".", attributes]
     return "\t".join(output)
 
-def process_allele(allele_data, dbsnp_data):
+def process_allele(allele_data, dbsnp_data, software_ver):
     """Combine data from multiple lines refering to a single allele.
     
     Returns four strings containing: concatenated variant sequence, 
@@ -87,20 +94,28 @@ def process_allele(allele_data, dbsnp_data):
     allele_seq = ref_seq = ""
     for data in allele_data:
         # We reject allele data if any subset of the data has a no-call.
-        if re.match("no-call", data[6]) or re.match("no-call", data[6]):
+        if (re.match("no-call", data[6]) or 
+            (int(software_ver[0]) > 1 and len(data) > 11 and
+             re.match("VQLOW", data[11]))):
             allele_seq = "NA"
             ref_seq = "NA"
             break
         else:
             allele_seq = allele_seq + data[8]
             ref_seq = ref_seq + data[7]
-            if data[11]:
-                data = data[11].split(";")
-                for item in data: 
-                    dbsnp_data.append(item)
+            if int(software_ver[0]) > 1:
+                if data[13]:
+                    data = data[13].split(";")
+                    for item in data:
+                        dbsnp_data.append(item)
+            else:
+                if data[11]:
+                    data = data[11].split(";")
+                    for item in data: 
+                        dbsnp_data.append(item)
     return allele_seq, ref_seq, start_1based, end
 
-def process_split_position(data, cgi_input):
+def process_split_position(data, cgi_input, software_ver):
     """Process CGI var where alleles are reported separately."""
     assert data[2] == "1"
 
@@ -118,9 +133,9 @@ def process_split_position(data, cgi_input):
 
     # Process all the lines to get concatenated sequences and other data.
     dbsnp_data = []
-    strand1_proc = process_allele(strand1_data, dbsnp_data)
+    strand1_proc = process_allele(strand1_data, dbsnp_data, software_ver)
     a1_seq, r1_seq, a1_start_1based, a1_end = strand1_proc
-    strand2_proc = process_allele(strand2_data, dbsnp_data)
+    strand2_proc = process_allele(strand2_data, dbsnp_data, software_ver)
     a2_seq, r2_seq, a2_start_1based, a2_end = strand2_proc
     if not (a1_seq == "NA" or a2_seq == "NA"):
         # Check that reference sequence and positions match.
@@ -154,9 +169,9 @@ def process_split_position(data, cgi_input):
     # Handle the remaining line (may recursively call this function if it's 
     # the start of a new region with separated allele calls).
     if next_data[2] == "all" or next_data[1] == "1":
-        out = process_full_position(next_data)
+        out = process_full_position(next_data, software_ver)
     else:
-        out = process_split_position(next_data, cgi_input)
+        out = process_split_position(next_data, cgi_input, software_ver)
     if out:
         if isinstance(out, str): 
             yield out
@@ -164,14 +179,15 @@ def process_split_position(data, cgi_input):
             for line in out: 
                 yield line
 
-def convert(cgi_input, options=dict()):
+def convert(cgi_input, options=None):
     """Generator that converts CGI var data to GFF-formated strings"""
     # Set up CGI input. Default is to assume a str generator.
     cgi_data = cgi_input
     if isinstance(cgi_input, str): 
         cgi_data = autozip_file_open(cgi_input, 'r')
      
-    build = DEFAULT_BUILD    
+    build = DEFAULT_BUILD
+    software_ver = DEFAULT_SOFTWARE_VER
     header_done = False
     saw_chromosome = False
     for line in cgi_data:
@@ -182,6 +198,10 @@ def convert(cgi_input, options=dict()):
                     build = "b37"
                 elif re.match("#GENOME_REFERENCE.*NCBI build 36", line): 
                     build = "b36"
+                if re.match("#SOFTWARE_VERSION\W+([0-9.]+)", line):
+                    matches = re.match("#SOFTWARE_VERSION\W+([0-9.]+)", 
+                                       line).groups()
+                    software_ver = matches[0]
                 continue
             else:
                 # Output GFF header once we're done reading CGI's.
@@ -196,7 +216,7 @@ def convert(cgi_input, options=dict()):
         # Handle data
         data = line.rstrip('\n').split("\t")
 
-        if options.chromosome:
+        if options and options.chromosome:
             if data[3] != options.chromosome:
                 if saw_chromosome:
                     # Assume all base calls for a single chromosome are in a contiguous block
@@ -206,12 +226,12 @@ def convert(cgi_input, options=dict()):
 
         if data[2] == "all" or data[1] == "1":
             # The output from process_full_position is a str.
-            out = process_full_position(data)
+            out = process_full_position(data, software_ver)
         else:
             assert data[2] == "1"
             # The output from process_split_position is a str generator;
             # it may end up calling itself recursively.
-            out = process_split_position(data, cgi_data)
+            out = process_split_position(data, cgi_data, software_ver)
         if not out: 
             continue
         if isinstance(out, str): 
