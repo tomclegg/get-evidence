@@ -713,6 +713,11 @@ function evidence_get_report ($snap, $variant_id)
       if (!preg_match ('{^<\?xml}i', $row['summary_long']) &&
           isset($_SERVER['REMOTE_ADDR']) // Avoid doing this during update_flat_summary, etc.
           ) {
+        if (!isset($GLOBALS['bionotate_earliest']))
+          $GLOBALS['bionotate_earliest'] = time();
+        else if (time() - $GLOBALS['bionotate_earliest'] > 3)
+          // don't spend more than 3 seconds getting new bionotate abstracts
+          break;
         $bionotate_key = htmlentities($row['article_pmid']."-".
                                       $v[0]['variant_gene']."-".
                                       $v[0]['variant_aa_del'].
