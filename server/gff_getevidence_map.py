@@ -516,14 +516,19 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
         else:
             output['coordinates'] = str(record.start) + "-" + str(record.end)
 
+        aa_changes = []
         # If there is an amino acid change reported, look it up based on this.
         if "amino_acid" in record.attributes:
+            for gene_aa_aa in record.attributes['amino_acid'].split('/'):
+                aas = gene_aa_aa.split()
+                gene = aas.pop(0)
+                for aa in aas:
+                    aa_changes.append([gene, aa])
+        for aa_data in aa_changes:
             # Get gene and amino acid change, store in output.
             # Note: parse_aa_change will call sys.exit() if it's misformatted.
             # TODO: analyze more than the first change, multiple are split by /
-            aa_changes = record.attributes['amino_acid'].split('/')
-            aa_data = aa_changes[0].split()
-            gene, aa_change_and_pos = aa_data[0:2]
+            gene, aa_change_and_pos = aa_data
             # "X" is preferred for stop, "*" can break things like URLs.
             aa_change_and_pos = re.sub(r'\*', r'X', aa_change_and_pos)
             (aa_from, aa_pos, aa_to) = parse_aa_change(aa_change_and_pos)
@@ -583,7 +588,8 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
                     gene_data[gene].append(output)
                 else:
                     gene_data[gene] = [ output ]
-        else:
+
+        if len(aa_changes) == 0:
             # If no gene data at all, try dbsnp ID.
             if "dbSNP" in output:
                 dbsnp_ids = output["dbSNP"].split(",")
