@@ -517,17 +517,19 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
             output['coordinates'] = str(record.start) + "-" + str(record.end)
 
         aa_changes = []
-        # If there is an amino acid change reported, look it up based on this.
+        # If there are any amino acid changes reported, look them up
         if "amino_acid" in record.attributes:
             for gene_aa_aa in record.attributes['amino_acid'].split('/'):
                 aas = gene_aa_aa.split()
                 gene = aas.pop(0)
+                aa_seen = {}
                 for aa in aas:
+                    if aa in aa_seen: continue
+                    aa_seen[aa] = 1
                     aa_changes.append([gene, aa])
         for aa_data in aa_changes:
             # Get gene and amino acid change, store in output.
             # Note: parse_aa_change will call sys.exit() if it's misformatted.
-            # TODO: analyze more than the first change, multiple are split by /
             gene, aa_change_and_pos = aa_data
             # "X" is preferred for stop, "*" can break things like URLs.
             aa_change_and_pos = re.sub(r'\*', r'X', aa_change_and_pos)
