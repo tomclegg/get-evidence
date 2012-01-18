@@ -7,7 +7,7 @@ include "lib/setup.php";
 
 $variant_name = evidence_get_variant_name($_REQUEST['variant_id'], '-', true);
 $bionotate_key = $_REQUEST['article_pmid'] . '-' . $variant_name;
-$html_or_xml = file_get_contents ('http://genome2.ugr.es/bionotate2/GET-Evidence/retrieve/'.$bionotate_key.'?oid='.urlencode(getCurrentUser('oid')));
+$html_or_xml = file_get_contents ('http://bionotate.biotektools.org/GET-Evidence/retrieve/'.$bionotate_key.'?oid='.urlencode(getCurrentUser('oid')));
 if (!preg_match ('{SNIPPET_XML = "(.*)";?\r?\n}', $html_or_xml, $regs) &&
     !preg_match ('{^(<\?xml .*)}is', $html_or_xml, $regs))
   exit ("No snippet found at .../$bionotate_key");
