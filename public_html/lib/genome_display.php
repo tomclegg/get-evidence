@@ -354,7 +354,7 @@ class GenomeReport {
                            $this->genomeID . "</a>");
         if ($db_query[0]["nickname"]) {
             $realname = $db_query[0]["nickname"];
-            if (preg_match ('{^PGP\d+ \((.+)\)}', $realname, $regs))
+            if (preg_match ('{^PGP\d+ \((.+?)\)}', $realname, $regs))
                 $realname = $regs[1];
             $head_data["Name"] = htmlspecialchars($realname, ENT_QUOTES, 
                                                   "UTF-8");

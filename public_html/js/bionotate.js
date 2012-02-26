@@ -23,7 +23,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     $form.find('input[name=oid]').attr('value',$div.attr('oid'));
                     $form.find('input[name=oidcookie]').attr('value',$div.attr('oidcookie'));
                     $form.find('input[name=save_to_url]').attr('value',document.location.href.replace(/([^\/])\/([^\/].*)?$/, '$1/bionotate-save.php?variant_id='+variant_id+'&article_pmid='+article_pmid));
-                    $form.attr('action', 'http://genome2.ugr.es/bionotate2/GET-Evidence/annotate/'+bnkey);
+                    $form.attr('action', 'http://bionotate.biotektools.org/GET-Evidence/annotate/'+bnkey);
                     $form.submit();
                     return false;
                 });
