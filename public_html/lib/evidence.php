@@ -878,7 +878,7 @@ function evidence_get_report ($snap, $variant_id)
 		$why[] = "pph2: benign";
 	    }
         } else {
-	    if ($row["variant_aa_to"] == "*" || $row["variant_aa_to"] == "X") {
+	    if ($row["variant_aa_to"] == "*" || $row["variant_aa_to"] == "X" || $row["variant_aa_to"] == "Stop") {
 		$autoscore+=2;
 		$why[] = "nonsense mutation";
 	    } else {
