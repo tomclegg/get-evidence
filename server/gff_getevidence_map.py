@@ -196,7 +196,7 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
     elif aa_to and re.search(r'Shift', aa_to):
         score_comp = 2
         data["frameshift"] = True
-    elif aa_from and aa_to and re.match('\*', aa_to):
+    elif aa_from and aa_to and (re.match('\*', aa_to) or re.match('X', aa_to)):
         score_comp = 2
         data["nonsense"] = True
     elif aa_from and aa_to and len(aa_from) != len(aa_to):
