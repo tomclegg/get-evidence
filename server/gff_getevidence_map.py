@@ -119,6 +119,7 @@ def copy_output_data(getev_data, output_data):
                     'n_web_pos': 'n_web_pos',
                     'n_web_uneval': 'n_web_uneval',
                     'n_web_neg': 'n_web_neg',
+                    'suff_eval': 'suff_eval',
                     }
     for name in name_map:
         if name in getev_data:
