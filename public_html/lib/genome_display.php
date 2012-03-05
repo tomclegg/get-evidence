@@ -571,12 +571,18 @@ class GenomeReport {
      * 'insuff' => list of arrays each w/ insufficient-evaluated variant data
      * @return array
      */
-    public function &variants() {
+    public function &variants($options=array()) {
         if (!file_exists($this->variantsfile))
             return null;
+        $no_insuff = array_key_exists('no_insuff', $options);
         $variants = array('suff' => array(), 'insuff' => array());
         $getev_variants = array();
-        $lines = file($this->variantsfile);
+        if ($no_insuff)
+            exec("fgrep -v '\"suff_eval\":false' " .
+                 escapeshellarg($this->variantsfile),
+                 $lines);
+        else
+            $lines = file($this->variantsfile);
         foreach ($lines as $line) {
             $variant_data = json_decode($line, true);
             if (!is_array($variant_data))
@@ -585,6 +591,9 @@ class GenomeReport {
             // If variant_id exists, variant is in GET-Evidence - 
             // store necessary data and look up later.
             if (array_key_exists('variant_id', $variant_data)) {
+                if (!($variant_data['autoscore'] > 0 ||
+                      $variant_data['suff_eval']))
+                    continue;
                 $want = array('genotype', 'ref_allele', 'chromosome',
                               'coordinates');
                 $vardata_to_pass = array();
@@ -597,15 +606,17 @@ class GenomeReport {
                 continue;
             }
             // Otherwise process & store. Var is necessarily insuff if not in GET-Ev.
-            $variant = new GenomeVariant($variant_data);
-            $variants['insuff'][] =& $variant->data;
+            if (!$no_insuff) {
+                $variant = new GenomeVariant($variant_data);
+                $variants['insuff'][] =& $variant->data;
+            }
         }
         // Grab data for GET-Evidence variants from the database.
         $getev_var_matched = $this->variants_lookup($getev_variants);
         foreach ($getev_var_matched as $variant) {
             if ($variant->data['suff_eval']) {
                 $variants['suff'][] =& $variant->data;
-            } else {
+            } else if (!$no_insuff && $variant->data['autoscore'] > 0) {
                 $variants['insuff'][] =& $variant->data;
             }
         }
@@ -613,7 +624,7 @@ class GenomeReport {
     }    
 }
 
-function genome_display($shasum, $oid, $is_admin=false) {
+function genome_display($shasum, $oid, $is_admin=false, $options=array()) {
     $genome_report = new GenomeReport($shasum);
     $results = $genome_report->status();
     $permission = $genome_report->permission($oid, $is_admin);
@@ -639,7 +650,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
     $returned_text .= "</ul>\n";
     $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><BLOCKQUOTE><PRE id='debuginfotext'>Log file: ".$logfile."\n\n".htmlspecialchars($log,ENT_QUOTES,"UTF-8")."\n\n</PRE></BLOCKQUOTE></DIV>\n";
 
-    $variants =& $genome_report->variants();
+    $variants =& $genome_report->variants($options);
     if (is_array($variants)) {
         $coverage =& $genome_report->coverage_data();
         $metadata =& $genome_report->metadata();
@@ -647,7 +658,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
 
         $returned_text .= "<div id='variant_table_tabs'><ul>\n"
             . "<li><A href='#variant_table_tab_0'>Genome report</A></li>\n"
-            . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants</A></li>\n";
+            . "<li><A href='#variant_table_tab_1'>Insufficiently evaluated variants<div class='ajax_loader_image ui-helper-hidden' style='margin-left: 3px'></div></a></li>\n";
         if ($coverage)
             $returned_text .=
                 "<li><A href='#variant_table_tab_2'>Coverage</A></li>\n";
@@ -697,7 +708,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
         $returned_text .= "</div>\n<div id='variant_table_tab_1'>\n";
 
         usort($variants['insuff'], "sort_variants");
-        $returned_text .= "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff'><THEAD><TR>"
+        $insuff_table = "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff' ajax_source='/genomes?display_genome_id=$shasum&part=insuff'><THEAD><TR>"
             . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
             . "<TH>Variant</TH>"
             . "<TH class='SortNumeric SortDescFirst'>Prioritization score</TH>"
@@ -709,7 +720,7 @@ function genome_display($shasum, $oid, $is_admin=false) {
         $rownumber = 0;
         foreach ($variants['insuff'] as $variant) {
             ++$rownumber;
-            $returned_text .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
+            $insuff_table .= "<TR><TD class='ui-helper-hidden'>$rownumber</TD>"
                 . "<TD><A HREF=\""
                 . $variant["name"] . "\">" . $variant["name"] . "</A></TD><TD>"
                 . $variant["autoscore"]. "</TD><TD>"
@@ -720,7 +731,12 @@ function genome_display($shasum, $oid, $is_admin=false) {
                 . "</TD><TD class='ui-helper-hidden'>"
                 . $variant["suff_eval"] . "</TD></TR>\n";
         }
-        $returned_text .= "</TBODY></TABLE>\n";
+        $insuff_table .= "</TBODY></TABLE>\n";
+
+        if (array_key_exists('only_insuff', $options))
+            return $insuff_table;
+
+        $returned_text .= $insuff_table;
 
         if ($coverage) {
             $returned_text .= "</div>\n<div id='variant_table_tab_2'>\n";

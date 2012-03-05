@@ -9,8 +9,10 @@ $page_content = "";  // all html output stored here
 $display_genome_ID = "";
 if (isset ($_REQUEST['display_genome_id']))
     $display_genome_ID = $_REQUEST['display_genome_id'];
-else if (!preg_match ('{=}', $_SERVER['QUERY_STRING']))
-    $display_genome_ID = $_SERVER['QUERY_STRING'];
+else if (preg_match ('{^\??([0-9a-f]{40})\b}',
+                     $_SERVER['QUERY_STRING'],
+                     $regs))
+    $display_genome_ID = $regs[1];
 
 if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $display_genome_ID, $matches)) {
     $display_genome_ID = theDb()->getOne
@@ -49,8 +51,16 @@ if (strlen($display_genome_ID) > 0) {
 	    print json_encode($report);
 	    exit;
 	}
+        if (isset ($_REQUEST['part']) &&
+            $_REQUEST['part'] == 'insuff') {
+            print genome_display($display_genome_ID, $permission,
+                                 getCurrentUser('is_admin'),
+                                 array('only_insuff' => true));
+            exit;
+        }
         $page_content .= genome_display($display_genome_ID, $permission,
-					getCurrentUser('is_admin'));
+					getCurrentUser('is_admin'),
+                                        array('no_insuff' => true));
     } else {
         $page_content .= "<DIV class=\"redalert\"><P>Sorry, we don't seem to have the report you requested.  Perhaps it has been deleted, or it isn't public and you don't have permission to see it, or you have been logged out.</P></DIV>\n";
     }

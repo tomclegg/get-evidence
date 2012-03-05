@@ -441,3 +441,9 @@ ul.tipped {
 .rectangle-speech-border-hidden>:first-child b {
     color:#000;
 }
+.ajax_loader_image {
+    float: right;
+    background: url(/img/ajax-loader.gif) no-repeat;
+    width: 16px;
+    height: 16px;
+}
