@@ -91,10 +91,19 @@ foreach ($public_genomes as $g) {
 	    print "(skipping unparseable JSON at line $ops)\n";
 	    continue;
 	}
-	if (isset($jvariant["gene"]) && isset($jvariant["amino_acid_change"]))
-	    $variant_names = array($jvariant["gene"] . " " . $jvariant["amino_acid_change"]);
+	if (isset($jvariant["gene"]) &&
+	    isset($jvariant["amino_acid_change"])) {
+	    $variant_names = array();
+	    foreach (split (' ', $jvariant["amino_acid_change"])
+		     as $aa_change) {
+		array_push ($variant_names,
+			    $jvariant["gene"] . " " . $aa_change);
+	    }
+	}
 	else if (isset($jvariant["dbSNP"]))
 	    $variant_names = explode(',', $jvariant["dbSNP"]);
+	else if (isset($jvariant["dbsnp"]))
+	    $variant_names = explode(',', $jvariant["dbsnp"]);
 	else {
 	    if ($jvariant["GET-Evidence"])
 		print "(Why is this here?) $line";
@@ -103,7 +112,8 @@ foreach ($public_genomes as $g) {
 	foreach ($variant_names as $variant_name) {
 	    $rsid = null;
 	    if (preg_match ('/^rs(\d+)$/', $variant_name, $regs) ||
-		(isset ($jvariant["dbSNP"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbSNP"], $regs)))
+		(isset ($jvariant["dbSNP"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbSNP"], $regs)) ||
+		(isset ($jvariant["dbsnp"]) && preg_match ('/^(?:rs)?(\d+)/', $jvariant["dbsnp"], $regs)))
 		$rsid = $regs[1];
 	    $variant_id = evidence_get_variant_id ($variant_name);
 	    if ($variant_id)
@@ -152,13 +162,13 @@ foreach ($public_genomes as $g) {
     print "\n$count_existing_variants existing and $count_new_variants new variants.\n";
     fclose ($fh);
 
-    print "\nReading ns.gff[.gz].\n";
     if (file_exists ("$datadir/ns.gff.gz"))
 	$fh = gzopen ($nsfile = "$datadir/ns.gff.gz", "r");
     else
 	$fh = fopen ($nsfile = "$datadir/ns.gff", "r");
     if (!$fh) { print "open($nsfile) failed.\n"; continue; }
     if (file_exists ("$datadir/lock")) { print "Skipping because backend is still processing.\n"; continue; }
+    print "\nReading $nsfile\n";
     $ops = 0;
     $count_existing_variants = 0;
     $count_new_variants = 0;
@@ -176,8 +186,16 @@ foreach ($public_genomes as $g) {
 	if (preg_match ('{db_xref dbsnp(?:\.\d+)?:rs(\d+)}', $gff[8], $regs))
 	    $rsid = $regs[1];
 
-	if (preg_match ('{amino_acid ([^;\n]+)}', $gff[8], $regs))
-	    $variant_names = explode ("/", $regs[1]);
+	if (preg_match ('{amino_acid ([^;\n]+)}', $gff[8], $regs)) {
+	    $variant_names = array();
+	    foreach (explode ("/", $regs[1]) as $gene_aa_aa) {
+		$gene_aa_aa = split(' ', $gene_aa_aa);
+		$gene = array_shift ($gene_aa_aa);
+		foreach ($gene_aa_aa as $aa) {
+		    array_push ($variant_names, "$gene $aa");
+		}
+	    }
+	}
 	else if ($rsid)
 	    // If we wanted to add all dbsnp variants, we would do...
 	    // $variant_names = array ("rs$rsid");
