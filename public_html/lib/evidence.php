@@ -718,11 +718,15 @@ function evidence_get_report ($snap, $variant_id)
         else if (time() - $GLOBALS['bionotate_earliest'] > 3)
           // don't spend more than 3 seconds getting new bionotate abstracts
           break;
-        $bionotate_key = htmlentities($row['article_pmid']."-".
-                                      $v[0]['variant_gene']."-".
-                                      $v[0]['variant_aa_del'].
-                                      $v[0]['variant_aa_pos'].
-                                      $v[0]['variant_aa_ins']);
+        if ($v[0]['variant_gene'])
+          $bionotate_key = htmlentities($row['article_pmid']."-".
+                                        $v[0]['variant_gene']."-".
+                                        $v[0]['variant_aa_del'].
+                                        $v[0]['variant_aa_pos'].
+                                        $v[0]['variant_aa_ins']);
+        else
+          $bionotate_key = htmlentities($row['article_pmid']."-rs".
+                                        $v[0]['variant_rsid']);
         $ctx = stream_context_create(array('http'=>array('timeout'=>2)));
         if (preg_match ('{SNIPPET_XML = "(.*?)";?\r?\n}s',
                         $html = @file_get_contents ('http://bionotate.biotektools.org/GET-Evidence/retrieve/'.$bionotate_key, 0, $ctx),
