@@ -715,8 +715,11 @@ function evidence_get_report ($snap, $variant_id)
           ) {
         if (!isset($GLOBALS['bionotate_earliest']))
           $GLOBALS['bionotate_earliest'] = time();
-        else if (time() - $GLOBALS['bionotate_earliest'] > 3)
-          // don't spend more than 3 seconds getting new bionotate abstracts
+        else if (time() - $GLOBALS['bionotate_earliest'] > 4)
+          // If we've already waited more than 4 seconds for new
+          // bionotate abstracts while fulfilling request, just use
+          // what we've already received and get the rest next time
+          // around.
           break;
         if ($v[0]['variant_gene'])
           $bionotate_key = htmlentities($row['article_pmid']."-".
@@ -727,9 +730,9 @@ function evidence_get_report ($snap, $variant_id)
         else
           $bionotate_key = htmlentities($row['article_pmid']."-rs".
                                         $v[0]['variant_rsid']);
-        $ctx = stream_context_create(array('http'=>array('timeout'=>2)));
+        $ctx = stream_context_create(array('http'=>array('timeout'=>8)));
         if (preg_match ('{SNIPPET_XML = "(.*?)";?\r?\n}s',
-                        $html = @file_get_contents ('http://bionotate.biotektools.org/GET-Evidence/retrieve/'.$bionotate_key, 0, $ctx),
+                        $html = @file_get_contents ('http://bionotate.biotektools.org/GET-Evidence/pmid/'.$bionotate_key, 0, $ctx),
                         $regs) ||
             preg_match ('{^(<\?xml .*)}is', $html, $regs)) {
           $xml = preg_replace('{>\\r?\\n\\s*}', '>', $regs[1]);
