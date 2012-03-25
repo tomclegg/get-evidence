@@ -22,8 +22,11 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     var article_pmid = $div.attr('article_pmid');
                     $form.find('input[name=oid]').attr('value',$div.attr('oid'));
                     $form.find('input[name=oidcookie]').attr('value',$div.attr('oidcookie'));
+                    $form.find('input[name=variant_id]').attr('value',variant_id);
+                    $form.find('input[name=article_pmid]').attr('value',article_pmid);
+                    $form.find('input[name=xml]').attr('value',$div.attr('snippet_xml'));
                     $form.find('input[name=save_to_url]').attr('value',document.location.href.replace(/([^\/])\/([^\/].*)?$/, '$1/bionotate-save.php?variant_id='+variant_id+'&article_pmid='+article_pmid));
-                    $form.attr('action', 'http://bionotate.biotektools.org/GET-Evidence/annotate/'+bnkey);
+                    $form.attr('action', 'http://bionotate.biotektools.org/GET-Evidence/xml/'+bnkey);
                     $form.submit();
                     return false;
                 });
@@ -129,7 +132,7 @@ var bionotate_schema_xml = '<?xml version="1.0" ?><schema><entities><entity><nam
                     $(div).html('<span><p>'+text+'</p><p>&nbsp;<br />Variant/disease relation: <b>'+conclusion_text+'</b></p></span>');
                     $(div).addClass('bionotate_visible').show();
                 });
-            $('body').append('<form class="bionotate-form" action="#" method="GET"><input type="hidden" name="oid" value=""/><input type="hidden" name="oidcookie" value=""/><input type="hidden" name="save_to_url" value=""/></form>');
+            $('body').append('<form class="bionotate-form" action="#" method="POST"><input type="hidden" name="oid" value=""/><input type="hidden" name="oidcookie" value=""/><input type="hidden" name="xml" value=""/><input type="hidden" name="variant_id" value=""/><input type="hidden" name="article_pmid" value=""/><input type="hidden" name="save_to_url" value=""/></form>');
 
             $('.bionotate').each(function(i,div){$(div).trigger('bionotate-render')});
         });
