@@ -1,2 +1,2 @@
 Deny from all
-Allow from none
+Allow from 0.0.0.0/32
