@@ -124,7 +124,9 @@ def process_source(genome_in, metadata=dict(), options=None):
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.
     header_done = False
     header = []
-    if options and options.sort_buffer_size:
+    if options and options.getev_only:
+        sort_cmd = ['cat']
+    elif options and options.sort_buffer_size:
         sort_cmd = ['sort',
                     '--buffer-size=' + options.sort_buffer_size,
                     '--key=1,1', '--key=5n,5', '--key=4n,4']

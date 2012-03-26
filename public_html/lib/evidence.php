@@ -1270,7 +1270,11 @@ class evidence_row_renderer {
 			     $summary . "<BR />",
 			     array ("tip" => "Explain this article's contribution to the conclusions drawn in the variant summary above."));
           if (preg_match ('{^<\?xml}i', $row['summary_long'])) {
-            $bionotate_key = htmlentities($row['article_pmid']."-".$row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins']);
+            if ($row['variant_gene'])
+              $variant_key = $row['variant_gene']."-".$row['variant_aa_del'].$row['variant_aa_pos'].$row['variant_aa_ins'];
+            else
+              $variant_key = 'rs'.$row['variant_rsid'];
+            $bionotate_key = htmlentities($row['article_pmid']."-".$variant_key);
             $q_snippet = htmlentities($row['summary_long']);
             $html .= "<div class=\"bionotate ui-helper-hidden\" bnkey=\"{$bionotate_key}\" snippet_xml=\"$q_snippet\"></div>\n";
             if (getCurrentUser()) {
