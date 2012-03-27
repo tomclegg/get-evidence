@@ -7,14 +7,6 @@ h1. Guide to editing
 
 GET-evidence variant evaluations can be edited by anyone&mdash;our only requirement is that you log in using OpenID to edit using your real name and provide your email address. Editor contributions are critical to GET-evidence's success, we encourage all users of GET-evidence to also edit. Things you can do include: evaluating new variants, correcting errors, and updating evaluations.
 
-h3. Other guides
-
-* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
-* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
-* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
-* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
-* "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads
-
 h2. Logging in with OpenID
 
 OpenID is a method for authenticating individuals. There are many different providers of OpenID authentication, including Google and Yahoo. *Anybody with a Google or Yahoo account can log in* to GET-evidence using OpenID. There are many other OpenID providers, you can also log in using the appropriate URL.
@@ -29,13 +21,15 @@ h2. Where to start?
 
 h3. Which variants need editing?
 
-A great place to start is the "public genomes":genomes that we have uploaded -- if you scroll down you'll find a list of "Insufficiently reviewed variants". These are variants which do not have enough scores and impact information filled in to allow us to automatically sort them. We sort these using "autoscore":guide_autoscore, which prioritizes variants based on their presence in variant-specific lists (indicating there is published literature available), gene-specific lists (indicating potential for that gene to cause disease), and computational evidence (reflecting automatic prediction whether a variant may cause disease).
+A great place to start is the "public genomes":genomes that we have uploaded. To learn more about how to read these pages please see our "guide to reading genome reports":guide_reading_genome_reports.
 
-Two other places to try are the "visualization":vis page and the "reports":report page. The "visualization":vis is interactive: you can find variants that appear to lack evaluations in this graph (they should lack summaries) and then open up and edit that variant's page. On the "reports":report page you can find various lists of GET-evidence entries. "Summaries needed" lists variants that have been marked pathogenic but lack summaries. "Variants with genome evidence and web search results" lists variants that have been found in one of the published genomes and have web search results (indicating that someone somewhere said something about that variant). These are good starting points for looking for variants that need more evaluation.
+If you open a genome report you'll find a tab listing "Insufficiently reviewed variants". These are variants which do not have enough scores and impact information filled in to allow us to automatically sort them. We sort these using "prioritization score":guide_prioritization_score, which prioritizes variants based on their presence in variant-specific lists (indicating there is published literature available), gene-specific lists (indicating potential for that gene to cause disease), and computational evidence (reflecting automatic prediction whether a variant may cause disease).
+
+"Scoring":guide_impact_score is the most important type of information to add to a variant interpretation. Once enough of these scores are added, a variant can be considered "sufficiently evaluated" by GET-Evidence.
 
 h3. What sort of information is relevant?
 
-First find some papers that might help you understand the variant. You can enter the Pubmed ID in a box at the bottom of the page to enter that publication into our system. There will be a field there for you to summarize data from that paper relevant to this variant. Read that paper looking for evidence that would contribute to scoring.
+Try finding some papers that might help you understand the variant. You can enter the Pubmed ID in a box at the bottom of the page to enter that publication into our system. There will be a field there for you to summarize data from that paper relevant to this variant. Read that paper looking for evidence that would contribute to scoring.
 
 You should go read our description of "variant impact scores":guide_impact_score if you haven't already. Relevant information will be anything that contributes to scoring: Case/control numbers, familial inheritance, biochemical studies, etc.
 

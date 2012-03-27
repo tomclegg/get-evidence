@@ -1,21 +1,13 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "GET-Evidence: File and call format";
+$gOut["title"] = "GET-Evidence: Amino acid call format";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
 h1. Variant call nomenclature
 
 In the process of interpreting a genome we match dbSNP IDs and predict amino acid changes in order to assist interpretation and allow comparison against other variant databases. Internally these are stored within a GFF file's "Attributes" column using "db_xref" and "amino_acid" variable names. 
 
 Any variants which occur within coding region is analyzed to see if it causes an amino acid change. We examined "other standard nomenclature":http://www.hgvs.org/mutnomen/disc.html for calling amino acid changes, but we wanted something more concise and standardized for amino acid insertions and deletions. In general it follows this pattern: two strings seperated by a space, the first is the gene name, the second string combines three data: reference sequence, first reference position, variant sequence (entirely replacing the reference).
-
-h3. Other guides
-
-* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
-* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
-* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
-* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
-* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
 
 h3. Single nucleotide substitutions causing missense mutations
 
