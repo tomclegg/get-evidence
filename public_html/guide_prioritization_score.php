@@ -1,23 +1,15 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "GET-Evidence: Autoscore";
+$gOut["title"] = "GET-Evidence: Prioritization Score";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
-h1. Autoscore
+h1. Prioritization scores
 
-Every genome has millions of variants, thousands of which are potentially interesting. To help sort through these and prioritize variants for review, an "autoscore" is automatically calculated. This score combines two different reasons for prioritizing variants -- we want to prioritize variants which we think have some relevant literature, and we want to prioritize variants for which computational methods predict a damaging effect.
+Every genome has millions of variants, thousands of which are potentially interesting. To help sort through these and prioritize variants for review, an "prioritization" is automatically calculated. This score combines two different reasons for prioritizing variants -- we want to prioritize variants which we think have some relevant literature, and we want to prioritize variants for which computational methods predict a damaging effect.
 
-h3. Other guides
+h2. How the prioritization score is calculated
 
-* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
-* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
-* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
-* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
-* "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads 
-
-h2. How autoscore is calculated
-
-Autoscores can be a total of six points, with a maximum of two points coming from each of three different categories: *(1)* pre-existing variant-specific knowledge, *(2)* pre-existing gene-specific knowledge, *(3)* computational prediction of variant disruptiveness.
+Prioritization scores can be a total of six points, with a maximum of two points coming from each of three different categories: *(1)* pre-existing variant-specific knowledge, *(2)* pre-existing gene-specific knowledge, *(3)* computational prediction of variant disruptiveness.
 
 h3. Pre-existing variant-specific knowledge
 
@@ -48,11 +40,11 @@ Some variants might be predicted to cause disease even though they have not been
 
 In addition, if this part of the score is nonzero and the allele frequency of the variant is 5% or greater (in GET-Evidence's set of PGP and public genomes), 1 point is subtracted.
 
-h2. What autoscore is not
+h2. What the prioritization score is not
 
-_Autoscore is *not* a prediction of a variant as having an effect_ -- Although this is a component of the score, autoscore is intended to prioritize variants for review. There may be variants with no functional effect that are highly reported-upon, thereby getting a higher autoscore. There may be undiscovered variants with severe effect
+_Prioritization scores are *not* a prediction of a variant as having an effect_ -- Although this is a component of the score, the score is intended to prioritize variants for review. There may be variants with no functional effect that are highly reported-upon, thereby getting a higher score. There may be undiscovered variants with severe effect.
 
-_Autoscore is *not* a summary of a variant's evaluation_ -- Although voting for web hits can adjust autoscore, autoscore merely reflects whether a variant is prioritized for review. It does not change in response to most aspects of variant review (users classifying a variant as pathogenic or benign, or adding variant impact score data).
+_Prioritization score is *not* a summary of a variant's evaluation_ -- Although voting for web hits can adjust the score, a prioritization score merely reflects whether a variant is prioritized for review. It does not change in response to most aspects of variant review (users classifying a variant as pathogenic or benign, or adding variant impact score data).
 
 EOF
 );
