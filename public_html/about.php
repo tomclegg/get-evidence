@@ -3,32 +3,36 @@
 include "lib/setup.php";
 $gOut["title"] = "GET-Evidence: About";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
-h1. GET-Evidence
 
-GET-Evidence is a system that assists evaluation of genetic variants in whole genomes.
 
-*Note:* This is a research tool and is not intended for use in the diagnosis or treatment of any disease or medical condition. GET-Evidence has been developed to support work carried out by the "Personal Genome Project":http://www.personalgenomes.org. By using GET-Evidence you agree to our "Terms of Service":tos. GET-Evidence's system is still under development: many variants have not been fully curated and some fields may contain default scoring. 
+p(((. !img/GET-Evidence_summary_drawing.png!
 
-h2. Genome reports
+*GET-Evidence* is a collaborative research tool for understanding how genetic variants impact human traits and diseases. As such, it is subject to many sources of error, including: 
+* human error in interpretations
+* errors or uncertainty in literature
+* errors in automatic/computational processing
 
-Whole genome sequencing results in thousands of variants which may have a functional consequence and have published literature findings which require review. Even after review, these findings need to be organized according to severity, impact, and strength of evidence to allow whole genome interpretation.
+GET-Evidence is *not* a "clinical quality" tool for diagnosis or treatment of any disease or medical condition. 
 
-To facilitate whole genome interpretation, GET-Evidence matches genetic variants against its own and other databases and produces two reports:
+By using GET-Evidence you agree to our "Terms of Service":tos. 
 
-* A sorted report of well-evaluated variants from GET-Evidence itself
-* A prioritized list of insufficiently evaluated variants still requiring review. 
+h2. What is GET-Evidence for?
 
-You can see some examples of "genome reports":genomes from Personal Genome Project participants.
+Whole genome sequencing results in thousands of variants which may have a functional consequence and have published literature findings which require review. Even after review, these findings need to be organized according to severity, impact, and strength of evidence to allow whole "genome interpretation":guide_reading_genome_reports. GET-Evidence was created to address this problem.
 
-h2. User-updated variant interpretations
+GET-Evidence is also a public forum for forming consensus. GET-Evidence uses a "peer production" model for "variant interpretation":guide_reading_variant_reports: all users who log in may "edit":guide_editing variant interpretations. This model facilitates the updating and correction of interpretations, facilitating the creation of a consensus from various publications and interpretations. 
 
-Users facilitate the process of genome evaluation by recording and sharing their literature findings publicly. The variant annotation pages are thus a forum in which various researchers can establish consensus interpretations for genetic variants.
+Finally, GET-Evidence is a public resource. Variant interpretations are shared freely (without copyright restriction). As such, GET-Evidence is a fully public method which others may build upon and against which private interpretations methods may be compared.
 
-We hope that you will consider contributing to variant evaluations; please see our "guide to editing GET-Evidence":guide_editing to learn how to participate.
+GET-Evidence was developed to support work carried out by the "Personal Genome Project":http://www.personalgenomes.org. You can see some examples of "genome reports":genomes from Personal Genome Project participants and other public genomes. 
 
-h2. Data download and source code
+We also have various "guides":guides available for using and editing our system, including a "guide to reading genome reports":guide_reading_genome_reports and a "guide to reading variant reports":guide_reading_variant_reports.
+
+h2. Downloading data or source code
 
 User-contributed variant interpretations are accepted and published under CC0 -- i.e., without copyright protection. You are welcome to obtain the data either by means of the web service or by "downloading a copy of the database":download.
+
+The source files for genome data, along with GET-Evidence's annotations, are provided alongside genome reports. See our "file format descriptions":upload_and_source_file_formats for more information on the format we use.
 
 The web service software is available under the GNU General Public License, version 3.
 
