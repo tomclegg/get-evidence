@@ -27,6 +27,8 @@ If you open a genome report you'll find a tab listing "Insufficiently reviewed v
 
 "Scoring":guide_impact_score is the most important type of information to add to a variant interpretation. Once enough of these scores are added, a variant can be considered "sufficiently evaluated" by GET-Evidence.
 
+You should also check out our "easy edit suggestions":guide_easy_edits to get started with easy ways to start improving GET-Evidence.
+
 h3. What sort of information is relevant?
 
 Try finding some papers that might help you understand the variant. You can enter the Pubmed ID in a box at the bottom of the page to enter that publication into our system. There will be a field there for you to summarize data from that paper relevant to this variant. Read that paper looking for evidence that would contribute to scoring.
