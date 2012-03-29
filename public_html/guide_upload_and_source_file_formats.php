@@ -7,14 +7,6 @@ h1. Upload & source file format
 
 The genome processing aspect of GET-Evidence interprets GFF formatted files that reports differences of the genome versus reference. Details on requirements, assumptions, and types of interpreted data are described here.
 
-h3. Other guides
-
-* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
-* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
-* "Variant impact score":guide_impact_score: Explains how the variant impact score is determined.
-* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
-* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
-
 h3. General instructions
 
 We use a variant of GFF files for genome processing. Files may be uploaded as plain text (with a .gff extension) or compressed with gzip (.gff.gz extension). If you click the "download" option at the top of a genome report you will see an example of input data we have used. We make a lot of assumptions about input data, so please read our descriptions below to be sure your data is processed properly.

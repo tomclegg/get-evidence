@@ -7,14 +7,6 @@ h1. Variant Impact Score
 
 To facilitate automatic reporting of variants, we ask that users score variants in various categories. There are seven impact scores that are recorded, described below.
 
-h3. Other guides
-
-* "Guide to editing":guide_editing: Explains how to edit variant evaluations.
-* "Autoscore":guide_autoscore: Explains how autoscore prioritization of variants for review is calculated.
-* "Qualifiers":guide_qualifiers: Explains how the variant impact score determines the description of the variant as “uncertain”, “likely”, etc.
-* "Amino acid calls":guide_amino_acid_calls: Explains our annotation for amino acid changes predicted from genetic variants
-* "Upload and source file format":guide_upload_and_source_file_formats: Explains file format used by our genome processing and provided genome data downloads
-
 h2. Variant evidence vs. clinical importance
 
 Of the seven impact scores, the first four reflect variant evidence (how "real" a variant effect is) while the last three reflect clinical importance (how severe and/or treatable the effect is). It is important to distinguish between these two sets of scores. Some variants may be predicted to have a very severe effect but have weak supporting evidence because the variant's rarity makes it hard to collect statistically significant data - such a variant would have high clinical importance scores but low evidence scores. On the other hand, some variants may have strong statistical significance but are common and have a weak impact on disease (for example, variants found through genome-wide association studies of common SNPs) - such variants would have high evidence scores but low clinical importance.

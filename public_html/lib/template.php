@@ -83,7 +83,7 @@ foreach(split(' ','addEvent message edit-autosave-submit evidence report show-wh
 		<div class="navigation">
 			<a href="/about">About</a>
 			<a href="/genomes">Genomes</a>
-			<a href="/guide_editing">Editing guide</a>
+			<a href="/guides">Guides</a>
 			<a href="/edits">Recent changes</a>
 			<a href="/editors">Contributors</a>
 			<a href="/download">Download</a>
