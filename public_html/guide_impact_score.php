@@ -1,11 +1,13 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "GET-Evidence: Variant Impact Score";
+$gOut["title"] = "GET-Evidence: Variant Impact Scores";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
-h1. Variant Impact Score
+h1. Variant Impact Scores
 
 To facilitate automatic reporting of variants, we ask that users score variants in various categories. There are seven impact scores that are recorded, described below.
+
+For a variant to be considered "sufficiently evaluated" (and thus appear in a genome interpretation) some minimum number of these categories must be recorded. See our "guide to sufficiently vs. insufficiently variants":guide_sufficiently_evaluated for the specific requirements.
 
 h2. Variant evidence vs. clinical importance
 
@@ -54,6 +56,14 @@ Exactly what is being counted can vary.
 * Recessive hypothesis: Only homozygotes for the variant are counted as case+, heterozygotes and non-carriers are case-
 * Dominant hypothesis: Homozygous and heterozygous carriers are counted as case+, non-carriers are case-
 * Counting chromosomes: Alleles rather than genotypes are counted, case+ is the number of chromosomes carrying the variant, case- is the number of chromosomes without it.
+
+h4. Do NOT combine data from different studies to increase statistical significance
+
+Publication bias is a serious issue that makes pooling data from multiple studies problematic. Pooled data from different studies fails to account for other studies where that particular variant was not observed, or was not reported upon (because it failed to have a strong assocation). 
+
+Data from multiple studies should not be pooled if it strengthens the statistical significance of evidence supporting a variant. You may find cases where such pooling has been done in a variant evaluation. These cases may predate the creation of this guideline and should be corrected when found. You might, with discretion, combine data from other studies in a manner that weakens a hypothesis.
+
+In general, "meta-analysis" that combines and analyzes case/control data from different sources should be from peer-reviewed meta-analysis publications, not performed within GET-Evidence.
 
 h3. Familial evidence
 
