@@ -21,11 +21,13 @@ h2. Where to start?
 
 h3. Which variants need editing?
 
+GET-Evidence uses collaborative editing to create and maintain our "variant interpretations":guide_reading_variant_reports. Which variants need editing?
+
 A great place to start is the "public genomes":genomes that we have uploaded. To learn more about how to read these pages please see our "guide to reading genome reports":guide_reading_genome_reports.
 
 If you open a genome report you'll find a tab listing "Insufficiently reviewed variants". These are variants which do not have enough scores and impact information filled in to allow us to automatically sort them. We sort these using "prioritization score":guide_prioritization_score, which prioritizes variants based on their presence in variant-specific lists (indicating there is published literature available), gene-specific lists (indicating potential for that gene to cause disease), and computational evidence (reflecting automatic prediction whether a variant may cause disease).
 
-"Scoring":guide_impact_score is the most important type of information to add to a variant interpretation. Once enough of these scores are added, a variant can be considered "sufficiently evaluated" by GET-Evidence.
+"Scoring":guide_impact_score is the most important type of information to add to a variant interpretation. Once enough of these scores are added, a variant can be considered "sufficiently evaluated":guide_sufficiently_evaluated by GET-Evidence.
 
 You should also check out our "easy edit suggestions":guide_easy_edits to get started with easy ways to start improving GET-Evidence.
 

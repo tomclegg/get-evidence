@@ -37,9 +37,9 @@ p(. !img/sample_genome_report_3.gif!
 
 h2. Insufficiently evaluated variants
 
-p. This tab contains a list of variants which haven't yet had a full interpretation performed within GET-Evidence. Each genome has thousands of variants affecting genes -- most of these do not yet have any interpretation associated with them.
+p. This tab contains a list of variants which haven't yet had a full interpretation performed within GET-Evidence. Each genome has thousands of variants affecting genes -- most of these do not yet have any interpretation associated with them. Once a variant has enough data recorded such that it is "considered sufficiently evaluated":guide_sufficiently_evaluated, it will appear instead in the "genome report" tab.
 
-p. To assist genome interpretation, GET-Evidence prioritizes these variants. When evaluating a new genome, a researcher might want to go to this tab and look for any prioritized variants that might be important to interpret. Once a variant interpretation is recorded it will be re-used by all other genomes that share that variant.
+p. To assist genome interpretation, GET-Evidence prioritizes insufficiently evaluated variants. When evaluating a new genome, a researcher might want to go to this tab and look for any prioritized variants that might be important to interpret. Once a variant interpretation is recorded it will be re-used by all other genomes that share that variant.
 
 p(. !img/sample_genome_report_4.gif!
 
