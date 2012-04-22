@@ -35,7 +35,7 @@ p(. Because assessing such confidence information can be very technology depende
 
 h3. How can I download the raw genome data?
 
-p(. At the top of each genome report, GET-Evidence provides a link to the original file interpreted by GET-Evidence ("source data"). In addition, GET-Evidence provides an output file you can download that includes some annotations added by GET-Evidence (e.g. amino acid change predictions). For more information on this file see our "upload and source file formats":guide_upload_and_source_file_formats.
+p(. At the top of each genome report, GET-Evidence provides a link to the original file interpreted by GET-Evidence ("source data"). In addition, GET-Evidence provides an output file you can download that includes some annotations added by GET-Evidence (e.g. amino acid change predictions). For more information on this file see our "upload and annotated file formats":guide_upload_and_annotated_file_formats.
 
 EOF
 );

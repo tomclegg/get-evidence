@@ -9,7 +9,7 @@ Genome reports on GET-Evidence are produced when a genome is matched against our
 
 p(. !img/sample_genome_report_1.gif!
 
-The header information contains information about this report, including name, URL, debugging information, and associated files you can download. An explanation of these files in our "guide to downloading genetic data":guide_upload_and_source_file_formats. Below we describe the different tabs associated with the genome interpretation.
+The header information contains information about this report, including name, URL, debugging information, and associated files you can download. An explanation of these files in our "guide to upload and annotated file formats":guide_upload_and_annotated_file_formats. Below we describe the different tabs associated with the genome interpretation.
 
 You may also wish to visit our "Genome Report FAQ":guide_genome_reports_faq for questions you might have.
 

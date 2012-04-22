@@ -78,7 +78,7 @@ if (strlen($display_genome_ID) > 0) {
 	$page_content .= upload_warning();
 	if (getCurrentUser('tos_date_signed')) {
 	    $page_content .= "<p><A HREF=" . 
-		"\"guide_upload_and_source_file_formats\">" .
+		"\"guide_upload_and_annotated_file_formats\">" .
 		"Upload file form guide</A></p>";
 	    $page_content .= genome_entry_form();
 	} else {

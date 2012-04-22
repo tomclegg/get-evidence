@@ -29,13 +29,13 @@ p((. To learn more about how to contribute and add to variant reports, see our "
 
 h2(. Downloading Genetic Data
 
-p((. Original genome data files (the "source files") interpreted by GET-Evidence are made available as links at the top of each "genome report":genomes. In addition, we provide files containing the same genome data with our own annotations added. To read more about the format of these see our "upload and source file formats":guide_upload_and_source_file_formats.
+p((. Original genome data files (the "source files") interpreted by GET-Evidence are made available as links at the top of each "genome report":genomes. In addition, we provide files containing the same genome data with our own annotations added. To read more about the format of these see our "upload and annotated file formats":guide_upload_and_annotated_file_formats.
 
 h2(. Uploading and Analyzing Genetic Data
 
 p((. We currently allow other researchers to upload and automatically form private genetic interpretations using our system. This process produces "private" versions of the genome reports. As stated above, these are not "clinical quality" -- they are likely to be flawed for various reasons. In addition, although we will not intentionally make such data public, we cannot guarantee the privacy and security of such privately uploaded data. Please contact us if you are interested in a more secure solution.
 
-p((. To upload data you must log in to our system and agree to our "terms of service":tos. The tool for uploading genetic data is at the bottom of the "genomes":genomes page. For information on what file format is required for this upload, see our "upload and source file formats":guide_upload_and_source_file_formats.
+p((. To upload data you must log in to our system and agree to our "terms of service":tos. The tool for uploading genetic data is at the bottom of the "genomes":genomes page. For information on what file format is required for this upload, see our "upload and annotated file formats":guide_upload_and_annotated_file_formats.
 
 EOF
 );

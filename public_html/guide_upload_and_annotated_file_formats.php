@@ -1,15 +1,25 @@
 <?php
 
 include "lib/setup.php";
-$gOut["title"] = "GET-Evidence: File and call format";
+$gOut["title"] = "GET-Evidence: Upload and annotated file formats";
 $gOut["content"] = $gTheTextile->textileThis (<<<EOF
 h1. Upload & source file format
 
 The genome processing aspect of GET-Evidence interprets GFF formatted files that reports differences of the genome versus reference. Details on requirements, assumptions, and types of interpreted data are described here.
 
-h3. General instructions
+h2. Accepted upload file formats
 
-We use a variant of GFF files for genome processing. Files may be uploaded as plain text (with a .gff extension) or compressed with gzip (.gff.gz extension). If you click the "download" option at the top of a genome report you will see an example of input data we have used. We make a lot of assumptions about input data, so please read our descriptions below to be sure your data is processed properly.
+You may upload a file in any of the following formats:
+* Complete Genomics var file (build 36 or 37)
+* 23andme SNP data (assumed to be build 36)
+* VCF format (assumes a single individual, so far only used for build 37 23andme exome data)
+* GFF format used by GET-Evidence, build 36 or 37 (described below)
+
+These files may be compressed as gzip (.gz extension) or bzip2 (.bz2 extension).
+
+h2. GET-Evidence's GFF format
+
+We use a variant of GFF files for internal genome processing and output. Files may be uploaded as plain text (with a .gff extension) or compressed with gzip (.gff.gz extension) or bzip2 (.gff.bz2 extension). If you click the "download" option at the top of a genome report you will see an example of input data we have used. We make a lot of assumptions about input data, so please read our descriptions below to be sure your data is processed properly.
 
 A header line in the file should specify genome build in the following manner:
 @##genome-build 37@
@@ -21,8 +31,8 @@ If unspecified, the processing currently assumes build 36. Either build 36 or bu
 # Chromosome (e.g. "chr1", "chr12", "chrX", "chrM". Must be h18 / build 36.)
 # Source (ignored)
 # Type (e.g. "SNP", "REF", "SUB", "INDEL". *Only "REF" matters - our variant processing skips these rows* - other values are ignored.)
-# Start (1-based) - must be hg18 / build 36
-# End (1-based) - must be hg18 / build 36
+# Start (1-based)
+# End (1-based)
 # Score (ignored, "." may be used to leave the field empty)
 # Strand (ignored, *we assume to be "+"*)
 # Frame (ignored, "." may be used to leave the field empty)
