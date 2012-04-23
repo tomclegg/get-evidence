@@ -180,7 +180,7 @@ Genome data for PGP participants and some other public genomes are available on 
 * source data: the original genome data uploaded to our processing system. Currently this is either Complete Genomics var files or GFF files. 
 * dbSNP and nsSNP report: the processed genome data in GFF format, with dbSNP and nonsynonymous amino acid change information added.
 
-You may also want the "description of the GFF format":guide_upload_and_source_file_formats used for the dbSNP and nsSNP report and for a subset of the uploaded data.
+You may also want the "description of the GFF format":guide_upload_and_annotated_file_formats used for the dbSNP and nsSNP report and for a subset of the uploaded data.
 
 h2. GET-Evidence variant information
 
