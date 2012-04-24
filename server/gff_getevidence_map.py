@@ -2,7 +2,7 @@
 # Filename: gff_getevidence_map.py
 
 """
-usage: %prog nssnp.gff getev_flatfile.tsv [output_file]
+usage: %prog nssnp.gff getev_flatfile.json[.gz] [output_file]
 """
 
 # Match to GET-Evidence's JSON flatfile dump, 
@@ -13,6 +13,7 @@ import gzip
 import os
 import re
 import sys
+import datetime
 from utils import autozip, doc_optparse, gff
 from config_names import GENETESTS_DATA
 from utils.substitution_matrix import blosum100
@@ -78,8 +79,16 @@ def read_genetests(genetests_file):
             genes = data[4].strip().split('|')
             for gene in genes: 
                 genes_clin.add(gene)
-                # If data[6] isn't 'na', it's a link to an associated review.
-                if data[6] != 'na':
+    f_in.close()
+    # Check for review separately: sometimes these are on different lines.
+    f_in = open(genetests_file)
+    for line in f_in:
+        data = line.rstrip('\n').split('\t')
+        # If data[6] isn't 'na', it's a link to an associated review.
+        if data[6] != 'na':
+            genes = data[4].strip().split('|')
+            for gene in genes:
+                if gene in genes_clin:
                     genes_rev.add(gene)
     return genes_clin, genes_rev
 
@@ -106,7 +115,11 @@ def copy_output_data(getev_data, output_data):
                     'variant_quality': 'variant_quality',
                     'inheritance': 'variant_dominance',
                     'variant_id': 'variant_id',
-                    'n_articles': 'n_articles'
+                    'n_articles': 'n_articles',
+                    'n_web_pos': 'n_web_pos',
+                    'n_web_uneval': 'n_web_uneval',
+                    'n_web_neg': 'n_web_neg',
+                    'suff_eval': 'suff_eval',
                     }
     for name in name_map:
         if name in getev_data:
@@ -166,7 +179,9 @@ def autoscore(data, blosum=None, aa_from=None, aa_to=None):
         score_var_database += 1
     if "in_pharmgkb" in data and data["in_pharmgkb"]:
         score_var_database += 1
-    
+    if ('n_web_pos' in data or 'n_web_uneval' in data):
+        score_var_database += 1
+
     # Add scores from gene specific databases.
     if "testable" in data and data["testable"] == 1:
         if "reviewed" in data and data["reviewed"] == 1:
@@ -419,7 +434,16 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
     else:
         gff_data = gff.input(gff_in)
 
+    header_done = False
+
     for record in gff_data:
+        # Have to do this after calling the first record to
+        # get the iterator to read through the header data 
+        if (not header_done) and f_json_out:
+            yield "##genome-build " + gff_data.data[1]
+            yield "# File creation date: " + datetime.datetime.now().isoformat(' ')
+            header_done = True
+
         # If outputing JSON to file, yield GFF data as it's read.
         if f_json_out:
             yield str(record)
@@ -493,14 +517,21 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
         else:
             output['coordinates'] = str(record.start) + "-" + str(record.end)
 
-        # If there is an amino acid change reported, look it up based on this.
+        aa_changes = []
+        # If there are any amino acid changes reported, look them up
         if "amino_acid" in record.attributes:
+            for gene_aa_aa in record.attributes['amino_acid'].split('/'):
+                aas = gene_aa_aa.split()
+                gene = aas.pop(0)
+                aa_seen = {}
+                for aa in aas:
+                    if aa in aa_seen: continue
+                    aa_seen[aa] = 1
+                    aa_changes.append([gene, aa])
+        for aa_data in aa_changes:
             # Get gene and amino acid change, store in output.
             # Note: parse_aa_change will call sys.exit() if it's misformatted.
-            # TODO: analyze more than the first change, multiple are split by /
-            aa_changes = record.attributes['amino_acid'].split('/')
-            aa_data = aa_changes[0].split()
-            gene, aa_change_and_pos = aa_data[0:2]
+            gene, aa_change_and_pos = aa_data
             # "X" is preferred for stop, "*" can break things like URLs.
             aa_change_and_pos = re.sub(r'\*', r'X', aa_change_and_pos)
             (aa_from, aa_pos, aa_to) = parse_aa_change(aa_change_and_pos)
@@ -531,22 +562,31 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
                             output["autoscore"] = autoscore(output, 
                                                             blosum_matrix,
                                                             aa_from, aa_to)
+                            output["suff_eval"] = suff_eval(output)
+                            output["dbSNP"] = dbsnp_id
                             # Quit after first hit passing threshold
-                            if output["autoscore"] >= 2 or suff_eval(output):
-                                output["dbSNP"] = dbsnp_id
+                            if output["autoscore"] >= 2 or output["suff_eval"]:
                                 break
-            # Calculate autoscore, yield json data if at least 2.
-            output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
-            if output["autoscore"] >= 2 or suff_eval(output):
-                # This barfs on Unicode sometimes.
-                try:
-                    json_output = str(json.dumps(output, ensure_ascii=False))
-                except:
-                    continue
-                if f_json_out:
-                    f_json_out.write(json_output + '\n')
-                else:
-                    yield json_output
+
+            # Calculate autoscore, if not already done during dbSNP selection process
+            if not ("autoscore" in output):
+                output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
+                output["suff_eval"] = suff_eval(output)
+
+            # This barfs on Unicode sometimes.
+            try:
+                json_output = str(json.dumps(output, ensure_ascii=False))
+            except:
+                output['summary_short'] = ('Summary for this variant not ' +
+                            'displayed. It may contain a Unicode character ' +
+                            'preventing it from being properly processed.')
+                json_output = str(json.dumps(output, ensure_ascii=False))
+
+            if f_json_out:
+                f_json_out.write(json_output + '\n')
+            else:
+                yield json_output
+
             # TODO: print when beyond end of gene, not when new one seen
             if f_gene_out and 'ucsc_trans' in record.attributes:
                 # We take 1st & ignore multiple transcripts (which are rare)
@@ -555,7 +595,8 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
                     gene_data[gene].append(output)
                 else:
                     gene_data[gene] = [ output ]
-        else:
+
+        if len(aa_changes) == 0:
             # If no gene data at all, try dbsnp ID.
             if "dbSNP" in output:
                 dbsnp_ids = output["dbSNP"].split(",")
@@ -565,15 +606,15 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
                         getev_data = getev_by_dbsnp[dbsnp_id]
                         copy_output_data(getev_data, output)
                         output["autoscore"] = autoscore(output)
+                        output["suff_eval"] = suff_eval(output)
+                        output["dbSNP"] = dbsnp_id
                         # Quit after first hit passing threshold
-                        if output["autoscore"] >= 2 or suff_eval(output):
-                            output["dbSNP"] = dbsnp_id
+                        if output["autoscore"] >= 2 or output["suff_eval"]:
                             break
-                    break  # quit after first hit
-            output["autoscore"] = autoscore(output)
-            # Autoscore bar is lower here because you can only get points if 
-            # the dbSNP ID is in one of the variant specific databases (max 2).
-            if output["autoscore"] >= 1 or suff_eval(output):
+
+            # If no gene data and dbSNP id is not listed in
+            # GET-Evidence, don't output.
+            if "autoscore" in output:
                 # This barfs on Unicode sometimes.
                 try:
                     json_output = str(json.dumps(output, ensure_ascii=False))
