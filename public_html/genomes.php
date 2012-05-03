@@ -9,7 +9,7 @@ $page_content = "";  // all html output stored here
 $display_genome_ID = "";
 if (isset ($_REQUEST['display_genome_id']))
     $display_genome_ID = $_REQUEST['display_genome_id'];
-else if (preg_match ('{^\??([0-9a-f]{40})\b}',
+else if (preg_match ('{^\??([0-9a-f]{40}|[a-z]{2}[A-F\d]{6}|GS\d{5}$)\b}',
                      $_SERVER['QUERY_STRING'],
                      $regs))
     $display_genome_ID = $regs[1];
