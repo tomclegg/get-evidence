@@ -281,6 +281,9 @@ Import the gwas comments for "other external references"
 
  ./import_gwas.php gwas.csv
 
+Download 1000genomes data (*.hap.*) from
+http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/2009_04/
+
 Import 1000genomes data:
 
  ./import_1000genomes.php /tmp/*.hap.2009_04.gz
