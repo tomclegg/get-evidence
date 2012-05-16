@@ -50,7 +50,7 @@ $q = theDb()->query ("ALTER TABLE import_variant_f CHANGE variant_id variant_id 
 $q = theDb()->query ("ALTER TABLE import_variant_f ADD INDEX(variant_id)");
 $q = theDb()->query ("ALTER TABLE import_variant_f ADD INDEX(variant_name)");
 $q = theDb()->query ("UPDATE import_variant_f SET variant_name = UPPER(replace(variant_name,'*','X'))");
-$q = theDb()->query ("CREATE TEMPORARY TABLE v_id_name AS SELECT variant_id, upper(concat(variant_gene,'-',variant_aa_del,variant_aa_pos,variant_aa_ins)) variant_name FROM variants");
+$q = theDb()->query ("CREATE TEMPORARY TABLE v_id_name AS SELECT variant_id, if(variant_gene is null,concat('RS',variant_rsid),upper(concat(variant_gene,'-',variant_aa_del,variant_aa_pos,variant_aa_ins))) variant_name FROM variants");
 $q = theDb()->query ("ALTER TABLE v_id_name ADD INDEX(variant_name)");
 $q = theDb()->query ("UPDATE import_variant_f i
  LEFT JOIN v_id_name v ON v.variant_name = i.variant_name
