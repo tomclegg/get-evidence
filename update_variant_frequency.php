@@ -76,8 +76,9 @@ print "\n";
 theDb()->query ("LOCK TABLES variant_frequency WRITE, variant_population_frequency");
 theDb()->query ("DELETE FROM variant_frequency");
 
-print "Updating variant_frequency from allele_frequency_merge...";
-$q=theDb()->query ("INSERT INTO variant_frequency
+print "NOT updating variant_frequency from allele_frequency_merge...";
+if(false) {
+    $q=theDb()->query ("INSERT INTO variant_frequency
  (variant_id, num, denom, f)
  SELECT vcp.variant_id, num, denom, num/denom
  FROM variant_chr_pos vcp
@@ -88,8 +89,9 @@ $q=theDb()->query ("INSERT INTO variant_frequency
   variant_frequency.num=if(variant_frequency.denom>afm.denom,variant_frequency.num,afm.num),
   variant_frequency.denom=if(variant_frequency.denom>afm.denom,variant_frequency.denom,afm.denom),
   f=variant_frequency.num/variant_frequency.denom");
-if (theDb()->isError($q)) die ($q->getMessage());
-print theDb()->affectedRows();
+    if (theDb()->isError($q)) die ($q->getMessage());
+    print theDb()->affectedRows();
+}
 print "\n";
 
 print "Updating variant_frequency from variant_population_frequency...";

@@ -288,7 +288,11 @@ Import 1000genomes data:
 
  ./import_1000genomes.php /tmp/*.hap.2009_04.gz
 
-Merge variant frequencies from hapmap (via Trait-o-matic) and 1000-genomes:
+Import EVS frequency data.  See ./evs-import.txt, then:
+
+ ./evs-getev-reformat.pl tmp/ESP5400_getev-aa-changes_allele_freqs.txt | ./import_variant_frequency.php /dev/stdin EVS
+
+Merge variant frequencies from multiple databases:
 
  ./update_variant_frequency.php
 

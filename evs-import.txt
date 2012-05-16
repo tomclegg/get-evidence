@@ -1,0 +1,24 @@
+In the directory with the EVS data...
+
+ cat ESP5400.chr* | perl -ne 'unless (/^#/) { print; }' > ESP5400.all.snps.txt
+ echo "##genome-build b37" > ESP5400.all.snps.gff
+ cat ESP5400.all.snps.txt | perl -ne '@data = split; if (/^#/) { next; } if ($data[0] eq $oldpos) { next; } $oldpos = $data[0]; @data0=split(":", $data[0]); if ($data0[0] eq "x") { $data0[0] = "X"; } @alleles = split("/", $data[3]); print "chr$data0[0]\tEVS\tSNP\t$data0[1]\t$data0[1]\t.\t+\t.\talleles $data[3]; ref_allele $alleles[1]\n";' | sort --key=1,1 --key=4n,4 >> ESP5400.all.snps.gff
+
+Go to get-evidence/server dir and run "python" (took ~5 hours -- best
+to do inside screen!):
+
+>>> import gff_nonsynonymous_filter
+>>> evs_gff_in = open('/home/.../EVS_allele_freq/ESP5400.all.snps.gff')
+>>> evs_gff_out = gff_nonsynonymous_filter.predict_nonsynonymous(evs_gff_in, '/home/trait/data/hg19.2bit', '/home/trait/data/knownGene_hg19_sorted.txt')
+>>> new_evs_file = open('/home/.../EVS_allele_freq/ESP5400.all.snps.withaachange.gff', 'w')
+>>> for line in evs_gff_out:
+...     new_evs_file.write(line + '\n')
+... 
+
+Go back to dir with EVS data & run...
+
+ cat ESP5400.all.snps.withaachange.gff | perl -ne 'if (/^#/) { next; } chomp; @data=split("\t"); if (/amino_acid (.*?);/) { $aa = $1; $aa =~ s/ /-/; } else { $aa = "None" } print "$data[0]:$data[3]\t$aa\n";' | sort --key=1,1 > temp1
+
+ cat ESP5400.all.snps.txt | perl -ne 'chomp; if (/^#/) { next; } @data=split(); @data0 = split(":", $data[0]); if ($data0[0] eq "x") { $data0[0] = "X"; } $pos = "chr" . $data0[0] . ":" . $data0[1]; @af_data = split("/", $data[6]); @af_data0 = split("=", $af_data[0]); @af_data1 = split("=", $af_data[1]); $af_data_tot = $af_data0[1] + $af_data1[1]; $af = $af_data0[1] / $af_data_tot; @alleles = split("/", $data[3]); $line = sprintf("$pos\t$alleles[0]\t$alleles[1]\t$af_data0[1]\t$af_data_tot\t" . "%1.7f\t$data[1]\n", $af); if ($pos ne $old_pos) { print $line; $old_pos = $pos; }' | sort --key=1,1 > temp2
+
+ join temp2 temp1 | grep -v 'none None' | perl -ne 'chomp; @data=split; @data0=split(":", $data[0]); print "@data0 @data[1..$#data]\n";' | sort --key=1,1 --key=2n,2 > ESP5400_getev-aa-changes_allele_freqs.txt 
