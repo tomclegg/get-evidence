@@ -37,6 +37,7 @@ print "Loading ".$_SERVER["argv"][1]."...";
 $q = theDb()->query ("LOAD DATA LOCAL INFILE ?
 	 INTO TABLE import_variant_f
 	 FIELDS TERMINATED BY '\t'
+	 OPTIONALLY ENCLOSED BY '\\\"'
 	 LINES TERMINATED BY '\n'",
 		     array ($_SERVER["argv"][1]));
 if (theDb()->isError($q)) print $q->getMessage();
@@ -45,7 +46,7 @@ print "\n";
 
 
 print "Looking up missing variant ids...";
-$q = theDb()->query ("UPDATE import_variant_f SET variant_id=NULL where variant_id='unknown'");
+$q = theDb()->query ("UPDATE import_variant_f SET variant_id=NULL where variant_id in ('unknown', 'null', '')");
 $q = theDb()->query ("ALTER TABLE import_variant_f CHANGE variant_id variant_id BIGINT UNSIGNED");
 $q = theDb()->query ("ALTER TABLE import_variant_f ADD INDEX(variant_id)");
 $q = theDb()->query ("ALTER TABLE import_variant_f ADD INDEX(variant_name)");

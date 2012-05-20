@@ -304,6 +304,8 @@ foreach (theDb()->getAll ("SELECT * FROM variant_population_frequency WHERE vari
     $denom = $frow["denom"];
     $f = sprintf ("%.1f%%", 100 * $num / $denom);
     $tag = $frow["dbtag"];
+    if ($tag == "1000g") $tag = "1000 Genomes";
+    if ($tag == "hapmap") $tag = "HapMap";
     $html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom) in $tag</LI>\n";
     $gotsome = 1;
 }
