@@ -146,10 +146,14 @@ def genome_metadata(gff_input, genome_stats_file, progresstracker):
     progresstracker.metadata['match_num'] = match_num
     progresstracker.metadata['ref_all_num'] = ref_all_num
     progresstracker.metadata['ref_nogap_num'] = ref_nogap_num
-    called_frac_all = match_num * 1.0 / ref_all_num
-    progresstracker.metadata['called_frac_all'] = called_frac_all
-    called_frac_nogap = match_num * 1.0 / ref_nogap_num
-    progresstracker.metadata['called_frac_nogap'] = called_frac_nogap
+
+    if ref_all_num > 0:
+        called_frac_all = match_num * 1.0 / ref_all_num
+        progresstracker.metadata['called_frac_all'] = called_frac_all
+
+    if ref_nogap_num > 0:
+        called_frac_nogap = match_num * 1.0 / ref_nogap_num
+        progresstracker.metadata['called_frac_nogap'] = called_frac_nogap
 
 def main():
     """Return GFF header metadata"""
