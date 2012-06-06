@@ -168,7 +168,7 @@ class GenomeVariant {
                 $pph2_string = $pph2_string . " (benign)";
             $items[] = $pph2_string;
         }
-        if ($data["aa_to"] || $data["aa_ins"]) {
+        if (@$data["aa_to"] || @$data["aa_ins"]) {
             // Live data from database
             if ($data["aa_to"] && ($data["aa_to"] == "X" ||
                                    $data["aa_to"] == "*"))
@@ -182,14 +182,14 @@ class GenomeVariant {
             }
         } else {
             // Stored data from JSON report
-            if ( (array_key_exists("nonsense", $data) && $data["nonsense"]) ||
-                 (preg_match('/X$/', $data['amino_acid_change']) || 
-                  preg_match('/\*$/', $data['amino_acid_change'])) )
+            if ( @$data["nonsense"] ||
+                 preg_match('/X$/', @$data['amino_acid_change']) || 
+                 preg_match('/\*$/', @$data['amino_acid_change']) )
                 $items[] = "Nonsense mutation";
             else if ( (array_key_exists("frameshift", $data) && 
                        $data["frameshift"]) ||
-                      (preg_match('/Shift$/', $data['amino_acid_change']) || 
-                       preg_match('/Framshift$/', $data['amino_acid_change'])) )
+                      (preg_match('/Shift$/', @$data['amino_acid_change']) || 
+                       preg_match('/Frameshift$/', @$data['amino_acid_change'])) )
                 $items[] = "Frameshift";
             else if (! (array_key_exists("pph2_score", $data) && 
                         $data["pph2_score"])) 
@@ -282,6 +282,7 @@ class GenomeReport {
                 }
             }
         } elseif (!file_exists($this->sourcefile)) {
+            $ret['logfilename'] = '/dev/null';
             $ret['progress'] = 1;
             $ret['status'] = 'finished';
         } else {
