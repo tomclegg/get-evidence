@@ -281,6 +281,9 @@ class GenomeReport {
                     }
                 }
             }
+        } elseif (!file_exists($this->sourcefile)) {
+            $ret['progress'] = 1;
+            $ret['status'] = 'finished';
         } else {
             $ret['logfilename'] = $this->logfile;
             if (file_exists($this->logfile) && 
@@ -307,35 +310,34 @@ class GenomeReport {
      * genome, return the PGP or Public genome openID.
      * @param string $user_oid
      * @param boolean $is_admin (optional, defaults to false)
-     * @return boolean|string false or the string containing openID
+     * @return boolean|string false, true, or the string containing openID
      */
     public function permission($user_oid, $is_admin=false) {
         global $pgp_data_user, $public_data_user;
         // Currently, admins have access to all genome reports.
         if ($is_admin) 
             return true;
-        $db_cmd = "SELECT oid FROM private_genomes 
+        $db_cmd = "SELECT * FROM private_genomes 
                    WHERE shasum=?";
         $db_query = theDb()->getAll($db_cmd, array($this->genomeID));
-        // Permission is false unless found by one of these checks.
-        $permission = false;
         // First check if logged in user has access.
         foreach ($db_query as $result) {
             if ($result['oid'] == $user_oid) {
-                $permission = $user_oid;
+                return $user_oid;
             }
         }
         // If no user-specific permission, check if PGP or Public data.
-        if (!$permission) {
-            foreach ($db_query as $result) {
-                if ($result['oid'] == $pgp_data_user) {
-                    $permission = $pgp_data_user;
-                } elseif ($result['oid'] == $public_data_user) {
-                    $permission = $public_data_user;
-                }
+        foreach ($db_query as $result) {
+            if ($result['oid'] == $pgp_data_user) {
+                return $pgp_data_user;
+            } elseif ($result['is_public'] > 0) {
+                return true;
+            } elseif ($result['oid'] == $public_data_user) {
+                return $public_data_user;
             }
         }
-        return $permission;
+        // Permission is false unless found by one of the above checks.
+        return false;
     }
 
     /**
@@ -343,15 +345,21 @@ class GenomeReport {
      * @return array
      */
     public function header_data() {
-        $db_cmd = "SELECT nickname, global_human_id FROM private_genomes 
+        $db_cmd = "SELECT * FROM private_genomes 
                    WHERE shasum=?";
         $db_query = theDb()->getAll ($db_cmd, array($this->genomeID));
         $head_data = array("Name" => false,
-                           "Public profile" => false,
-                           "This report" => "<a href=\"/genomes?" . 
-                           $this->genomeID . "\">" . 
-                           "{$_SERVER['HTTP_HOST']}/genomes?" .
-                           $this->genomeID . "</a>");
+                           "Public profile" => false);
+
+        if ($db_query[0]['is_public']) {
+            $query_string = $this->genomeID;
+        } else {
+            $access_token = hash_hmac('md5', $this->genomeID, $GLOBALS['gSiteSecret']);
+            $query_string = 'display_genome_id=' . $this->genomeID . '&access_token=' . $access_token;
+        }
+        $head_data['This report'] = "<a href=\"/genomes?$query_string\">" . 
+            "{$_SERVER['HTTP_HOST']}/genomes?$query_string</a>";
+
         if ($db_query[0]["nickname"]) {
             $realname = $db_query[0]["nickname"];
             if (preg_match ('{^PGP\d+ \((.+?)\)}', $realname, $regs))
@@ -642,11 +650,13 @@ function genome_display($shasum, $oid, $is_admin=false, $options=array()) {
         if ($v)
             $returned_text .= "<li>$k: $v</li>\n";
     if ($results["progress"] < 1) {
-        $returned_text .= "<li>Processing status: &nbsp; <div style='margin:3px 0 -3px 0;display:inline-block;height:12px;' id='variant_report_progress' initial-value='{$results['progress']}'></div> &nbsp; <div style='display:inline' id='variant_report_status'>{$results['status']}</div><input type='hidden' id='display_genome_id' value='{$shasum}' /></li>\n";
+        $returned_text .= "<li>Processing status: &nbsp; <div style='margin:3px 0 -3px 0;display:inline-block;height:12px;' id='variant_report_progress' initial-value='{$results['progress']}'></div> &nbsp; <div style='display:inline' id='variant_report_status'>{$results['status']}</div><input type='hidden' id='display_genome_id' value='{$shasum}' /><input type='hidden' id='access_token' value='{$_REQUEST[access_token]}' /></li>\n";
     }
     $logfile = $results["logfilename"];
     $log = $results["log"];
-    $returned_text .= "<li><A id=\"showdebuginfo\" href=\"#\" onclick=\"jQuery('#debuginfo').toggleClass('ui-helper-hidden');jQuery('#showdebuginfo').html('Show/hide debugging info');return false;\">Show debugging info</A></li>\n";
+    if ($logfile != '/dev/null') {
+        $returned_text .= "<li><A id=\"showdebuginfo\" href=\"#\" onclick=\"jQuery('#debuginfo').toggleClass('ui-helper-hidden');jQuery('#showdebuginfo').html('Show/hide debugging info');return false;\">Show debugging info</A></li>\n";
+    }
     $returned_text .= "</ul>\n";
     $returned_text .= "<DIV id='debuginfo' class='ui-helper-hidden'><BLOCKQUOTE><PRE id='debuginfotext'>Log file: ".$logfile."\n\n".htmlspecialchars($log,ENT_QUOTES,"UTF-8")."\n\n</PRE></BLOCKQUOTE></DIV>\n";
 
@@ -708,7 +718,7 @@ function genome_display($shasum, $oid, $is_admin=false, $options=array()) {
         $returned_text .= "</div>\n<div id='variant_table_tab_1'>\n";
 
         usort($variants['insuff'], "sort_variants");
-        $insuff_table = "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff' ajax_source='/genomes?display_genome_id=$shasum&part=insuff'><THEAD><TR>"
+        $insuff_table = "<TABLE class='report_table variant_table datatables_please' datatables_name='variant_table_insuff' ajax_source='/genomes?display_genome_id=$shasum&access_token=$_REQUEST[access_token]&part=insuff'><THEAD><TR>"
             . "<TH class='Invisible ui-helper-hidden'>Row number</TH>"
             . "<TH>Variant</TH>"
             . "<TH class='SortNumeric SortDescFirst'>Prioritization score</TH>"

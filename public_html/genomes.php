@@ -16,7 +16,7 @@ else if (preg_match ('{^\??([0-9a-f]{40}|[a-z]{2}[A-F\d]{6}|GS\d{5}$)\b}',
 
 if (preg_match ('{^([a-z]{2}[0-9A-F]{6}|GS[0-9]{5})$}', $display_genome_ID, $matches)) {
     $display_genome_ID = theDb()->getOne
-	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND oid IN (?,?) ORDER BY private_genome_id DESC',
+	    ('SELECT shasum FROM private_genomes WHERE global_human_id=? AND (oid IN (?,?) OR is_public > 0) ORDER BY private_genome_id DESC',
 	     array ($matches[0], $public_data_user, $pgp_data_user));
     if (!$display_genome_ID)
         $display_genome_ID = -1;
@@ -35,8 +35,12 @@ $user = getCurrentUser();
 
 if (strlen($display_genome_ID) > 0) {
     $genome_report = new GenomeReport($display_genome_ID);
-    $permission = $genome_report->permission($user['oid'], 
-					      getCurrentUser('is_admin'));
+    $permission =
+        ($_REQUEST['access_token']
+         == hash_hmac('md5', $display_genome_ID, $gSiteSecret))
+        ||
+        ($genome_report->permission($user['oid'],
+                                    getCurrentUser('is_admin')));
     if ($permission) {
 	if (isset($_REQUEST["json"]) ||
             (isset($_REQUEST['format']) && $_REQUEST['format'] == 'json')) {
@@ -66,7 +70,7 @@ if (strlen($display_genome_ID) > 0) {
     }
 } else {
     $page_content .= "<h2>PGP genomes</h2>";
-    $page_content .= list_uploaded_genomes($pgp_data_user);
+    $page_content .= list_uploaded_genomes($pgp_data_user, '');
     $page_content .= "<h2>Public genomes</h2>";
     $page_content .= list_uploaded_genomes($public_data_user);
     $page_content .= "<hr>";
@@ -99,13 +103,16 @@ go();
 
 // Functions
 
-function list_uploaded_genomes($user_oid) {
+function list_uploaded_genomes($user_oid, $global_human_prefix=false) {
     global $pgp_data_user, $public_data_user, $user;
     if ($user_oid != $pgp_data_user &&
 	$user_oid != $public_data_user &&
 	getCurrentUser('is_admin')) {
-	$condition = 'oid NOT IN (?,?)';
+	$condition = 'oid NOT IN (?,?) AND is_public=0';
 	$param = array ($pgp_data_user, $public_data_user);
+    } elseif ($global_human_prefix !== false) {
+        $condition .= 'oid=? OR (is_public>0 AND global_human_id LIKE ?)';
+        $param = array ($user_oid, $global_human_prefix . "%");
     } else {
 	$condition = 'oid=?';
 	$param = array ($user_oid);

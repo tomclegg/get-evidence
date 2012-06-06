@@ -279,6 +279,7 @@ function variant_report_progress_update()
 	parameters:
 	{
 	    'display_genome_id': $('display_genome_id').value,
+	    'access_token': $('access_token').value,
 	    'json': true
 	},
 	onSuccess: function(transport)

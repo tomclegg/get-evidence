@@ -72,6 +72,9 @@ function evidence_create_tables ()
   INDEX (oid), INDEX (shasum))");
   theDb()->query ("ALTER TABLE private_genomes ADD private_genome_id SERIAL FIRST");
   theDb()->query ("ALTER TABLE private_genomes ADD global_human_id VARCHAR(64)");
+  theDb()->query ("ALTER TABLE private_genomes ADD is_public TINYINT DEFAULT 0");
+  theDb()->query ("ALTER TABLE private_genomes ADD dataset_locator VARCHAR(255)");
+  theDb()->query ("ALTER TABLE private_genomes ADD UNIQUE KEY `oid_shasum` (oid,shasum)");
 
   theDb()->query ("CREATE TABLE IF NOT EXISTS datasets (
   dataset_id VARCHAR(16) NOT NULL,
