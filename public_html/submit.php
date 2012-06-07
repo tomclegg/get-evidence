@@ -50,8 +50,11 @@ if (isset($_REQUEST['human_id']) &&
     }
 }
 
-$access_token = hash_hmac('md5', $shasum, $gSiteSecret);
-$result_url = 'http://' . $_SERVER['HTTP_HOST'] . '/genomes?display_genome_id=' . $shasum . '&access_token=' . $access_token;
+$result_url = 'http://' . $_SERVER['HTTP_HOST'] . '/genomes?display_genome_id=' . $shasum;
+if (!$_REQUEST['dataset_is_public']) {
+    $access_token = hash_hmac('md5', $shasum, $gSiteSecret);
+    $result_url .= '&access_token=' . $access_token;
+}
 
 respond(true, array('result_url' => $result_url));
 
