@@ -725,7 +725,7 @@ function genome_display($shasum, $oid, $is_admin=false, $options=array()) {
             . "<TH class='SortNumeric SortDescFirst'>Prioritization score</TH>"
             . "<TH class='RenderFreq'>Allele<BR />freq</TH>"
             . "<TH class='Unsortable'>Num of<BR />articles</TH>"
-            . "<TH class='Unsortable'>Zygosity and Autoscore Reasons</TH>"
+            . "<TH class='Unsortable'>Zygosity and Prioritization Score Reasons</TH>"
             . "<TH class='Invisible ui-helper-hidden'>Sufficient</TH>"
             . "</TR></THEAD><TBODY>\n";
         $rownumber = 0;
