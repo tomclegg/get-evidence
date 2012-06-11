@@ -145,11 +145,11 @@ class GenomeVariant {
 
     public function autoscore_why($data) {
         $items = array();
-        if (array_key_exists("in_omim", $data) && $data["in_omim"])
+        if (@$data["in_omim"] && $data["in_omim"] != '-')
             $items[] = "In OMIM";
-        if (array_key_exists("in_gwas", $data) && $data["in_gwas"])
+        if (@$data["in_gwas"] && $data["in_gwas"] != '-')
             $items[] = "In HuGENet GWAS";
-        if (array_key_exists("in_pharmgkb", $data) && $data["in_pharmgkb"])
+        if (@$data["in_pharmgkb"] && $data["in_pharmgkb"] != '-')
             $items[] = "In PharmGKB";
         if (array_key_exists("webscore", $data) && $data["webscore"] != "N") {
             if ($data["webscore"] == "-") {
