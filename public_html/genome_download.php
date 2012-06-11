@@ -34,14 +34,18 @@ $nickname = $_REQUEST['download_nickname'];
 $nickname = preg_replace('/ +/', '_', $nickname) . $ext;
 
 $user = getCurrentUser();
-$db_query = theDb()->getAll ("SELECT oid FROM private_genomes WHERE shasum=?",
+$db_query = theDb()->getAll ("SELECT * FROM private_genomes WHERE shasum=?",
                                     array($genome_id));
 
 # check you should have permission
 $permission = false;
 foreach ($db_query as $result) {
-    if ($result['oid'] == $user['oid'] || $result['oid'] == $pgp_data_user
-        || $result['oid'] == $public_data_user) $permission = true;
+    if ($result['oid'] == $user['oid']
+	|| $result['is_public'] > 0
+	|| @$_REQUEST['access_token'] == hash_hmac('md5', $genome_id, $GLOBALS['gSiteSecret'])
+	|| $result['oid'] == $pgp_data_user
+        || $result['oid'] == $public_data_user)
+	$permission = true;
 }
 
 if ($permission) {

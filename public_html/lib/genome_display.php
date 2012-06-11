@@ -392,9 +392,11 @@ class GenomeReport {
             if (isset($head_data["Download"]))
                 $head_data["Download"] .= ", ";
             else $head_data["Download"] = "";
+            $access_token_if_needed = isset($access_token) ? ('&amp;access_token=' . $access_token) : '';
             $head_data["Download"] .= "<a href=\"/genome_download.php?" .
                 "download_type=ns&amp;download_genome_id=" . $this->genomeID . 
-                "&amp;download_nickname=" . urlencode($realname) . 
+                "&amp;download_nickname=" . urlencode($realname) .
+                $access_token_if_needed .
                 "\">dbSNP and nsSNP report</a> (" . 
                 humanreadable_size(@filesize($this->processedfile)) . ")";
         }
