@@ -158,7 +158,7 @@ class GenomeVariant {
                 $items[] = "Has confirmed web hits";
             }
         }
-        if (array_key_exists("pph2_score", $data) && $data["pph2_score"]) {
+        if (strlen(@$data["pph2_score"]) > 0 && $data["pph2_score"] != '-') {
             $pph2_string = "Polyphen 2: " . $data["pph2_score"];
             if ($data["pph2_score"] >= 0.85)
                 $pph2_string = $pph2_string . " (probably damaging)";
@@ -191,8 +191,7 @@ class GenomeVariant {
                       (preg_match('/Shift$/', @$data['amino_acid_change']) || 
                        preg_match('/Frameshift$/', @$data['amino_acid_change'])) )
                 $items[] = "Frameshift";
-            else if (! (array_key_exists("pph2_score", $data) && 
-                        $data["pph2_score"])) 
+            else if (!isset($pph2_string))
                 // Remainder: frame-preserving indels, large substitutions, 
                 // or otherwise unknown to Polyphen 2.
                 $items[] = "Polyphen 2: Unknown";
