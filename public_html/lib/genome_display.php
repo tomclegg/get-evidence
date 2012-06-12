@@ -586,7 +586,7 @@ class GenomeReport {
             return null;
         $no_insuff = array_key_exists('no_insuff', $options);
         $variants = array('suff' => array(), 'insuff' => array());
-        $getev_variants = array();
+        $getev_variants = array (false => array(), true => array());
         if ($no_insuff)
             exec("fgrep -v '\"suff_eval\":false' " .
                  escapeshellarg($this->variantsfile),
@@ -612,7 +612,7 @@ class GenomeReport {
                         $vardata_to_pass[$key] = $variant_data[$key];
                     }
                 }
-                $getev_variants[$variant_data['variant_id']] = $vardata_to_pass;
+                $getev_variants[!!$variant_data['suff_eval']][$variant_data['variant_id']] = $vardata_to_pass;
                 continue;
             }
             // Otherwise process & store. Var is necessarily insuff if not in GET-Ev.
@@ -622,14 +622,16 @@ class GenomeReport {
             }
         }
         // Grab data for GET-Evidence variants from the database.
-        $getev_var_matched = $this->variants_lookup($getev_variants);
-        foreach ($getev_var_matched as $variant) {
-            if ($variant->data['suff_eval']) {
-                $variants['suff'][] =& $variant->data;
-            } else if (!$no_insuff && $variant->data['autoscore'] > 0) {
-                $variants['insuff'][] =& $variant->data;
-            }
-        }
+        $getev_var_suff = $this->variants_lookup($getev_variants[true]);
+        $getev_var_insuff = $this->variants_lookup($getev_variants[false]);
+
+        foreach ($getev_var_suff as $variant)
+            $variants['suff'][] =& $variant->data;
+
+        if (!$no_insuff)
+            foreach ($getev_var_insuff as $variant)
+                if ($variant->data['autoscore'] > 0)
+                    $variants['insuff'][] =& $variant->data;
         return $variants;
     }    
 }
