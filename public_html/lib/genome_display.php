@@ -507,6 +507,8 @@ class GenomeReport {
      * @return array List of GenomeVariant objects
      */
     public function variants_lookup($variants_data) {
+        if (count($variants_data) == 0)
+            return array();
         // Look up data in database
         $variant_ids = array_keys($variants_data);
         $combine_for_db_query = "(" . join(',', $variant_ids) . ")";
@@ -623,15 +625,16 @@ class GenomeReport {
         }
         // Grab data for GET-Evidence variants from the database.
         $getev_var_suff = $this->variants_lookup($getev_variants[true]);
-        $getev_var_insuff = $this->variants_lookup($getev_variants[false]);
 
         foreach ($getev_var_suff as $variant)
             $variants['suff'][] =& $variant->data;
 
-        if (!$no_insuff)
+        if (!$no_insuff) {
+            $getev_var_insuff = $this->variants_lookup($getev_variants[false]);
             foreach ($getev_var_insuff as $variant)
                 if ($variant->data['autoscore'] > 0)
                     $variants['insuff'][] =& $variant->data;
+        }
         return $variants;
     }    
 }
