@@ -37,6 +37,7 @@ def read_getev_flat(getev_flatfile):
     # Pull only these items from the GET-Evidence json data:
     items_wanted = ['gene', 'aa_change_short', 'summary_short', 'impact', \
             'inheritance', 'dbsnp_id', 'in_omim', 'in_gwas', 'in_pharmgkb', \
+            'quality_scores', \
             'variant_quality', 'overall_frequency_n', 'overall_frequency_d', \
             'pph2_score', 'n_articles', 'variant_id']
 
@@ -110,8 +111,8 @@ def copy_output_data(getev_data, output_data):
                     'overall_frequency_d': 'denom',
                     'pph2_score': 'pph2_score',
                     'impact': 'variant_impact',
-                    'quality': 'variant_quality',
                     'summary_short': 'summary_short',
+                    'quality_scores': 'quality_scores',
                     'variant_quality': 'variant_quality',
                     'inheritance': 'variant_dominance',
                     'variant_id': 'variant_id',
@@ -237,14 +238,19 @@ def suff_eval(variant_data):
     6 - disease penetrance
     """
     # Check that we have the data we need, else return "False"
-    if "variant_quality" in variant_data:
-        quality_scores = variant_data["variant_quality"]
+    if "quality_scores" in variant_data:
+        quality_scores = variant_data["quality_scores"]
         if (not quality_scores) or len(quality_scores) < 7:
             return False
     else:
-        return False
-    impact = variant_data["variant_impact"]
+        quality_scores = []
+        for k in ['in_silico', 'in_vitro', 'case_control', 'familial', 'severity', 'treatability', 'penetrance']:
+            if ('qualityscore_' + k) in variant_data:
+                quality_scores.append(variant_data['qualityscore_'+k])
+            else:
+                quality_scores.append('-')
 
+    impact = variant_data["variant_impact"]
     # Must have either case_control or familial data
     if quality_scores[2] == "-" and quality_scores[3] == "-":
         return False
@@ -263,8 +269,8 @@ def suff_eval(variant_data):
             return False
         return True
 
-def eval_scores(variant_quality):
-    scores = list(variant_quality)
+def eval_scores(quality_scores):
+    scores = list(quality_scores)
     for i in range(len(scores)):
         if scores[i] == '-':
             scores[i] = 0
@@ -295,7 +301,7 @@ def impact_rank(variant):
     # combine for gene level ranking.  -- MPB 5/11
     impact_rank = 0
     if suff_eval(variant):
-        evidence_eval, clin_importance = eval_scores(variant['variant_quality'])
+        evidence_eval, clin_importance = eval_scores(variant['quality_scores'])
         if evidence_eval == 'Well-established':
             impact_rank += 2
         elif evidence_eval == 'Likely':

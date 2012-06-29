@@ -1056,7 +1056,7 @@ function evidence_get_assoc_flat_summary ($snap, $variant_id)
 {
   $nonflat =& evidence_get_assoc ($snap, $variant_id);
   $flat = array ();
-  foreach (array ("gene", "aa_change", "aa_change_short", "rsid", "impact", "qualified_impact", "inheritance", "quality_scores") as $k)
+  foreach (array ("gene", "aa_change", "aa_change_short", "rsid", "impact", "qualified_impact", "inheritance", "quality_scores", "variant_quality") as $k)
     if (isset ($nonflat[$k]))
       $flat[$k] = $nonflat[$k];
   $flat["dbsnp_id"] = "";
