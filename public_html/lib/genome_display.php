@@ -590,7 +590,7 @@ class GenomeReport {
         $variants = array('suff' => array(), 'insuff' => array());
         $getev_variants = array (false => array(), true => array());
         if ($no_insuff)
-            exec("fgrep -v '\"suff_eval\":false' " .
+            exec("egrep -v '\"suff_eval\": ?false' " .
                  escapeshellarg($this->variantsfile),
                  $lines);
         else
