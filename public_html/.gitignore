@@ -6,3 +6,4 @@ latest_vis_data.tsv*
 latest-flat.tsv*
 getev.json*
 getev-latest.json.gz
+bionotate-history.csv.gz

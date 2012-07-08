@@ -34,7 +34,7 @@ if ($snap &&
     header ("Content-type: text/tab-separated-values");
     while ($row =& $q->fetchRow()) {
         if ($flat = $row["flat_summary"]) {
-        $flat = json_decode ($flat, true);
+            $flat = json_decode ($flat, true);
         }
         else {
             $flat = evidence_get_assoc_flat_summary ($snap, $row["variant_id"]);
@@ -191,6 +191,12 @@ You can download the *latest* snapshot of the database in TSV format.
 You can also download the database in a more complete, but less easy-to-use, MySQL dump format.
 
 * "get-evidence.sql.gz":get-evidence.sql.gz is a nightly MySQL dump of the entire database _including_ edit history but _excluding_ users, sessions, dbSNP, and raw web search results.
+
+h2. BioNotate annotations
+
+* "bionotate-history.csv.gz":bionotate-history.csv.gz is a nightly dump of the BioNotate edit history only.
+
+h2. Source code
 
 The GET-Evidence source code is available with git:
 
