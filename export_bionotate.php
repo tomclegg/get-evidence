@@ -17,7 +17,7 @@ SELECT *
 ");
 if (theDb()->isError($q)) die ($q->getMessage() . "\n");
 
-$fields = split(' ', 'edit_timestamp edit_oid variant_id variant_gene variant_aa_del variant_aa_pos variant_aa_ins variant_rsid bionotate_xml');
+$fields = split(' ', 'edit_timestamp edit_oid variant_id variant_gene variant_aa_del variant_aa_pos variant_aa_ins variant_rsid article_pmid bionotate_xml');
 fputcsv($fh, $fields);
 
 $n=0;
