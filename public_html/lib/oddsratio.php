@@ -1,7 +1,7 @@
 <?php
     ;
 
-// Copyright 2010 Clinical Future, Inc.
+// Copyright: see COPYING
 // Authors: see git-blame(1)
 
 function oddsratio_compute ($figs, $htmlformat=FALSE)

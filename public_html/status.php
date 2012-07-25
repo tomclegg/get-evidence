@@ -1,3 +1,6 @@
 <?php
 
-header ("Location: https://trac.scalablecomputingexperts.com/wiki/GET-Evidence#ToDo");
+// Copyright: see COPYING
+// Authors: see git-blame(1)
+
+header ("Location: https://redmine.clinicalfuture.com/projects/get-evidence");

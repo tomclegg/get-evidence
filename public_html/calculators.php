@@ -1,7 +1,7 @@
 <?php
 
-// Written by Madeleine Price Ball
-// Part of the GET-Evidence software and shared under its license.
+// Copyright: see COPYING
+// Authors: see git-blame(1)
 
 include "lib/setup.php";
 

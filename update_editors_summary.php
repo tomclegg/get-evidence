@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php ;
 
-// Copyright 2010 Clinical Future, Inc.
+// Copyright: see COPYING
 // Authors: see git-blame(1)
 
 chdir ('public_html');

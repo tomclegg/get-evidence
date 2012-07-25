@@ -2,7 +2,7 @@
 <?php
     ;
 
-// Copyright 2010, 2011 Clinical Future, Inc.
+// Copyright: see COPYING
 // Authors: see git-blame(1)
 
 chdir ('public_html');

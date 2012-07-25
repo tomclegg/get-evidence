@@ -1,5 +1,8 @@
 <?php
 
+// Copyright: see COPYING
+// Authors: see git-blame(1)
+
 require_once "lib/setup.php";
 require_once "lib/openid.php";
 

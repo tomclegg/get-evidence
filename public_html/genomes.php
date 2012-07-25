@@ -1,5 +1,8 @@
 <?php ; // -*- mode: java; c-basic-offset: 4; tab-width: 8; indent-tabs-mode: nil; -*-
 
+// Copyright: see COPYING
+// Authors: see git-blame(1)
+
 include "lib/setup.php";
 include "lib/genome_display.php";
 $gOut["title"] = "GET-Evidence: Genomes";

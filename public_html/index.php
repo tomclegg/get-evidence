@@ -1,6 +1,6 @@
 <?php ; // -*- mode: java; c-basic-offset: 2; tab-width: 8; indent-tabs-mode: nil; -*-
 
-// Copyright 2009-2011 Clinical Future, Inc.
+// Copyright: see COPYING
 // Authors: see git-blame(1)
 
 include "lib/setup.php";

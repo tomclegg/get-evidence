@@ -1,5 +1,8 @@
 <?php
 
+// Copyright: see COPYING
+// Authors: see git-blame(1)
+
 include "lib/setup.php";
 
 $orderby_sql = "edit_timestamp DESC, edit_id DESC";

@@ -1,5 +1,8 @@
 <?php
 
+// Copyright: see COPYING
+// Authors: see git-blame(1)
+
 include "lib/setup.php";
 require_once ("lib/quality_eval.php");
 

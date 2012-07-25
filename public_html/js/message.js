@@ -1,4 +1,4 @@
-// Copyright 2010 Clinical Future, Inc.
+// Copyright: see COPYING
 // Authors: see git-blame(1)
 
 var message_current = false;

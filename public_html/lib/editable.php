@@ -1,7 +1,7 @@
 <?php
     ;
 
-// Copyright 2010 Clinical Future, Inc.
+// Copyright: see COPYING
 // Authors: see git-blame(1)
 
 require_once (dirname(dirname(dirname(__FILE__)))."/textile-2.0.0/classTextile.php");

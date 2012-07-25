@@ -1,5 +1,8 @@
 <?php // -*- mode: java; indent-tabs-mode: nil; -*-
 
+// Copyright: see COPYING
+// Authors: see git-blame(1)
+
 include "lib/setup.php";
 
 foreach (array('api_key', 'api_secret', 'dataset_locator', 'dataset_name', 'dataset_is_public') as $k) {

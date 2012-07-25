@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2012 Clinical Future, Inc.
+# Copyright: see COPYING
 # Authors: see git-blame(1)
 
 $, = "\t";
