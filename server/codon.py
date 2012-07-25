@@ -1,4 +1,6 @@
-# This code is part of the Trait-o-matic project and is governed by its license.
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 one_letter_alphabet = {
     "Ala": "A",

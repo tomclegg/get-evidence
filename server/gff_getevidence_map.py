@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: gff_getevidence_map.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """
 usage: %prog nssnp.gff getev_flatfile.json[.gz] [output_file]

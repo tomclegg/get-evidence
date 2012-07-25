@@ -1,4 +1,7 @@
 #!/usr/bin/python
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """Parse output from count_variants.py"""
 

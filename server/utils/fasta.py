@@ -1,10 +1,10 @@
 #!/usr/bin/python
-# Filename: fasta.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 # A quick-and-dirty FASTA file parser
 # based in part on the example at <http://www.dalkescientific.com/writings/NBN/parsing.html>
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
 
 import textwrap
 

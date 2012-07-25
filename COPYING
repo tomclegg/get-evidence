@@ -1,6 +1,9 @@
 * Code is copyright 2009, 2010, 2011, 2012 Clinical Future, Inc.,
   distributed under AGPLv3. http://www.gnu.org/licenses/agpl-3.0.html
 
+* Python server based on Trait-o-matic by Xiaodi Wu
+  https://github.com/xwu/trait-o-matic/blob/master/LICENSE
+
 * Style sheet adapted from "Indigo" by Viktor Persson http://arcsin.se
   ("Feel free to use and modify but please provide credits.")
 

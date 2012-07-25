@@ -1,9 +1,9 @@
 #!/usr/bin/python
-# Filename: codon_intersect.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 # A useful utility function for retrieving coding sequence fragments
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
 
 def codon_intersect(start, end, exons, codon_position):
     """Returns a tuple to express the intervals in genomic sequence

@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: gff_query_dbsnp.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """
 usage: %prog gff_file dbsnp_file [output_file]

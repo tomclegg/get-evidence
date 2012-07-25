@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: setup.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 # A setup script to install the _twobit module
 # ---

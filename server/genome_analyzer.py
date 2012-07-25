@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: server.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """
 usage: %prog [options]

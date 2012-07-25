@@ -1,5 +1,8 @@
 #!/usr/bin/python
-# Filename: substitution_matrix.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
+
 '''Takes two amino acids with single letter code,
 returns the BLOSUM100 value for the pair.
 Uses get-evidence/public_html/lib/blosum100.txt'''

@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: call_missing.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """
 Find coding regions missing in a genome report.

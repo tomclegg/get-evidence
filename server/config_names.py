@@ -1,5 +1,8 @@
 #!/usr/bin/python
-# Filename: config.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
+
 import os
 
 UPLOAD_DIR = os.getenv('UPLOAD')

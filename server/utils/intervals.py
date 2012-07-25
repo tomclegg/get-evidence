@@ -1,9 +1,9 @@
 #!/usr/bin/python
-# Filename: intervals.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 # A basic set of functionality for files that specify intervals
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
 
 from warnings import warn
 from bitset import *

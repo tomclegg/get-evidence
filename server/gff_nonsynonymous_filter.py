@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: gff_nonsynonymous_filter.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """
 usage: %prog gff_file twobit_file transcript_file [output_file]

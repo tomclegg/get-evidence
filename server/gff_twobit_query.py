@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: gff_query_twobit.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """
 usage: %prog gff_file twobit_file [output_file]

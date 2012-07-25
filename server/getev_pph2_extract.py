@@ -1,4 +1,7 @@
 #!/usr/bin/python
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 """Extract scores from Polyphen 2 1.9GB data dump for GET-Evidence variants"""
 import re

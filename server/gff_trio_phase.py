@@ -1,7 +1,7 @@
 #!/usr/bin/python
-# Filename: gff_trio_phase.py
-# Author: Evan Maxwell (evanmaxwell@gmail.com)
-# Date: April 2011
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 import re
 import optparse

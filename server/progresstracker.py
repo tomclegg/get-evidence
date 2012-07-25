@@ -1,3 +1,7 @@
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
+
 """Tracking and logging progress and reporting metadata during processing"""
 
 import simplejson as json

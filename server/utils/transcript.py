@@ -1,5 +1,7 @@
 #!/usr/bin/python
-# Filename: transcript.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 class Transcript:
     def __init__(self, transcript_data, column_specs = {}):

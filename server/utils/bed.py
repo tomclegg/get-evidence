@@ -1,9 +1,9 @@
 #!/usr/bin/python
-# Filename: bed.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 # A BED file parser
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
 
 from warnings import warn
 from intervals import Interval, IntervalFile

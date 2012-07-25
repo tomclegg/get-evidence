@@ -1,9 +1,9 @@
 #!/usr/bin/python
-# Filename: omim.py
+# This code is part of GET-Evidence.
+# Copyright: see COPYING
+# Authors: see git-blame(1)
 
 # A prototype OMIM parser
-# ---
-# This code is part of the Trait-o-matic project and is governed by its license.
 
 class OMIMRecord(object):
     def __init__(self, d):
