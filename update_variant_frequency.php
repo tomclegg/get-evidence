@@ -1,6 +1,5 @@
 #!/usr/bin/php
-<?php
-    ;
+<?php ; // -*- mode: java; c-basic-indent: 4; tab-width: 4; indent-tabs-mode: nil; -*-
 
 // Copyright 2010, 2011 Clinical Future, Inc.
 // Authors: see git-blame(1)
@@ -14,30 +13,35 @@ evidence_create_tables ();
 print "\n";
 
 
-print "Parsing hapmap data in taf table...";
-$q=theDb()->query ("CREATE TEMPORARY TABLE hapmap_tmp
+if (true) {
+    print "Skipping hapmap import.\n";
+}
+else {
+    print "Parsing hapmap data in taf table...";
+    $q=theDb()->query ("CREATE TEMPORARY TABLE hapmap_tmp
  AS SELECT chr, chr_pos, allele,
  CONVERT(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING(taf,LOCATE('\"all_n\": ',taf)+9),',',1),'}',1),UNSIGNED) num,
  CONVERT(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING(taf,LOCATE('\"all_d\": ',taf)+9),',',1),'}',1),UNSIGNED) denom
  FROM taf
  WHERE taf LIKE '%\"all_n\": %'
  ");
-if (theDb()->isError($q)) die ($q->getMessage());
-print theDb()->affectedRows();
-print "\n";
+    if (theDb()->isError($q)) die ($q->getMessage());
+    print theDb()->affectedRows();
+    print "\n";
 
 
-print "Copying to allele_frequency...";
-theDb()->query ("REPLACE INTO allele_frequency
+    print "Copying to allele_frequency...";
+    theDb()->query ("REPLACE INTO allele_frequency
  (chr,chr_pos,allele,dbtag,num,denom)
  SELECT chr,chr_pos,allele,?,num,denom
  FROM hapmap_tmp",
-		array ('HapMap'));
-print theDb()->affectedRows();
-print "\n";
+		    array ('HapMap'));
+    print theDb()->affectedRows();
+    print "\n";
 
 
-theDb()->query ("DROP TEMPORARY TABLE hapmap_tmp");
+    theDb()->query ("DROP TEMPORARY TABLE hapmap_tmp");
+}
 
 
 print "Merging frequencies from multiple databases...";

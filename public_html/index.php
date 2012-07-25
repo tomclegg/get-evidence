@@ -278,22 +278,6 @@ $html = "";
 $gotsome = 0;
 $html .= "<H2>Allele frequency</H2>\n<DIV id=\"allele_frequency\">\n";
 $html .= "<UL>\n";
-foreach ($allele_frequency as $chr_pos_allele => $f) {
-  list ($chr, $pos, $allele) = explode (" ", $chr_pos_allele);
-  $frows = theDb()->getAll ("SELECT * FROM allele_frequency WHERE chr=? AND chr_pos=? AND allele=?", array ($chr, $pos, $allele));
-  foreach ($frows as $frow) {
-      if (!$frow["denom"])
-	continue;
-      $num = $frow["num"];
-      $denom = $frow["denom"];
-      $f = sprintf ("%.1f%%", 100 * $num / $denom);
-      $tag = $frow["dbtag"];
-      if ($tag == "1000g") $tag = "1000 Genomes";
-      if ($tag == "hapmap") $tag = "HapMap";
-      $html .= "<LI>$allele @ $chr:$pos: $f ($num/$denom) in $tag</LI>\n";
-      $gotsome = 1;
-  }
-}
 foreach (theDb()->getAll ("SELECT * FROM variant_population_frequency WHERE variant_id=?",
 			  array($variant_id)) as $frow) {
     if (!$frow['denom'])
