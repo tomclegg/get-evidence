@@ -29,7 +29,7 @@ h2. Variant Evidence & Clinical Importance Scores
 
 p(. !img/sample_variant_report_2.gif!
 
-p(. After the summary, the variant report contains a set of "impact scores":guide_impact_scores. These scores are generally entered by people who review the variant and help us automatically interpret the variant when producing reports. 
+p(. After the summary, the variant report contains a set of "impact scores":guide_impact_score. These scores are generally entered by people who review the variant and help us automatically interpret the variant when producing reports. 
 
 p(. The scores split into two sections: "variant evidence" and "clinical importance". These two sections reflect two very different aspects to understanding a genetic variant's impact -- how serious the effect is clinically, and how well-established the evidence is for that effect. For example, a variant might have been seen once in a family with a very severe genetic disease. The clinical importance of such a disease could be quite high. However, the strength of evidence supporting that variant as causing the disease could be extremely weak -- it was only seen that once, in one child, and not part of an extensive study comparing many patients and many controls.
 
