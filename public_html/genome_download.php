@@ -37,7 +37,7 @@ if (! file_exists($fullPath)) {
 	if (preg_match('/ 0:(\d+):(\S+)$/', $manifest, $regs)) {
 	    $passthru_command = "whget ".escapeshellarg("$locator/**/$regs[2]");
 	    $fsize = $regs[1];
-	    $ext = preg_replace ('/^.*((\.\w{3})?(\.[bg]z2?)?)/', '\1', $regs[2]);
+	    $ext = preg_replace ('/^.*?((\.\w{3})?(\.[bg]z2?)?)$/', '\1', $regs[2]);
 	}
     }
 }
