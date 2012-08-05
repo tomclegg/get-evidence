@@ -30,6 +30,15 @@ if (! file_exists($fullPath)) {
     } elseif (file_exists($fullPath . '.gff.bz2')) {
 	$ext = $ext . '.gff.bz2';
 	$fullPath = $fullPath . '.gff.bz2';
+    } elseif (is_link($locator_symlink = $GLOBALS["gBackendBaseDir"] . "/upload/" . $genome_id . "/input.locator")) {
+	$locator = readlink($locator_symlink);
+	$locator_esc = escapeshellarg($locator);
+	$manifest = `whget ''$locator_esc`;
+	if (preg_match('/ 0:(\d+):(\S+)$/', $manifest, $regs)) {
+	    $passthru_command = "whget ".escapeshellarg("$locator/**/$regs[2]");
+	    $fsize = $regs[1];
+	    $ext = preg_replace ('/^.*((\.\w{3})?(\.[bg]z2?)?)/', '\1', $regs[2]);
+	}
     }
 }
 
@@ -52,22 +61,32 @@ foreach ($db_query as $result) {
 }
 
 if ($permission) {
-    if ($fd = fopen ($fullPath, "r")) {
-        $fsize = filesize($fullPath);
-        header("Content-type: text/plain");
-        header("Content-Disposition: attachment; filename=\"" . $nickname . "\"");
-        header("Content-length: $fsize");
-        header("Cache-control: private"); //use this to open files directly
-        while(!feof($fd)) {
-            $buffer = fread($fd, 2048);
-            echo $buffer;
-        }
+    if (isset($passthru_command)) {
+	send_headers($nickname, $fsize);
+	ob_clean();
+	flush();
+	passthru($passthru_command);
+    }
+    else if (is_readable ($fullPath)) {
+	$fsize = filesize($fullPath);
+	send_headers($nickname, $fsize);
+	ob_clean();
+	flush();
+	readfile($fullPath);
     } else {
         print "Error: Unable to open file for download!";
     }
-    fclose ($fd);
 } else {
     print "Sorry, you don't have permission to download this genome.";
+}
+
+function send_headers($nickname, $fsize)
+{
+    header("Content-type: text/plain");
+    header("Content-Disposition: attachment; filename=\"" . $nickname . "\"");
+    if ($fsize)
+	header("Content-length: $fsize");
+    header("Cache-control: private"); //use this to open files directly
 }
 
 ?>

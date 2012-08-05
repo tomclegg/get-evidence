@@ -221,6 +221,7 @@ class GenomeReport {
     public function __construct($genomeID) {
         $this->genomeID = $genomeID;
         $prefix = $GLOBALS['gBackendBaseDir'] . '/upload/' . $genomeID;
+        $this->input_locator = $prefix . '/input.locator';
         $this->sourcefile = $prefix . '/genotype';
         if (! file_exists($this->sourcefile)) {
             if (file_exists($this->sourcefile . '.gz')) {
@@ -353,9 +354,11 @@ class GenomeReport {
 
         if ($db_query[0]['is_public']) {
             $query_string = $this->genomeID;
+            $access_token_if_needed = '';
         } else {
             $access_token = hash_hmac('md5', $this->genomeID, $GLOBALS['gSiteSecret']);
             $query_string = 'display_genome_id=' . $this->genomeID . '&access_token=' . $access_token;
+            $access_token_if_needed = '&amp;access_token=' . $access_token;
         }
         $head_data['This report'] = "<a href=\"/genomes?$query_string\">" . 
             "{$_SERVER['HTTP_HOST']}/genomes?$query_string</a>";
@@ -378,11 +381,18 @@ class GenomeReport {
                 htmlspecialchars($url) . "\">" . 
                 preg_replace('{^https?://}', '', $url) . "</a>";
         }
-        $data_size = @filesize ($this->sourcefile);
+        if (file_exists($this->sourcefile))
+            $data_size = @filesize ($this->sourcefile);
+        else if (is_link($this->input_locator)) {
+            $manifest = readlink ($this->input_locator);
+            if (preg_match ('/ 0:(\d+)/', `whget $manifest`, $regs))
+                $data_size = $regs[1];
+        }
         if ($data_size) {
             $head_data["Download"] = "<a href=\"/genome_download.php?" . 
                 "download_genome_id=" . $this->genomeID . 
                 "&amp;download_nickname=" . urlencode($realname) . 
+                $access_token_if_needed .
                 "\">source data</a> (" . humanreadable_size($data_size) . ")";
         }
         $outdir = $GLOBALS["gBackendBaseDir"]."/upload/" . $this->genomeID . 
@@ -391,7 +401,6 @@ class GenomeReport {
             if (isset($head_data["Download"]))
                 $head_data["Download"] .= ", ";
             else $head_data["Download"] = "";
-            $access_token_if_needed = isset($access_token) ? ('&amp;access_token=' . $access_token) : '';
             $head_data["Download"] .= "<a href=\"/genome_download.php?" .
                 "download_type=ns&amp;download_genome_id=" . $this->genomeID . 
                 "&amp;download_nickname=" . urlencode($realname) .
