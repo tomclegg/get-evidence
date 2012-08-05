@@ -240,6 +240,8 @@ def suff_eval(variant_data):
     6 - disease penetrance
     """
     # Check that we have the data we need, else return "False"
+    if !("variant_impact" in variant_data):
+        return False
     if "quality_scores" in variant_data:
         quality_scores = variant_data["quality_scores"]
         if (not quality_scores) or len(quality_scores) < 7:
