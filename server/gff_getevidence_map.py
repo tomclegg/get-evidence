@@ -579,7 +579,7 @@ def match_getev(gff_in, getev_flat, transcripts_file=None,
             # Calculate autoscore, if not already done during dbSNP selection process
             if not ("autoscore" in output):
                 output["autoscore"] = autoscore(output, blosum_matrix, aa_from, aa_to)
-                if 'GET-Evidence' in output:
+                if output["GET-Evidence"]:
                     output["suff_eval"] = suff_eval(output)
 
             # This barfs on Unicode sometimes.
