@@ -48,13 +48,16 @@ if (strlen($display_genome_ID) > 0) {
 	if (isset($_REQUEST["json"]) ||
             (isset($_REQUEST['format']) && $_REQUEST['format'] == 'json')) {
 	    header ("Content-type: application/json");
-            $report = array ('input_sha1' => $genome_report->genomeID,
-                             'status' => $genome_report->status(),
-                             'header_data' => $genome_report->header_data(),
-                             'metadata' => $genome_report->metadata(),
-                             'variants' => $genome_report->variants(),
-                             'coverage_data' => $genome_report->coverage_data()
-                             );
+            if (@$_REQUEST['content'] == 'status')
+                $report = array ('status' => $genome_report->status());
+            else
+                $report = array ('input_sha1' => $genome_report->genomeID,
+                                 'status' => $genome_report->status(),
+                                 'header_data' => $genome_report->header_data(),
+                                 'metadata' => $genome_report->metadata(),
+                                 'variants' => $genome_report->variants(),
+                                 'coverage_data' => $genome_report->coverage_data()
+                                 );
 	    print json_encode($report);
 	    exit;
 	}

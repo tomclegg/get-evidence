@@ -4,6 +4,7 @@
 // Authors: see git-blame(1)
 
 include "lib/setup.php";
+include "lib/whpipeline.php";
 
 foreach (array('api_key', 'api_secret', 'dataset_locator', 'dataset_name', 'dataset_is_public') as $k) {
     if (!isset($_REQUEST[$k])) {
@@ -54,12 +55,20 @@ if (isset($_REQUEST['human_id']) &&
 }
 
 $result_url = 'http://' . $_SERVER['HTTP_HOST'] . '/genomes?display_genome_id=' . $shasum;
+$status_url = 'http://' . $_SERVER['HTTP_HOST'] . '/genomes?format=json&content=status&display_genome_id=' . $shasum;
+$download_url = 'http://' . $_SERVER['HTTP_HOST'] . '/genome_download.php?download_genome_id=' . $shasum . '&download_nickname=' . urlencode($_REQUEST['dataset_name']);
 if (!$_REQUEST['dataset_is_public']) {
     $access_token = hash_hmac('md5', $shasum, $gSiteSecret);
     $result_url .= '&access_token=' . $access_token;
+    $status_url .= '&access_token=' . $access_token;
+    $download_url .= '&access_token=' . $access_token;
 }
 
-respond(true, array('result_url' => $result_url));
+run_whpipeline($_REQUEST['dataset_locator'], $shasum);
+
+respond(true, array('result_url' => $result_url,
+                    'status_url' => $status_url,
+                    'download_url' => $download_url));
 
 function respond($success, $data)
 {

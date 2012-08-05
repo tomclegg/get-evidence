@@ -246,6 +246,10 @@ class GenomeReport {
         $this->genereportfile = $prefix . '-out/get-ev_genes.json';
         $this->lockfile = $prefix . '-out/lock';
         $this->logfile = $prefix . '-out/log';
+        $this->whpipeline_status_json = $prefix . '-out/whpipeline-status.json';
+        $this->whpipeline_lockfile = $prefix . '-out/whpipeline.lock';
+        $this->output_locator = $prefix . '-out/output.locator';
+        $this->output_directory = $prefix . '-out';
     }
 
     // Log files can have a long series of status lines with only numbers,
@@ -260,7 +264,59 @@ class GenomeReport {
     public function status() {
         $ret = array('progress' => 0, 'status' => 'unknown');
         $still_processing = false;
-        if (file_exists($this->lockfile)) {
+        if (file_exists($this->whpipeline_status_json)) {
+            $pipeline = json_decode(file_get_contents($this->whpipeline_status_json), true);
+            if (file_exists($this->whpipeline_lockfile) &&
+                shell_exec('fuser ""'.escapeshellarg($this->whpipeline_lockfile))) {
+                $still_processing = true;
+            }
+            $n_done = 0;
+            $n_tot = 0;
+            foreach ($pipeline['steps'] as $step) {
+                if ($step['complete'])
+                    ++$n_done;
+                elseif (!$still_processing)
+                    $ret['status'] = 'failed';
+                elseif (!@$step['warehousejob']['starttime']) {
+                    if ($ret['status'] == 'unknown') {
+                        $ret['status'] = $step['name'];
+                        if ($step['warehousejob'])
+                            $ret['status'] .= ' #'.$step['warehousejob']['id'];
+                        $ret['status'] .= ' queued';
+                    }
+                }
+                elseif (preg_match('{^(\d+)\+(\d+)/(\d+)$}', $step['progress'], $regs)) {
+                    $n_done += ($regs[1] + $regs[2]/2) / $regs[3];
+                    if ($ret['status'] == 'unknown')
+                        $ret['status'] = ($step['name']
+                                          . ' #' . $step['warehousejob']['id']
+                                          . " - $regs[1](+$regs[2])/$regs[3]");
+                }
+                ++$n_tot;
+                $last_step = $step;
+            }
+            $ret['progress'] = $n_done / $n_tot;
+            if ($last_step['complete'] && $last_step['output_data_locator']) {
+                // Pipeline is complete
+                if (!is_link($this->output_locator) ||
+                    readlink($this->output_locator) != $last_step['output_data_locator']) {
+                    // Fetch/update the local cache of the output data
+                    $ok = shell_exec('flock --wait 1 --exclusive --nonblock '
+                                     .escapeshellarg($this->lockfile)
+                                     .' whget -r '
+                                     .escapeshellarg($last_step['output_data_locator'])
+                                     .'/**/ '
+                                     .escapeshellarg($this->output_directory)
+                                     .'/ && echo ok');
+                    if (trim($ok) == 'ok')
+                        @symlink($last_step['output_data_locator'],
+                                 $this->output_locator);
+                }
+                $ret['status'] = 'finished';
+            }
+            $ret['logfilename'] = false;
+        }
+        elseif (file_exists($this->lockfile)) {
             $ret['logfilename'] = $this->lockfile;
             // If not writable, fuser won't work: assume lock is current.
             $fuser_test = shell_exec("fuser ''" . 
@@ -282,7 +338,7 @@ class GenomeReport {
                 }
             }
         } elseif (!file_exists($this->sourcefile)) {
-            $ret['logfilename'] = '/dev/null';
+            $ret['logfilename'] = false;
             $ret['progress'] = 1;
             $ret['status'] = 'finished';
         } else {
@@ -295,11 +351,13 @@ class GenomeReport {
         }
         if (!file_exists($ret['logfilename']) || 
             !is_readable($ret['logfilename']))
-            $ret['logfilename'] = "/dev/null";
-        $ret['logmtime'] = filemtime ($ret['logfilename']);
-        $ret['log'] = file_get_contents($ret['logfilename']);
-        $this->trim_log($ret['log']);
-        $ret['log'] .= "\n\nLog file ends: ".date('r',$ret['logmtime']);
+            $ret['logfilename'] = false;
+        if ($ret['logfilename']) {
+            $ret['log'] = file_get_contents($ret['logfilename']);
+            $this->trim_log($ret['log']);
+            $ret['logmtime'] = filemtime ($ret['logfilename']);
+            $ret['log'] .= "\n\nLog file ends: ".date('r',$ret['logmtime']);
+        }
         return $ret;
     }
 

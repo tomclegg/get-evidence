@@ -6,12 +6,16 @@ Install prerequisites:
     make mysql-client mysql-server patch \
     php5 php5-curl php5-dev php5-gd php5-mysql php-db \
     python-biopython python-dev python-mysqldb python-pyrex \
-    rsync unzip wget zip --fix-missing
+    rsync unzip wget zip at --fix-missing
  sudo a2enmod php5
  sudo a2enmod rewrite
  sudo a2enmod expires
  sudo a2enmod negotiation
  sudo /etc/init.d/apache2 restart
+
+Remove www-data from /etc/at.deny
+
+ sudo perl -ni~ -e 'print unless /www-data/' /etc/at.deny
 
 If apt-get python-biopython fails, ensure that you have universe in
 your apt source list.

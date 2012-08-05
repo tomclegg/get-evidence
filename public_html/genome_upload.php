@@ -4,6 +4,7 @@
 // Authors: see git-blame(1)
 
 include "lib/setup.php";
+include "lib/whpipeline.php";
 $gOut["title"] = "GET-Evidence: Genome uploaded";
 
 $user = getCurrentUser();
@@ -19,7 +20,8 @@ if (isset($_POST['reprocess_genome_id'])) {
     if (@$_POST['reproc_type'] == 'getev') {
 	$reprocess_type = 'getev';
     }
-    $permname = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID . "/genotype";
+    $in_dir = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID;
+    $permname = $in_dir . "/genotype";
     if (! file_exists($permname)) {
         if (file_exists ($permname . ".gz")) {
             $permname = $permname . ".gz";
@@ -31,12 +33,17 @@ if (isset($_POST['reprocess_genome_id'])) {
 	    $permname = $permname . ".gff.gz";
 	} elseif (file_exists ($permname . ".gff.bz2")) {
 	    $permname = $permname . ".gff.bz2";
+	} elseif (is_link ($symlink = $in_dir . '/input.locator')) {
+	    $warehouse_locator = readlink($symlink);
 	}
     }
-    if (file_exists($permname)) {
+    if (file_exists($permname) || $warehouse_locator) {
         $page_content .= "<P>Reprocessing data: " . $reprocess_genome_ID . "</P>\n";
         $page_content .= "<P>The <A href=\"genomes?display_genome_id=$reprocess_genome_ID\">existing results</A> will remain available until the new analysis is complete.</P>\n";
-        send_to_server($permname, $reprocess_type);
+	if ($warehouse_locator)
+	    run_whpipeline($warehouse_locator, $reprocess_genome_ID, $reprocess_type == 'getev');
+	else
+	    send_to_server($permname, $reprocess_type);
     } else {
         $page_content .= "<P>Error! Sorry, for some reason we are unable to find the "
             . "original file for " . $reprocess_genome_ID . "</P>";

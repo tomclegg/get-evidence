@@ -1,0 +1,24 @@
+{
+ "id": 1,
+   "steps":
+     [
+     {"name": "map", "function": "get-evidence", "params":
+        [{"name": "DATA_TARBALL", "value": "a8948d1a428977c9dce50415b2e5938b+1476+K@templeton/analysis_data.tar.gz"},
+	 {"name": "GETEV_JSON", "value": "9ab707253e5983349af382964ac05c34+86+K@templeton/getev-latest.json.gz"},
+	 {"name": "GET_VERSION", "value": "a6114f4930a290d35689844c67fc04b4ce6e2465"},
+	 {"name": "GIT_REPO", "value": "git://git.clinicalfuture.com/get-evidence.git"},
+	 {"name": "INPUT", "data_locator": null}],
+	"max_nodes": 4},
+     {"name": "merge", "function": "get-evidence-merge", "params":
+        [{"name": "INPUT", "from_step": 0}],
+	"max_nodes": 1,
+	"max_steps_per_node": 1},
+     {"name": "refresh", "function": "filefilter", "params":
+	[{"name": "GETEV_JSON", "value": "7295ea70f1a51bf118ee12b329927f2b+80+K@ant/getev-latest.json.gz"},
+         {"name": "COMMAND", "value": "mrs-get-evidence-refresh"},
+         {"name": "OUTPUTNAME", "value": "%F"},
+         {"name": "INPUT", "from_step": 1}],
+	"max_nodes": 1,
+	"max_steps_per_node": 2}
+     ]
+}

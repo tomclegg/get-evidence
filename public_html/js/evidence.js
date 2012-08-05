@@ -280,6 +280,7 @@ function variant_report_progress_update()
 	{
 	    'display_genome_id': $('display_genome_id').value,
 	    'access_token': $('access_token').value,
+	    'content': 'status',
 	    'json': true
 	},
 	onSuccess: function(transport)
@@ -294,8 +295,8 @@ function variant_report_progress_update()
 		    else
 			jQuery('#variant_report_status').html(j.status.status);
 		}
-		if (j.log) {
-		    jQuery('#debuginfotext').html(('Log file: '+j.logfilename+'\n\n'+j.log+'\n\n').escapeHTML());
+		if (j.status.log) {
+		    jQuery('#debuginfotext').html(('Log file: '+j.status.logfilename+'\n\n'+j.status.log+'\n\n').escapeHTML());
 		}
 	    }
 	}
