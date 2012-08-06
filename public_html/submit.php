@@ -22,16 +22,25 @@ if (hash_hmac('md5', $_REQUEST['api_key'], $gSiteSecret) != $_REQUEST['api_secre
 
 $api_key = $_REQUEST['api_key'];
 $shasum = hash('sha1', $_REQUEST['dataset_locator']);
+if (isset($_REQUEST['controlled_by'])) {
+    if (substr($_REQUEST['controlled_by'],0,2) == $api_key) {
+        $controlled_by = $_REQUEST['controlled_by'];
+    } else {
+        respond(false, 'controlled_by does not match api_key');
+    }
+} else {
+    $controlled_by = $api_key;
+}
 
 theDB()->query ("INSERT IGNORE INTO private_genomes SET
                  oid=?, shasum=?, upload_date=SYSDATE()",
-                array ($api_key, $shasum));
+                array ($controlled_by, $shasum));
 theDB()->query ("UPDATE private_genomes SET
                  dataset_locator=?, nickname=?, is_public=? WHERE oid=? AND shasum=?",
                 array ($_REQUEST['dataset_locator'],
                        $_REQUEST['dataset_name'],
                        $_REQUEST['dataset_is_public'],
-                       $api_key, $shasum));
+                       $controlled_by, $shasum));
 $confirm_shasum = theDb()->getOne ("SELECT shasum FROM private_genomes WHERE oid=? AND shasum=?",
                                    array($api_key, $shasum));
 if ($confirm_shasum != $shasum) {
@@ -48,7 +57,7 @@ if (isset($_REQUEST['human_id']) &&
                      global_human_id=? WHERE oid=? AND shasum=?",
                     array ($_REQUEST['human_id'],
                            $api_key, $shasum));
-    if ($_REQUEST['human_name']) {
+    if (@$_REQUEST['human_name']) {
         theDB()->query ("UPDATE genomes SET name=? WHERE global_human_id=?",
                         array ($_REQUEST['human_name'], $_REQUEST['human_id']));
     }
