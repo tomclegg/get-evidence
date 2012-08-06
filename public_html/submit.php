@@ -42,7 +42,7 @@ theDB()->query ("UPDATE private_genomes SET
                        $_REQUEST['dataset_is_public'],
                        $controlled_by, $shasum));
 $confirm_shasum = theDb()->getOne ("SELECT shasum FROM private_genomes WHERE oid=? AND shasum=?",
-                                   array($api_key, $shasum));
+                                   array($controlled_by, $shasum));
 if ($confirm_shasum != $shasum) {
     respond(false, array('error' => 'Some sort of database error happened'));
 }
