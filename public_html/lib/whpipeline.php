@@ -11,7 +11,7 @@ function run_whpipeline($locator, $shasum, $quick=false)
     @mkdir($in_dir);
     @mkdir($out_dir);
     if (!is_link($in_dir.'/input.locator')) {
-        symlink($locator, $in_dir.'/input.locator');
+        @symlink($locator, $in_dir.'/input.locator');
     }
     $status_json = $out_dir.'/whpipeline-status.json';
 
