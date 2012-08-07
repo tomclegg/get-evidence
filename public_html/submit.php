@@ -22,6 +22,11 @@ if (hash_hmac('md5', $_REQUEST['api_key'], $gSiteSecret) != $_REQUEST['api_secre
 
 $api_key = $_REQUEST['api_key'];
 $shasum = hash('sha1', $_REQUEST['dataset_locator']);
+
+if (!preg_match('{^[\da-f]{32}\b\S*$}', $_REQUEST['dataset_locator'])) {
+    respond(false, 'bogus dataset_locator');
+}
+
 if (isset($_REQUEST['controlled_by'])) {
     if (substr($_REQUEST['controlled_by'],0,2) == $api_key) {
         $controlled_by = $_REQUEST['controlled_by'];
