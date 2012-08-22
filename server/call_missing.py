@@ -167,7 +167,14 @@ def report_uncovered(gff_input, transcript_filename, genetests_filename,
     # Note: Start is 1-based, not 0-based as is in transcript files
     examined_regions = {}
 
+    header_done = False
     for record in gff_data:
+        if not header_done:
+            yield "##gff-version " + gff_data.data[0]
+            yield "##genome-build " + gff_data.data[1]
+            yield "# Produced by: call_missing.py"
+            header_done = True
+
         if f_out:
             yield str(record)
 
