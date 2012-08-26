@@ -5,32 +5,43 @@ import os
 import bz2
 
 def file_open(filename, mode='r'):
-    """Return file obj, with compression if appropriate extension is given"""
+    """Return file obj, with compression if appropriate extension is given
+
+    Arguments:
+    mode -- 'r' for reading a file (default, available for .zip, .gz, and .bz2)
+            'w' for writing a file (available for .gz and .bz2)
+    """
+
+    # If filename is not a string, it is returned.
     if not isinstance(filename, basestring):
         return filename
+
+    # ZIP compression actions.
     if re.search("\.zip", filename):
         archive = zipfile.ZipFile(filename, mode)
         if mode == 'r':
             files = archive.infolist()
-            if len(files) == 1:
-                if hasattr(archive, "open"):
-                    return archive.open(files[0])
-                else:
-                    sys.exit("zipfile.ZipFile.open not available. Upgrade " +
-                             "python to 2.6 (or later) to work with " +
-                             "zip-compressed files!")
+            assert len(files) == 1
+            if hasattr(archive, "open"):
+                return archive.open(files[0])
             else:
-                sys.exit("Zip archive " + filename + 
-                         " has more than one file!")
+                raise ImportError ('zipfile.ZipFile.open not available. '
+                                   'Upgrade python to 2.6 (or later) to ' +
+                                   'work with zip-compressed files!')
         else:
-            sys.exit("Zip archive only supported for reading.")
+            raise TypeError ('Zip archive only supported for reading.')
+
+    # GZIP compression actions.
     elif re.search("\.gz", filename):
         if mode == 'r':
             return os.popen('zcat ' + filename)
         elif mode == 'w':
             return os.popen('gzip -c > ' + filename, 'w')
         else:
-            sys.exit("Only read ('r') and write ('w') available for gzip")
+            raise TypeError ("Only read ('r') and write ('w') available " + 
+                             "for gzip")
+
+    # BZIP2 compression actions.
     elif re.search("\.bz2", filename):
         return bz2.BZ2File(filename, mode)
     else:
