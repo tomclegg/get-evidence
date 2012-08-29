@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # Filename: detect_format.py
 
+import csv
 import re
 import os
 import sys
@@ -25,15 +26,24 @@ def detect_format(file_input):
       GFF: General Feature Format
       VCF: Variant Call Format (only tested for 23andme exome data)
     """
+    looks_like = dict()
     if isinstance(file_input, str):
-        f_in = autozip.file_open(file_input, 'r')
+        try:
+            f_in = autozip.file_open(file_input, 'r')
+        except AssertionError:
+            f_in = autozip.file_open(file_input, 'r', 'deCODEme_scan.csv')
+            print "deCODEme archive (deCODEme) detected"
+            looks_like['deCODEme'] = True
     else:
         f_in = file_input
 
-    looks_like = dict()
     line_count = 0
     for line in f_in:
         line_count += 1
+        if any([looks_like[x] for x in looks_like.keys()]):
+            break    
+        if line_count > MAX_LINES_CHECKED:
+            break
 
         # Check comment lines, if they exist, for information on file type.
         if re.match('#', line):
@@ -51,41 +61,44 @@ def detect_format(file_input):
                 looks_like['VCF'] = True
 
         # Look at other lines and decide based on their format.
-        data = line.split('\t')
+        tsv_data = line.split('\t')
+        csv_data = list(csv.reader([line]))
 
-        if ( len(data) > 3 and
-             re.match(r'rs', data[0]) and 
-             re.match(r'[0-9]', data[2]) and
-             re.match(r'[ACGT][ACGT]', data[3]) ):
+        if ( len(csv_data) > 5 and
+             re.match(r'rs', csv_data[0]) and
+             re.match(r'[ACGT]', csv_data[1]) and
+             re.match(r'[0-9]', csv_data[3]) and
+             re.match(r'[+-]', csv_data[4]) and
+             re.match(r'[ACGT]', csv_data[5]) ):
+            print "deCODEme microarray genotyping data (deCODEme) guessed"
+            looks_like['deCODEme'] = True
+        if ( len(tsv_data) > 3 and
+             re.match(r'rs', tsv_data[0]) and 
+             re.match(r'[0-9]', tsv_data[2]) and
+             re.match(r'[ACGT][ACGT]', tsv_data[3]) ):
             print "23andme microarray genotyping data (23andme) guessed"
             looks_like['23andme'] = True
-        if ( len(data) > 6 and
-             re.match(r'chr', data[3]) and 
-             re.match(r'[0-9]', data[4]) and 
-             re.match(r'[0-9]', data[5]) and
-             (data[6] == "no-call" or data[6] == "ref") ):
+        if ( len(tsv_data) > 6 and
+             re.match(r'chr', tsv_data[3]) and 
+             re.match(r'[0-9]', tsv_data[4]) and 
+             re.match(r'[0-9]', tsv_data[5]) and
+             (tsv_data[6] == "no-call" or tsv_data[6] == "ref") ):
             print "Complete Genomics var file format (CGIvar) guessed"
             looks_like['CGIvar'] = True
-        if ( len(data) > 6 and
-             re.match(r'[0-9]', data[3]) and
-             re.match(r'[0-9]', data[4]) and
-             data[6] == "+" ):
+        if ( len(tsv_data) > 6 and
+             re.match(r'[0-9]', tsv_data[3]) and
+             re.match(r'[0-9]', tsv_data[4]) and
+             tsv_data[6] == "+" ):
             print "General Feature Format (GFF) guessed"
             looks_like['GFF'] = True
-        if ( len(data) > 7 and
-             re.match(r'[0-9]', data[1]) and
-             re.match(r'[ACGT]', data[3]) and
-             re.match(r'[ACGT]', data[4]) and
-             len(data[7].split(';')) > 2 ):
+        if ( len(tsv_data) > 7 and
+             re.match(r'[0-9]', tsv_data[1]) and
+             re.match(r'[ACGT]', tsv_data[3]) and
+             re.match(r'[ACGT]', tsv_data[4]) and
+             len(tsv_data[7].split(';')) > 2 ):
             print "Variant Call Format (VCF) guessed"
             looks_like['VCF'] = True
     
-        if any([looks_like[x] for x in looks_like.keys()]):
-            break
-    
-        if line_count > MAX_LINES_CHECKED:
-            break
-
     if isinstance(file_input, str):
         f_in.close()
 

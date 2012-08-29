@@ -4,7 +4,7 @@
 import os
 import sys
 from optparse import OptionParser
-import detect_format, cgivar_to_gff, gff_from_23andme, vcf_to_gff
+import detect_format, cgivar_to_gff, gff_from_23andme, gff_from_decodeme, vcf_to_gff
 
 # A bit of path manipulation to import autozip.py from ../utils/
 GETEV_MAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -24,6 +24,8 @@ def convert(input_file, options=None):
         input_data = gff_from_23andme.convert(input_file)
     elif input_type == 'VCF':
         input_data = vcf_to_gff.convert(input_file, options)
+    elif input_type == 'deCODEme':
+        input_data = gff_from_decodeme.convert(input_file)
     else:
         raise Exception("input format not recognized")
 

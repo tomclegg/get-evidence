@@ -45,13 +45,11 @@ def process_source(genome_in, metadata=dict(), options=None):
     """
     Open source and return as sorted GFF data.
     """
-    # Handle genome compression, get input, and make best guess of format type.
-    source_input = autozip.file_open(genome_in, 'r')
-    metadata['input_type'] = detect_format.detect_format(source_input)
+    # Make best guess of format type, to be saved in metadata.
+    metadata['input_type'] = detect_format.detect_format(genome_in)
     print >> sys.stderr, "file format:", metadata['input_type']
 
-    # Reset input and reopen, converting to GFF if necessary.
-    source_input.close()
+    # Open genetic data, decompressing and converting to GFF if necessary.
     gff_input = convert_to_gff.convert(genome_in, options)
 
     # Grab header (don't sort) & genome build. Pipe the rest to UNIX sort.

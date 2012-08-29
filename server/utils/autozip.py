@@ -4,7 +4,7 @@ import zipfile
 import os
 import bz2
 
-def file_open(filename, mode='r'):
+def file_open(filename, mode='r', arch_file=''):
     """Return file obj, with compression if appropriate extension is given
 
     Arguments:
@@ -19,15 +19,18 @@ def file_open(filename, mode='r'):
     # ZIP compression actions.
     if re.search("\.zip", filename):
         archive = zipfile.ZipFile(filename, mode)
+        if not hasattr(archive, 'open'):
+            raise ImportError ('zipfile.ZipFile.open not available. '
+                               'Upgrade python to 2.6 (or later) to ' +
+                               'work with zip-compressed files!')
         if mode == 'r':
             files = archive.infolist()
-            assert len(files) == 1
-            if hasattr(archive, "open"):
+            if not arch_file:
+                assert len(files) == 1, \
+                    'More than one file in ZIP archive, no filename provided.'
                 return archive.open(files[0])
             else:
-                raise ImportError ('zipfile.ZipFile.open not available. '
-                                   'Upgrade python to 2.6 (or later) to ' +
-                                   'work with zip-compressed files!')
+                return archive.open(arch_file)
         else:
             raise TypeError ('Zip archive only supported for reading.')
 
