@@ -82,7 +82,7 @@ if (isset($_POST['reprocess_genome_id'])) {
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
     $ext = substr($filename, strrpos($filename, '.') + 1);
-    if (($ext == "txt" || $ext == "gff" || $ext == "zip" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 524288000)) {
+    if (($ext == "txt" || $ext == "csv" || $ext == "gff" || $ext == "zip" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 524288000)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
@@ -114,7 +114,7 @@ if (isset($_POST['reprocess_genome_id'])) {
             $page_content .= "Error: A problem occurred during file upload!";
         }
     } else {
-        $page_content .= "Error: Only .txt, .gff, .zip, .gz or .bz2 files under 500MB are accepted for upload";
+        $page_content .= "Error: Only .txt, .csv, .gff, .zip, .gz or .bz2 files under 500MB are accepted for upload";
     }
 } elseif (isset($_POST['location']) && $user && $user['oid']) {
   $location = preg_replace('{/\.\./}','',$_POST['location']); # No shenanigans
