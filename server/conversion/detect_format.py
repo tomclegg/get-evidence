@@ -63,7 +63,7 @@ def detect_format(file_input):
 
         # Look at other lines and decide based on their format.
         tsv_data = line.split('\t')
-        csv_data = list(csv.reader([line]))
+        csv_data = list(csv.reader([line]))[0]
 
         if ( len(csv_data) > 5 and
              re.match(r'rs', csv_data[0]) and
