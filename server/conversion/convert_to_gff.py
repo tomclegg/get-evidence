@@ -18,9 +18,9 @@ def convert(input_file, options=None):
     input_type = detect_format.detect_format(input_file)
     if input_type == 'GFF':
         input_data = autozip.file_open(input_file)
-    elif input_type == 'CGIvar':
+    elif input_type == 'CGIVAR':
         input_data = cgivar_to_gff.convert(input_file, options)
-    elif input_type == '23andme':
+    elif input_type == '23ANDME':
         input_data = gff_from_23andme.convert(input_file)
     elif input_type == 'VCF':
         input_data = vcf_to_gff.convert(input_file, options)
