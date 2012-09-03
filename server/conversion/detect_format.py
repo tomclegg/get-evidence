@@ -73,6 +73,12 @@ def detect_format(file_input):
              re.match(r'[ACGT]', csv_data[5]) ):
             print "deCODEme microarray genotyping data (deCODEme) guessed"
             looks_like['deCODEme'] = True
+        if ( len(csv_data) > 3 and
+             re.match(r'rs', csv_data[0]) and
+             re.match(r'[0-9]', csv_data[2]) and
+             re.match(r'[ACGT]', csv_data[3]) ):
+            print "Family Tree DNA genotyping data (FTDNA) guessed"
+            looks_like['FTDNA'] = True
         if ( len(tsv_data) > 3 and
              re.match(r'rs', tsv_data[0]) and 
              re.match(r'[0-9]', tsv_data[2]) and
