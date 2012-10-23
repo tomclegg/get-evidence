@@ -20,6 +20,30 @@ from utils import autozip, doc_optparse, gff
 from config_names import GENETESTS_DATA
 from utils.substitution_matrix import blosum100
 
+def get_name_map():
+    """Return mapping of GET-Evidence data
+
+    Keys are keys for data in the /public/getev-latest.json flat file.
+    Values are keys to used in the get-evidence.json file outputed for a given 
+    genome, to be interpreted by genome_display.php.
+    """
+    name_map = { 'overall_frequency_n': 'num',
+                 'overall_frequency_d': 'denom',
+                 'pph2_score': 'pph2_score',
+                 'impact': 'variant_impact',
+                 'summary_short': 'summary_short',
+                 'quality_scores': 'quality_scores',
+                 'variant_quality': 'variant_quality',
+                 'inheritance': 'variant_dominance',
+                 'variant_id': 'variant_id',
+                 'n_articles': 'n_articles',
+                 'n_web_pos': 'n_web_pos',
+                 'n_web_uneval': 'n_web_uneval',
+                 'n_web_neg': 'n_web_neg',
+                 'suff_eval': 'suff_eval',
+                 }
+    return name_map
+
 def read_getev_flat(getev_flatfile):
     """Load GET-Evidence data into two dicts, which are returned.
  
@@ -37,11 +61,9 @@ def read_getev_flat(getev_flatfile):
             f_in = open(getev_flatfile)
 
     # Pull only these items from the GET-Evidence json data:
-    items_wanted = ['gene', 'aa_change_short', 'summary_short', 'impact', \
-            'inheritance', 'dbsnp_id', 'in_omim', 'in_gwas', 'in_pharmgkb', \
-            'quality_scores', \
-            'variant_quality', 'overall_frequency_n', 'overall_frequency_d', \
-            'pph2_score', 'n_articles', 'variant_id']
+    items_wanted = get_name_map().keys() + ['gene', 
+                                            'aa_change_short', 
+                                            'dbsnp_id']
 
     # Create two dicts to be returned, storing data we want.
     # If possible, getev_by_aa is used with gene and amino acid change as key.
@@ -50,6 +72,19 @@ def read_getev_flat(getev_flatfile):
     getev_by_dbsnp = dict()
     for line in f_in:
         data = json.loads(line)
+
+        # Fallback to get 'quality_scores' array, if not in loaded data.
+        if not 'quality_scores' in data:
+            data['quality_scores'] = []
+            for qtype in ['in_silico', 'in_vitro', 'case_control', 'familial', 
+                      'severity', 'treatability', 'penetrance']:
+                qkey = 'qualityscore_' + qtype
+                if (qkey) in data:
+                    data['quality_scores'].append(data[qkey])
+                else:
+                    data['quality_scores'].append('-')
+
+        # Store GET-Evidence data by amino acid change and dbSNP ID.
         stored_data = dict()
         for item in items_wanted:
             if item in data and data[item]:
@@ -109,21 +144,7 @@ def read_transcripts(transcript_file):
 
 def copy_output_data(getev_data, output_data):
     """Copy data to output using names recognized by genome_display.php"""
-    name_map = {    'overall_frequency_n': 'num',
-                    'overall_frequency_d': 'denom',
-                    'pph2_score': 'pph2_score',
-                    'impact': 'variant_impact',
-                    'summary_short': 'summary_short',
-                    'quality_scores': 'quality_scores',
-                    'variant_quality': 'variant_quality',
-                    'inheritance': 'variant_dominance',
-                    'variant_id': 'variant_id',
-                    'n_articles': 'n_articles',
-                    'n_web_pos': 'n_web_pos',
-                    'n_web_uneval': 'n_web_uneval',
-                    'n_web_neg': 'n_web_neg',
-                    'suff_eval': 'suff_eval',
-                    }
+    name_map = get_name_map()
     for name in name_map:
         if name in getev_data:
             output_data[name_map[name]] = getev_data[name]
@@ -242,17 +263,9 @@ def suff_eval(variant_data):
     # Check that we have the data we need, else return "False"
     if not ("variant_impact" in variant_data):
         return False
-    if "quality_scores" in variant_data:
-        quality_scores = variant_data["quality_scores"]
-        if (not quality_scores) or len(quality_scores) < 7:
-            return False
-    else:
-        quality_scores = []
-        for k in ['in_silico', 'in_vitro', 'case_control', 'familial', 'severity', 'treatability', 'penetrance']:
-            if ('qualityscore_' + k) in variant_data:
-                quality_scores.append(variant_data['qualityscore_'+k])
-            else:
-                quality_scores.append('-')
+    quality_scores = variant_data["quality_scores"]
+    if (not quality_scores) or len(quality_scores) < 7:
+        return False
 
     impact = variant_data["variant_impact"]
     # Must have either case_control or familial data

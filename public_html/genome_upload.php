@@ -23,7 +23,9 @@ if (isset($_POST['reprocess_genome_id'])) {
     $in_dir = $GLOBALS["gBackendBaseDir"] . "/upload/" . $reprocess_genome_ID;
     $permname = $in_dir . "/genotype";
     if (! file_exists($permname)) {
-        if (file_exists ($permname . ".gz")) {
+	if (file_exists ($permname . ".zip")) {
+	    $permname = $permname . ".zip";
+	} elseif (file_exists ($permname . ".gz")) {
             $permname = $permname . ".gz";
         } elseif (file_exists ($permname . ".bz2")) {
             $permname = $permname . ".bz2";
@@ -80,12 +82,14 @@ if (isset($_POST['reprocess_genome_id'])) {
 } elseif((!empty($_FILES["genotype"])) && ($_FILES['genotype']['error'] == 0)) {
     $filename = basename($_FILES['genotype']['name']);
     $ext = substr($filename, strrpos($filename, '.') + 1);
-    if (($ext == "txt" || $ext == "gff" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 524288000)) {
+    if (($ext == "txt" || $ext == "csv" || $ext == "gff" || $ext == "zip" || $ext == "gz" || $ext == "bz2") && ($_FILES["genotype"]["size"] < 524288000)) {
         $tempname = $_FILES['genotype']['tmp_name'];
         $shasum = sha1_file($tempname);
         $page_content .= "shasum is $shasum<br>";
         $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype";
-        if ($ext == "gz") {
+        if ($ext == "zip") {
+	    $permname = $permname . ".zip";
+	} elseif ($ext == "gz") {
             $permname = $permname . ".gz";
         } elseif ($ext == "bz2") {
             $permname = $permname . ".bz2";
@@ -110,7 +114,7 @@ if (isset($_POST['reprocess_genome_id'])) {
             $page_content .= "Error: A problem occurred during file upload!";
         }
     } else {
-        $page_content .= "Error: Only .txt, .gff, .gz or .bz2 files under 500MB are accepted for upload";
+        $page_content .= "Error: Only .txt, .csv, .gff, .zip, .gz or .bz2 files under 500MB are accepted for upload";
     }
 } elseif (isset($_POST['location']) && $user && $user['oid']) {
   $location = preg_replace('{/\.\./}','',$_POST['location']); # No shenanigans
@@ -119,7 +123,9 @@ if (isset($_POST['reprocess_genome_id'])) {
     if (file_exists($location) && strpos ($location, $GLOBALS["gBackendBaseDir"] . "/upload/") === 0) {
       $shasum = sha1_file($location);
       $permname = $GLOBALS["gBackendBaseDir"] . "/upload/$shasum/genotype";
-      if (preg_match ('{\.gz$}', $location))
+      if (preg_match ('{\.zip$}', $location))
+	  $permname = $permname . ".zip";
+      elseif (preg_match ('{\.gz$}', $location))
           $permname = $permname . ".gz";
       elseif (preg_match ('{\.bz2$}', $location))
 	  $permname = $permname . ".bz2";

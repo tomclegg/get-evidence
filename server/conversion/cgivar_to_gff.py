@@ -5,38 +5,20 @@
 The files should be interpretable by GET-Evidence's genome processing system.
 To see command line usage, run with "-h" or "--help".
 """
+import os
 import re
 import sys
-import bz2
-import gzip
-import zipfile
 from optparse import OptionParser
+
+GETEV_MAIN_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if not GETEV_MAIN_PATH in sys.path:
+    sys.path.insert(1, GETEV_MAIN_PATH)
+del GETEV_MAIN_PATH
+
+from utils import autozip
 
 DEFAULT_BUILD = "b36"
 DEFAULT_SOFTWARE_VER = "2.0.1.5"
-
-def autozip_file_open(filename, mode='r'):
-    """Return file obj, with compression if appropriate extension is given"""
-    if re.search("\.zip", filename):
-        archive = zipfile.ZipFile(filename, mode)
-        if mode == 'r':
-            files = archive.infolist()
-            if len(files) == 1:
-                if hasattr(archive, "open"):
-                    return archive.open(files[0])
-                else:
-                    sys.exit("zipfile.ZipFile.open not available. Upgrade " \
-                        + "python to 2.6 to work with zip-compressed files!")
-            else:
-                sys.exit("Zip archive " + filename + " has more than one file!")
-        else:
-            sys.exit("Zip archive only supported for reading.")
-    elif re.search("\.gz", filename):
-        return gzip.GzipFile(filename, mode)
-    elif re.search("\.bz2", filename):
-        return bz2.BZ2File(filename, mode)
-    else:
-        return open(filename, mode)
 
 def process_full_position(data, software_ver):
     """Return GFF-formated string for when all alleles called on same line"""
@@ -184,7 +166,7 @@ def convert(cgi_input, options=None):
     # Set up CGI input. Default is to assume a str generator.
     cgi_data = cgi_input
     if isinstance(cgi_input, str): 
-        cgi_data = autozip_file_open(cgi_input, 'r')
+        cgi_data = autozip.file_open(cgi_input, 'r')
      
     build = DEFAULT_BUILD
     software_ver = DEFAULT_SOFTWARE_VER
@@ -255,7 +237,7 @@ def convert_to_file(cgi_input, output_file):
     """Convert a CGI var file and output GFF-formatted data to file"""
     output = output_file  # default assumes writable file object
     if isinstance(output_file, str): 
-        output = autozip_file_open(output_file, 'w')
+        output = autozip.file_open(output_file, 'w')
     conversion = convert(cgi_input)  # set up generator
     for line in conversion:
         output.write(line + "\n")

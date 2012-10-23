@@ -113,7 +113,16 @@ def genome_metadata(gff_input, genome_stats_file, progresstracker):
     progresstracker.metadata['chromosomes'] = list()
 
     # Progress through GFF input.
+    header_done = False
     for record in gff_data:
+        # Have to do this after calling the first record to
+        # get the iterator to read through the header data
+        if not header_done:
+            yield "##gff-version " + gff_data.data[0]
+            yield "##genome-build " + gff_data.data[1]
+            yield "# Produced by: get_metadata.py"
+            header_done = True
+
         # Record number of positions called.
         dist = (record.end - (record.start - 1))
         called_num += dist
